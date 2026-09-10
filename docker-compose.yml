@@ -1,0 +1,156 @@
+services:
+  regime-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: regime-dashboard:latest
+    container_name: regime-dashboard
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    # Optional .env file with secrets (ANTHROPIC_API_KEY etc.). If the file
+    # doesn't exist, docker-compose ignores it gracefully thanks to env_file
+    # behavior — but the user must create it first to enable Claude AI.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Streamlit headless settings (also baked into the image, but explicit here
+      # so they're easy to tweak without rebuilding).
+      STREAMLIT_SERVER_HEADLESS: "true"
+      STREAMLIT_SERVER_ADDRESS: "0.0.0.0"
+      STREAMLIT_SERVER_PORT: "8501"
+      STREAMLIT_BROWSER_GATHERUSAGESTATS: "false"
+      # Tell Python to find the source on PYTHONPATH (defensive — not strictly needed
+      # since the code lives in WORKDIR, but useful if you mount volumes).
+      PYTHONPATH: /app
+    volumes:
+      # Persist Streamlit's data cache across container restarts so yfinance
+      # responses don't get re-fetched after every `docker compose up`.
+      - streamlit-cache:/home/streamlit/.streamlit
+      # Shared 5m cache populated by the `refresher` sidecar. Read-only from
+      # streamlit's perspective — only refresher writes here.
+      - ./cache_5m:/app/cache_5m
+      # Predictions log (Track Record) bind-mounted to the project directory
+      # so data survives `docker compose down -v`, image rebuilds, and is
+      # visible/editable from Finder. This is CRITICAL user data.
+      - ./predictions:/app/predictions
+      # Twitter sentiment snapshots + index (Phase 4). Bind mount so editing
+      # influencers.json from Finder takes effect on next refresh.
+      - ./twitter_sentiment:/app/twitter_sentiment
+      # Claude API call audit log (Phase 5.1). Captures every prompt/response
+      # with tokens + cost for later backtest and debug.
+      - ./claude_calls:/app/claude_calls
+      # TradingView Ideas data (Phase 6.1).
+      - ./tv_ideas:/app/tv_ideas
+      # Influencer track-record (Phase 6.3).
+      - ./influencer_track_record:/app/influencer_track_record
+      # TV MCP host bridge queue (Phase 8.1). Bind mount so Streamlit
+      # can drop request files for the host daemon to process.
+      - ./tv_bridge_queue:/app/tv_bridge_queue
+      # Wave-analysis journal — snapshots / transitions / manual actions.
+      # Bind mount is CRITICAL: this is irreplaceable signal data that powers
+      # the Track Record evaluations. Must survive `docker compose down -v`.
+      - ./wave_journal:/app/wave_journal
+      # Wave knowledge base — expert source material (transcripts, books,
+      # screenshots, pattern cards) compiled into Claude's system prompt.
+      # Editable from Finder — adding a new source.yaml is enough to wire it in.
+      - ./knowledge_base:/app/knowledge_base
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Sidecar that fetches 5m OHLCV for BTC/ETH/HYPE every 5 minutes and writes
+  # parquet files to the shared cache-5m volume. The main streamlit container
+  # reads from this volume — so the chart refreshes are instant and not gated
+  # on the exchange's API latency.
+  refresher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: regime-dashboard:latest      # same image as the web app
+    container_name: regime-refresher
+    restart: unless-stopped
+    command: ["python", "refresh_5m.py", "--loop"]
+    environment:
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: "1"             # so docker logs see stdout immediately
+    volumes:
+      - ./cache_5m:/app/cache_5m
+    healthcheck:
+      # The refresher writes a `.heartbeat` file after every successful cycle.
+      # Healthy if the heartbeat is < 11 minutes old (2x the refresh interval).
+      test: ["CMD-SHELL", "test -f /app/cache_5m/.heartbeat && find /app/cache_5m/.heartbeat -mmin -11 | grep -q ."]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    depends_on:
+      regime-dashboard:
+        condition: service_started
+
+  # Twitter sentiment refresher — scrapes Apify twice a day (06:00 & 18:00
+  # UTC) and re-aggregates the sentiment index. Reads APIFY_API_TOKEN from
+  # .env. If the token is missing, the cycle is gracefully skipped (no crash).
+  twitter-refresher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: regime-dashboard:latest
+    container_name: regime-twitter-refresher
+    restart: unless-stopped
+    command: ["python", "refresh_twitter.py", "--loop"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./twitter_sentiment:/app/twitter_sentiment
+    healthcheck:
+      # Healthy if heartbeat is < 13h old (1.1× the 12h refresh interval).
+      test: ["CMD-SHELL", "test -f /app/twitter_sentiment/.heartbeat && find /app/twitter_sentiment/.heartbeat -mmin -780 | grep -q ."]
+      interval: 5m
+      timeout: 5s
+      retries: 3
+      start_period: 5m
+    depends_on:
+      regime-dashboard:
+        condition: service_started
+
+  # TradingView Ideas refresher (Phase 6). Scrapes scrapemint/tradingview-ideas-scraper
+  # twice daily, aggregates per-tier author bias votes.
+  tv-ideas-refresher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: regime-dashboard:latest
+    container_name: regime-tv-ideas-refresher
+    restart: unless-stopped
+    command: ["python", "refresh_tv_ideas.py", "--loop"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PYTHONPATH: /app
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./tv_ideas:/app/tv_ideas
+      - ./influencer_track_record:/app/influencer_track_record
+      - ./cache_5m:/app/cache_5m
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /app/tv_ideas/.heartbeat && find /app/tv_ideas/.heartbeat -mmin -780 | grep -q ."]
+      interval: 5m
+      timeout: 5s
+      retries: 3
+      start_period: 5m
+    depends_on:
+      regime-dashboard:
+        condition: service_started
+
+volumes:
+  streamlit-cache:

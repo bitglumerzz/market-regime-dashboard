@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker (don't recursively include compose files into the build context)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Streamlit local cache (rebuilt inside the container)
+.streamlit/secrets.toml
+
+# Environment file with API keys — must stay out of the image
+.env
+.env.local
+
+# Tests / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Notes, logs, ad-hoc files
+*.log
+*.md
+notes/

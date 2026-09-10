@@ -1,0 +1,26 @@
+# Streamlit configuration for containerized deployment.
+# Settings here mirror the env vars in docker-compose.yml; either is sufficient,
+# both are kept so the app behaves the same outside Docker.
+
+[server]
+headless = true
+address = "0.0.0.0"
+port = 8501
+fileWatcherType = "none"   # the source is read-only inside the image; saves CPU
+runOnSave = false
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+# Match the dark theme used by design_system.py so the chrome around the
+# rendered HTML doesn't flash white on first paint.
+base = "dark"
+primaryColor = "#00D4FF"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#161B22"
+textColor = "#E6EDF3"
+font = "sans serif"
+
+[logger]
+level = "info"

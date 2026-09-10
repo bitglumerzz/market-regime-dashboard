@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS launchd service for tv_bridge.py.
+
+  Installation:
+    cp com.yourname.tv_bridge.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.yourname.tv_bridge.plist
+
+  Verify it runs:
+    launchctl list | grep tv_bridge
+
+  Stop:
+    launchctl unload ~/Library/LaunchAgents/com.yourname.tv_bridge.plist
+
+  Logs:
+    tail -f ~/Documents/Claude/Projects/Market\ Regime\ Detection\ Dashboard\ —\ Streamlit\ App/tv_bridge.log
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.yourname.tv_bridge</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/path/to/market-regime-dashboard/tv_bridge.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/path/to/market-regime-dashboard</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/path/to/market-regime-dashboard/tv_bridge.stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/path/to/market-regime-dashboard/tv_bridge.stderr.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+  </dict>
+</dict>
+</plist>
