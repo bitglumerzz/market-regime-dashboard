@@ -1,0 +1,4 @@
+aiogram>=3.13,<4
+python-dotenv>=1.0
+# Неофициальный SDK DIKIDI Business (нужен Python 3.13+). Не нужен при BACKEND=local.
+dikidi-api-client; python_version >= "3.13"

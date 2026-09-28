@@ -1,0 +1,16 @@
+{
+  "_comment": "Используется только при BACKEND=local (тестовый режим без DIKIDI). В режиме dikidi услуги и мастера берутся из DIKIDI.",
+  "services": [
+    {"id": "classic", "title": "Классическое наращивание", "duration": 120, "price": 2500},
+    {"id": "2d", "title": "Объём 2D", "duration": 150, "price": 3000},
+    {"id": "3d", "title": "Объём 3D", "duration": 180, "price": 3500},
+    {"id": "hollywood", "title": "Голливудский объём (4D–6D)", "duration": 210, "price": 4500},
+    {"id": "correction", "title": "Коррекция", "duration": 90, "price": 2000},
+    {"id": "removal", "title": "Снятие ресниц", "duration": 30, "price": 500},
+    {"id": "lamination", "title": "Ламинирование ресниц", "duration": 60, "price": 2200}
+  ],
+  "masters": [
+    {"id": "1", "name": "Анна", "services": []},
+    {"id": "2", "name": "Мария", "services": ["classic", "2d", "correction", "removal"]}
+  ]
+}
