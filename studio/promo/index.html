@@ -54,6 +54,30 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
 .chip{padding:16px 28px;border-radius:999px;border:1px solid rgba(233,196,125,.35);background:rgba(233,196,125,.07);
   font-size:30px;font-weight:600;color:#eadfc7;backdrop-filter:blur(8px)}
 
+/* S3b — model reveal */
+#s3b{background:radial-gradient(ellipse at 50% 55%,#0d0f15 0%,#06070a 70%)}
+#mk{position:absolute;left:0;right:0;top:740px;text-align:center;font-family:'JetBrains Mono';font-size:26px;letter-spacing:.42em;color:var(--gold)}
+#mname{position:absolute;left:0;right:0;top:800px;text-align:center;font-family:Unbounded;font-weight:800;font-size:150px;letter-spacing:-.02em;white-space:nowrap;transform-origin:50% 0}
+#mname span{display:inline-block}
+#mname .gl{color:rgba(233,196,125,.45);font-family:'JetBrains Mono';font-weight:700}
+#mline{position:absolute;left:540px;top:1010px;height:2px;width:0;background:linear-gradient(90deg,transparent,#e9c47d,#fff1cf,#e9c47d,transparent);box-shadow:0 0 20px #e9c47d}
+#msub{position:absolute;left:0;right:0;top:1050px;text-align:center;font-size:44px;font-weight:500;color:#c9c6bf}
+#net{position:absolute;left:0;top:0}
+.inp{position:absolute;width:300px;height:70px;border-radius:20px;display:flex;align-items:center;justify-content:center;gap:12px;
+  background:rgba(18,21,28,.8);border:1px solid rgba(233,196,125,.3);font-size:26px;font-weight:600;color:#e7e2d7;box-sizing:border-box}
+.inp i{width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+#mout{position:absolute;left:190px;top:1480px;width:700px;white-space:nowrap;border-radius:32px;padding:26px 34px;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;
+  background:linear-gradient(160deg,rgba(53,232,168,.16),rgba(53,232,168,.03));border:1px solid rgba(53,232,168,.5);box-shadow:0 0 60px rgba(53,232,168,.18)}
+#mout .ai{color:var(--em)}#mout .ai:before{background:var(--em);box-shadow:0 0 12px var(--em)}
+#mout b{font-family:Unbounded;font-size:44px;color:var(--em)}
+.lay{position:absolute;left:64px;font-family:'JetBrains Mono';font-size:18px;letter-spacing:.25em;color:rgba(244,241,234,.38)}
+#mhead{top:470px;font-size:70px;text-align:center}
+.tile{position:absolute;width:440px;height:300px;border-radius:40px;box-sizing:border-box;padding:40px 44px;
+  background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.015));border:1px solid rgba(233,196,125,.3);
+  box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)}
+.tile b{display:block;font-family:Unbounded;font-weight:800;font-size:120px;line-height:1;letter-spacing:-.03em}
+.tile span{display:block;margin-top:26px;font-size:34px;font-weight:600;color:#cfcac0}
+
 /* S4 */
 #cam{position:absolute;inset:0;perspective:2600px}
 #phone{position:absolute;left:150px;top:240px;width:780px;height:1460px;border-radius:84px;box-sizing:border-box;padding:34px 40px;
@@ -185,6 +209,32 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
     </div>
   </div>
 
+  <!-- 03b MODEL REVEAL -->
+  <div class="scene" id="s3b">
+    <canvas id="net" width="1080" height="1920"></canvas>
+    <div class="lay" style="top:752px">01 · ПРИЗНАКИ</div>
+    <div class="lay" style="top:942px">02 · РЕЖИМ</div>
+    <div class="lay" style="top:1132px">03 · СКОРИНГ</div>
+    <div id="inps">
+      <div class="inp" style="left:60px;top:470px"><i></i>Цена и объём</div>
+      <div class="inp" style="left:390px;top:470px"><i></i>Волны Эллиотта</div>
+      <div class="inp" style="left:720px;top:470px"><i></i>Режимы HMM</div>
+      <div class="inp" style="left:60px;top:560px"><i></i>Новости</div>
+      <div class="inp" style="left:390px;top:560px"><i></i>Сентимент соцсетей</div>
+      <div class="inp" style="left:720px;top:560px"><i></i>Мульти-таймфрейм</div>
+    </div>
+    <div id="mout"><span class="ai">ВЫХОД МОДЕЛИ</span><b>LONG · 78%</b></div>
+    <div class="kt" id="mhead" data-split>Всё это — *за секунды*</div>
+    <div class="tile" style="left:80px;top:660px"><b class="gold" data-n="6">0</b><span>слоёв анализа</span></div>
+    <div class="tile" style="left:560px;top:660px"><b class="gold" data-s="24/7">0</b><span>следит за рынком</span></div>
+    <div class="tile" style="left:80px;top:1000px"><b class="gold" data-n="3">0</b><span>таймфрейма сразу</span></div>
+    <div class="tile" style="left:560px;top:1000px"><b class="gold" data-n="1">0</b><span>чёткий сигнал</span></div>
+    <div id="mk">ПРЕДСТАВЛЯЕМ ИИ-МОДЕЛЬ</div>
+    <div id="mname"></div>
+    <div id="mline"></div>
+    <div id="msub">Модель, которая читает рынок за тебя</div>
+  </div>
+
   <!-- 04 PRODUCT -->
   <div class="scene" id="s4">
     <div id="cam">
@@ -256,7 +306,7 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden}
     <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
     <div class="tl" id="hudBrand"></div>
     <div class="tr"><span class="dot"></span><span id="tc">00:00:00</span></div>
-    <div class="bl" id="hudScene">01 / 06</div>
+    <div class="bl" id="hudScene">01 / 07</div>
     <div class="br">AI · TRADING</div>
   </div>
   <div id="leak"></div>
@@ -272,8 +322,11 @@ const CONFIG = {
   brandA: Q.get('brandA') || 'REGIME',   // первая часть логотипа
   brandB: Q.get('brandB') || 'AI',       // вторая (золотая) часть
   bot:    Q.get('bot')    || '@regime_ai_bot',
+  model:  Q.get('model')  || 'REGIME CORE',   // имя ИИ-модели в сцене-презентации
 };
-const DURATION = 33, FPS = 30;
+/* сцена презентации модели вставлена в таймлайн: старое время 12.1 «замирает» на INS секунд */
+const BRK = 12.1, INS = 9.6;
+const DURATION = 33 + INS, FPS = 30;
 
 /* ============ helpers ============ */
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
@@ -359,7 +412,7 @@ const GR = []; { for (let k = 0; k < 6; k++) { const cv = document.createElement
 const bg = $('#bg').getContext('2d'), chart = $('#chart').getContext('2d'), grain = $('#grain').getContext('2d');
 
 /* ============ background canvas ============ */
-function drawBG(t) {
+function drawBG(t, after) {
   const g = bg; g.clearRect(0, 0, 1080, 1920);
   // dotted grid, drifting
   const ga = .5 * (1 - P(t, 20.8, 21.4)) + .5 * P(t, 26.6, 27.4);
@@ -407,7 +460,7 @@ function drawBG(t) {
   }
 
   // S3: particles converging / orbiting the core
-  if (t > 7.9 && t < 12.6) {
+  if (t > 7.9 && t < 12.6 && !after) {
     const a = P(t, 8.0, 8.6) * (1 - P(t, 11.9, 12.5)), r = rng(11), zoom = 1 + E.inX(P(t, 11.7, 12.5)) * 3;
     g.save(); g.globalAlpha = a;
     for (let i = 0; i < 140; i++) {
@@ -473,10 +526,111 @@ function drawChart(t) {
   return CH.c[0].o;
 }
 
+/* ============ model reveal (S3b) ============ */
+$('#mname').innerHTML = [...CONFIG.model].map(c => `<span data-c="${c}">${c === ' ' ? '&nbsp;' : c}</span>`).join('');
+const NET = (() => {
+  const inp = [210, 540, 870, 210, 540, 870].map((x, i) => [x, i < 3 ? 540 : 630]);
+  const lay = (n, y, a, b) => Array.from({ length: n }, (_, i) => [L(a, b, i / (n - 1)), y]);
+  const L1 = lay(6, 810, 150, 930), L2 = lay(8, 1000, 110, 970), L3 = lay(5, 1190, 230, 850), OUT = [[540, 1380]];
+  const layers = [inp, L1, L2, L3, OUT], r = rng(21), parts = [];
+  for (let k = 0; k < 70; k++) parts.push({ path: layers.map(l => l[Math.floor(r() * l.length)]), off: r(), sp: .45 + r() * .25, gold: r() > .3 });
+  return { layers, parts };
+})();
+const net = $('#net').getContext('2d');
+const GLY = '█▓▒░#%&@0123456789ABCDEFX<>/';
+function drawModel(u) {
+  // name decode
+  $$('#mname span').forEach((sp, i) => {
+    const c = sp.dataset.c, t0 = .45 + i * .07, res = u > t0 + .45;
+    if (c === ' ') return;
+    if (u < t0) { sp.style.opacity = 0; return; }
+    sp.style.opacity = 1;
+    if (res) { sp.textContent = c; sp.className = 'gold'; sp.style.backgroundPosition = `${L(100, 0, P(u, 1.4, 3.2))}% 0`; }
+    else { sp.textContent = GLY[Math.floor(rng(Math.floor(u * 24) * 97 + i)() * GLY.length)]; sp.className = 'gl'; }
+  });
+  const kt = Math.round(22 * P(u, .15, .8));
+  $('#mk').textContent = 'ПРЕДСТАВЛЯЕМ ИИ-МОДЕЛЬ'.slice(0, kt);
+  const up = E.io(P(u, 2.2, 3.0));
+  st($('#mk'), { opacity: 1 - up, transform: `translateY(${-up * 590}px)` });
+  st($('#mname'), { transform: `translateY(${-up * 640}px) scale(${L(1, .52, up)})` });
+  const ml = E.outX(P(u, 1.2, 2.1));
+  st($('#mline'), { width: ml * 760 + 'px', left: 540 - ml * 380 + 'px', opacity: 1 - up });
+  st($('#msub'), { opacity: P(u, 1.5, 1.9) * (1 - up), transform: `translateY(${L(24, 0, E.out(P(u, 1.5, 2.1)))}px)` });
+
+  // network
+  const back = E.io(P(u, 6.6, 7.3)), na = P(u, 2.9, 3.4) * (1 - back);
+  $$('.inp').forEach((d, i) => { const p = E.back(P(u, 2.6 + i * .08, 3.1 + i * .08));
+    st(d, { opacity: C(p) * (1 - back), transform: `translateY(${(1 - p) * 30 - back * 60}px) scale(${L(.85, 1, C(p, 0, 1.2))})`, filter: `blur(${back * 8}px)` }); });
+  $$('.lay').forEach((d, i) => d.style.opacity = P(u, 3.3 + i * .15, 3.7 + i * .15) * (1 - back));
+  const g = net; g.clearRect(0, 0, 1080, 1920);
+  if (na > 0) {
+    g.save(); g.globalAlpha = na;
+    g.translate(540, 960); g.scale(1 - back * .12, 1 - back * .12); g.translate(-540, -960);
+    const Ls = NET.layers;
+    // connections, lit by a travelling wave
+    for (let l = 0; l < Ls.length - 1; l++) {
+      const dw = P(u, 3.0 + l * .15, 3.6 + l * .15);
+      for (const a of Ls[l]) for (const b of Ls[l + 1]) {
+        const wave = Math.max(0, Math.sin((u * 1.6 - l * .5) * Math.PI)) ** 6;
+        g.strokeStyle = `rgba(233,196,125,${(.07 + wave * .22) * dw})`; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(a[0], a[1] + (l ? 0 : 35)); const my = (a[1] + b[1]) / 2;
+        g.bezierCurveTo(a[0], my, b[0], my, b[0], b[1]); g.stroke();
+      }
+    }
+    // particles
+    const pa = P(u, 3.4, 3.9);
+    for (const pt of NET.parts) {
+      for (let tr = 0; tr < 5; tr++) {
+        const s = ((u - 3.4 - tr * .025) * pt.sp + pt.off) % 1; if (s < 0 || u < 3.4) continue;
+        const seg = s * 4, k = Math.floor(seg), f = E.io(seg - k), a = pt.path[k], b = pt.path[k + 1];
+        const ay = a[1] + (k ? 0 : 35), my = (ay + b[1]) / 2, it = 1 - f;
+        const x = it ** 3 * a[0] + 3 * it * it * f * a[0] + 3 * it * f * f * b[0] + f ** 3 * b[0];
+        const y = it ** 3 * ay + 3 * it * it * f * my + 3 * it * f * f * my + f ** 3 * b[1];
+        g.fillStyle = pt.gold ? `rgba(255,236,190,${pa * (1 - tr * .2)})` : `rgba(53,232,168,${pa * (1 - tr * .2)})`;
+        if (!tr) { g.shadowColor = pt.gold ? '#e9c47d' : '#35e8a8'; g.shadowBlur = 16; }
+        g.beginPath(); g.arc(x, y, 4.5 - tr * .7, 0, 7); g.fill(); g.shadowBlur = 0;
+      }
+    }
+    // nodes
+    Ls.slice(1).forEach((l, li) => l.forEach(([x, y], i) => {
+      const p = E.back(P(u, 3.0 + li * .18 + i * .03, 3.5 + li * .18 + i * .03)); if (p <= 0) return;
+      const pulse = Math.max(0, Math.sin((u * 1.6 - (li + 1) * .5) * Math.PI)) ** 4, out = li === 3;
+      const R = (out ? 34 : 13) * p, glow = out ? P(u, 4.8, 5.4) : pulse;
+      g.fillStyle = '#0b0d12'; g.strokeStyle = out ? '#35e8a8' : '#e9c47d'; g.lineWidth = out ? 4 : 2.5;
+      g.shadowColor = g.strokeStyle; g.shadowBlur = 10 + glow * 30;
+      g.beginPath(); g.arc(x, y, R, 0, 7); g.fill(); g.stroke();
+      g.fillStyle = out ? `rgba(53,232,168,${.4 + glow * .6})` : `rgba(255,241,207,${.25 + pulse * .75})`;
+      g.beginPath(); g.arc(x, y, R * .45, 0, 7); g.fill(); g.shadowBlur = 0;
+      if (out && glow > 0) { g.strokeStyle = `rgba(53,232,168,${(1 - (u * .8 % 1)) * .6})`; g.lineWidth = 2;
+        g.beginPath(); g.arc(x, y, R + (u * .8 % 1) * 70, 0, 7); g.stroke(); }
+    }));
+    g.restore();
+  }
+  const mo = E.outX(P(u, 5.3, 6.0));
+  st($('#mout'), { opacity: mo * (1 - back), transform: `translateY(${(1 - mo) * 50 + back * 80}px) scale(${L(.9, 1, mo)})`, filter: `blur(${back * 8}px)` });
+
+  // spec tiles
+  reveal($('#mhead'), u, 6.9, .08, .8, 9.1);
+  const zo = E.inX(P(u, 9.1, 9.9));
+  $$('.tile').forEach((d, i) => {
+    const p = E.outX(P(u, 7.1 + i * .12, 7.9 + i * .12)), b = d.querySelector('b');
+    st(d, { opacity: p * (1 - zo), transform: `translateY(${(1 - p) * 80}px) scale(${L(.9, 1, p) * (1 + zo * .6)})`, filter: `blur(${zo * 14}px)` });
+    const cp = E.out(P(u, 7.3 + i * .12, 8.4 + i * .12));
+    b.textContent = b.dataset.s ? b.dataset.s.slice(0, Math.max(1, Math.round(cp * 4))) : Math.round(cp * +b.dataset.n);
+    b.style.backgroundPosition = `${L(100, 0, P(u, 7.6, 9.6))}% 0`;
+  });
+  st($('#mname'), { opacity: 1 - zo });
+}
+
 /* ============ main render ============ */
-const SCENES = [[0, 4.3], [3.9, 8.2], [8.0, 12.6], [12.2, 21.3], [20.9, 27.0], [26.6, 33.2]];
-function renderAt(t) {
-  drawBG(t);
+const SCENES = [[0, 4.3], [3.9, 8.2], [8.0, 12.6], [11.9, 21.8], [21.8, 30.9], [30.5, 36.6], [36.2, 42.8]];
+function renderAt(T) {
+  // T — реальное время ролика; t — время «старого» таймлайна (стоит на паузе, пока идёт презентация модели)
+  const after = T >= BRK + INS, t = T < BRK ? T : after ? T - INS : BRK;
+  drawBG(t, after);
+  const u = T - BRK;
+  $('#s3b').style.opacity = win(T, BRK - .25, BRK + INS + .35, .45, .45);
+  drawModel(u);
 
   // --- S1
   $('#s1').style.opacity = win(t, 0, 4.2, .01, .35);
@@ -496,7 +650,7 @@ function renderAt(t) {
   st($('#s2sub'), { opacity: P(t, 6.5, 6.9) * (1 - P(t, 7.1, 7.4)), transform: `translateY(${L(30, 0, E.out(P(t, 6.5, 7.1)))}px)` });
 
   // --- S3
-  $('#s3').style.opacity = win(t, 8.0, 12.6, .2, .5);
+  $('#s3').style.opacity = after ? 0 : win(t, 8.0, 12.6, .2, .5);
   const zoom = E.inX(P(t, 11.7, 12.55));
   const cp = E.outX(P(t, 8.05, 9.3));
   st($('#core'), { transform: `scale(${L(.55, 1, cp) * (1 + zoom * 4)})`, opacity: cp * (1 - zoom) });
@@ -590,9 +744,9 @@ function renderAt(t) {
   st($('#disc'), { opacity: P(t, 30.4, 30.9) });
 
   // --- HUD / overlays
-  const si = SCENES.findIndex(([a, b], i) => t < (SCENES[i + 1] ? SCENES[i + 1][0] + .2 : 99));
-  $('#hudScene').textContent = `0${si + 1} / 06`;
-  const s = Math.floor(t), fr = Math.floor((t - s) * FPS);
+  const si = SCENES.findIndex(([a, b], i) => T < (SCENES[i + 1] ? SCENES[i + 1][0] + .2 : 99));
+  $('#hudScene').textContent = `0${si + 1} / 07`;
+  const s = Math.floor(T), fr = Math.floor((T - s) * FPS);
   $('#tc').textContent = `00:${String(s).padStart(2, '0')}:${String(fr).padStart(2, '0')}`;
   $('#hud').style.opacity = P(t, .3, 1) * (1 - P(t, 26.4, 27)) * .9;
   // light leaks at cuts
@@ -601,14 +755,14 @@ function renderAt(t) {
   st($('#leak'), { opacity: lk, transform: `translateX(${lx}px) rotate(18deg)` });
   $('#flash').style.opacity = Math.max(Math.sin(P(t, 7.85, 8.35) * Math.PI) * .75, Math.sin(P(t, 17.45, 17.7) * Math.PI) * .12, 1 - P(t, 32.4, 33) === 1 ? 0 : 0);
   $('#stage').style.filter = `brightness(${P(t, 0, .35) * (1 - P(t, 32.4, 33))})`;
-  grain.imageSmoothingEnabled = false; grain.drawImage(GR[Math.floor(t * FPS) % 6], 0, 0);
+  grain.imageSmoothingEnabled = false; grain.drawImage(GR[Math.floor(T * FPS) % 6], 0, 0);
 }
 window.renderAt = renderAt; window.DURATION = DURATION; window.FPS = FPS;
 
 /* ============ preview mode ============ */
 function fitStage() { const s = Math.min(innerWidth / 1080, innerHeight / 1920); st($('#stage'), { transform: `scale(${s})`, left: (innerWidth - 1080 * s) / 2 + 'px' }); }
 document.fonts.ready.then(() => {
-  $$('.kt').forEach(el => fit(el, 900)); $$('#slot div').forEach(el => fit(el, 960)); fit($('#brand'), 900);
+  $$('.kt').forEach(el => fit(el, 900)); $$('#slot div').forEach(el => fit(el, 960)); fit($('#brand'), 900); fit($('#mname'), 960);
   $$('#slot div').forEach(el => el.style.top = (170 - parseFloat(el.style.fontSize || 112) * 1.25) / 2 + 'px');
   window.__ready = true;
   if (Q.has('render')) { renderAt(+Q.get('t') || 0); return; }

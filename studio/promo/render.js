@@ -1,7 +1,7 @@
 // Покадровый рендер промо-ролика в MP4.
 //   NODE_PATH=$(npm root -g) node render.js                 -> promo.mp4 (1080x1920, 30fps)
 //   node render.js --stills 1,6,10,16,18,24,30             -> PNG-кадры для проверки
-//   node render.js --bot @my_bot --brandA MYBRAND --brandB AI
+//   node render.js --bot @my_bot --brandA MYBRAND --brandB AI --model "MYBRAND CORE"
 // ffmpeg: берётся из $FFMPEG, иначе из PATH.
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
@@ -12,7 +12,7 @@ const opt = k => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1]
 
 (async () => {
   const q = new URLSearchParams({ render: '1' });
-  for (const k of ['bot', 'brandA', 'brandB']) if (opt(k)) q.set(k, opt(k));
+  for (const k of ['bot', 'brandA', 'brandB', 'model']) if (opt(k)) q.set(k, opt(k));
   const url = 'file://' + path.join(__dirname, 'index.html') + '?' + q;
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
