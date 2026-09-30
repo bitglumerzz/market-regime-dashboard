@@ -25,17 +25,20 @@ from sklearn.isotonic import IsotonicRegression
 from .barrier_eval import Config, score_configs
 from .evaluate import Folds, _make_model, nonoverlap
 from .features import build_features_v1, primary_side
-from .labels import triple_barrier_sided
+from .labels import triple_barrier_sided, uniqueness_weights
 from .run import BARS_PER_DAY, load
 
 
-def _fit_calibrated(kind: str, X: np.ndarray, y: np.ndarray, horizon: int):
-    """Модель на первых 75% обучения + изотоническая калибровка на последних 25% (между ними зазор h баров)."""
+def _fit_calibrated(kind: str, X: np.ndarray, y: np.ndarray, horizon: int, w: np.ndarray | None = None):
+    """Модель на первых 75% обучения + изотоническая калибровка на последних 25% (между ними зазор h баров).
+    w — веса уникальности меток (пересекающиеся сделки весят меньше)."""
     cut = int(len(X) * 0.75)
     fit_idx, cal_idx = np.arange(0, max(0, cut - horizon)), np.arange(cut, len(X))
     if len(fit_idx) < 150 or len(cal_idx) < 50 or len(np.unique(y[fit_idx])) < 2:
         return None
-    m = _make_model(kind).fit(X[fit_idx], y[fit_idx])
+    sw = None if w is None else w[fit_idx]
+    m = _make_model(kind)
+    m = m.fit(X[fit_idx], y[fit_idx], **({"logisticregression__sample_weight": sw} if kind == "logit" else {"sample_weight": sw}))
     iso = IsotonicRegression(out_of_bounds="clip", y_min=0.01, y_max=0.99).fit(m.predict_proba(X[cal_idx])[:, 1], y[cal_idx])
     return lambda Z: iso.predict(m.predict_proba(Z)[:, 1])
 
@@ -88,8 +91,9 @@ def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: flo
         te = te[valid[te]]
         if not len(te):
             continue
+        wts = uniqueness_weights(tr + 1, tb["exit_bar"].values[tr])
         for k in probs:
-            f = _fit_calibrated(k, Xs.values[tr], y[tr], h)
+            f = _fit_calibrated(k, Xs.values[tr], y[tr], h, wts)
             if f is not None:
                 probs[k][[pos[t] for t in te]] = f(Xs.values[te])
     have = ~np.isnan(probs["logit"])
@@ -165,6 +169,11 @@ def report_v1(res: dict, name: str) -> str:
              f"{res['configs'][0].stats.get('mean_bps', float('nan')):+.1f} у primary." if res["m2_best"] else "."),
           "", "Требования гейта: DSR > 0.95, PBO < 0.2, нижняя граница 95% ДИ > 0, ≥ 100 сделок, лучше «всегда long». "
           "Меньше ~2 сигналов в месяц — продукт нежизнеспособен, даже если гейт пройден."]
+    suspicious = [c for c in [*res["configs"], *res["baselines"]] if c.stats.get("trades", 0) >= 100 and c.stats["hit"] > 0.62]
+    if suspicious:
+        L += ["", f"⚠️ **Подозрение на утечку данных:** {', '.join(c.name for c in suspicious)} — больше 62 % прибыльных сделок "
+              "на ≥ 100 сделках. На реальном рынке такое почти всегда означает, что признак видит будущее. Проверьте время признаков "
+              "и меток, прогоните --placebo."]
     if res["placebo"]:
         L += ["", "_Плацебо: базовый сигнал настоящий, признаки мета-модели перемешаны блоками. Если здесь H3 «подтверждается» — "
               "в конвейере утечка, и результатам основного прогона верить нельзя._"]

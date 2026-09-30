@@ -15,7 +15,16 @@ def ewm_vol(close: pd.Series, span: int) -> pd.Series:
     return np.log(close).diff().ewm(span=span, min_periods=span // 2).std()
 
 
-def triple_barrier(df: pd.DataFrame, horizon: int, k: float = 1.0, vol_span: int = 42) -> pd.DataFrame:
+def _entry(df: pd.DataFrame, t: int, entry: str) -> tuple[float, int]:
+    """Цена и бар входа. next_open (по умолчанию): сигнал формируется на закрытии бара t, подписчик получает его
+    с задержкой и входит по открытию бара t+1 (приём Qlib: метка начинается со следующего бара). close — вход по
+    закрытию бара t (оптимистично, для сравнения)."""
+    if entry == "next_open" and "open" in df:
+        return float(df["open"].values[t + 1]), t + 1
+    return float(df["close"].values[t]), t + 1
+
+
+def triple_barrier(df: pd.DataFrame, horizon: int, k: float = 1.0, vol_span: int = 42, entry: str = "next_open") -> pd.DataFrame:
     """Для каждого бара t: какой барьер коснулся первым на (t, t+h] и с каким результатом (лог-доходность long-позиции).
 
     Возвращает колонки: label (+1 верхний, −1 нижний, 0 по времени), ret (результат long в лог-доходности,
@@ -34,9 +43,10 @@ def triple_barrier(df: pd.DataFrame, horizon: int, k: float = 1.0, vol_span: int
         w = width[t]
         if not np.isfinite(w) or w <= 0:
             continue
-        up, dn = c[t] * np.exp(w), c[t] * np.exp(-w)
-        lab, r, eb = 0, np.log(c[t + horizon] / c[t]), horizon
-        for j in range(1, horizon + 1):
+        p0, first = _entry(df, t, entry)
+        up, dn = p0 * np.exp(w), p0 * np.exp(-w)
+        lab, r, eb = 0, np.log(c[t + horizon] / p0), horizon
+        for j in range(first - t, horizon + 1):
             touch_dn, touch_up = lo[t + j] <= dn, hi[t + j] >= up
             if touch_dn:                                       # стоп проверяем первым — консервативно
                 lab, r, eb = -1, -w, j
@@ -63,7 +73,7 @@ def kelly_fraction(p_win: np.ndarray, width: np.ndarray, frac: float = 0.25, cap
 
 
 def triple_barrier_sided(df: pd.DataFrame, horizon: int, side: np.ndarray, tp: float = 2.0, sl: float = 1.5,
-                         vol_span: int = 42) -> pd.DataFrame:
+                         vol_span: int = 42, entry: str = "next_open") -> pd.DataFrame:
     """Барьеры для заданной стороны сделки (мета-разметка): цель tp·σ·√h в сторону сделки, стоп sl·σ·√h против неё,
     выход по времени через h баров. label = 1, если сделка закрылась в плюс (цель или плюс по времени), иначе 0.
     ret — результат в лог-доходности со стороны сделки. При касании обоих барьеров в одной свече — стоп."""
@@ -72,26 +82,46 @@ def triple_barrier_sided(df: pd.DataFrame, horizon: int, side: np.ndarray, tp: f
     sig = ewm_vol(df["close"], vol_span).values
     n = len(c)
     w = sig * np.sqrt(horizon)
-    label, ret, how = np.full(n, np.nan), np.full(n, np.nan), np.full(n, np.nan)
+    label, ret, how, exit_bar = np.full(n, np.nan), np.full(n, np.nan), np.full(n, np.nan), np.full(n, np.nan)
     for t in range(n - horizon):
         s = side[t]
         if not np.isfinite(w[t]) or w[t] <= 0 or not np.isfinite(s) or s == 0:
             continue
+        p0, first = _entry(df, t, entry)
         up_w, dn_w = (tp * w[t], sl * w[t]) if s > 0 else (sl * w[t], tp * w[t])
-        up, dn = c[t] * np.exp(up_w), c[t] * np.exp(-dn_w)
-        r, h = s * np.log(c[t + horizon] / c[t]), 0
-        for j in range(1, horizon + 1):
+        up, dn = p0 * np.exp(up_w), p0 * np.exp(-dn_w)
+        r, h, eb = s * np.log(c[t + horizon] / p0), 0, horizon
+        for j in range(first - t, horizon + 1):
             touch_up, touch_dn = hi[t + j] >= up, lo[t + j] <= dn
             stop_hit = touch_dn if s > 0 else touch_up
             tgt_hit = touch_up if s > 0 else touch_dn
             if stop_hit:
-                r, h = -sl * w[t], -1
+                r, h, eb = -sl * w[t], -1, j
                 break
             if tgt_hit:
-                r, h = tp * w[t], 1
+                r, h, eb = tp * w[t], 1, j
                 break
-        label[t], ret[t], how[t] = float(r > 0), r, h
-    return pd.DataFrame({"label": label, "ret": ret, "hit": how, "tp_w": tp * w, "sl_w": sl * w}, index=df.index)
+        label[t], ret[t], how[t], exit_bar[t] = float(r > 0), r, h, t + eb
+    return pd.DataFrame({"label": label, "ret": ret, "hit": how, "exit_bar": exit_bar, "tp_w": tp * w, "sl_w": sl * w},
+                        index=df.index)
+
+
+def uniqueness_weights(starts: np.ndarray, ends: np.ndarray) -> np.ndarray:
+    """Средняя уникальность меток (López de Prado, AFML гл. 4): сделки пересекаются по времени, и без весов модель
+    многократно учится на одном и том же эпизоде. Для сделки на [s, e] вес = среднее 1/c_t по её барам,
+    где c_t — сколько сделок активно на баре t. Нормировано к среднему 1."""
+    starts, ends = starts.astype(int), ends.astype(int)
+    if not len(starts):
+        return np.array([])
+    lo, hi = starts.min(), ends.max()
+    conc = np.zeros(hi - lo + 2)
+    np.add.at(conc, starts - lo, 1)
+    np.add.at(conc, ends - lo + 1, -1)
+    conc = np.cumsum(conc)[:-1]
+    inv = np.where(conc > 0, 1 / np.maximum(conc, 1), 0)
+    csum = np.r_[0, np.cumsum(inv)]
+    w = (csum[ends - lo + 1] - csum[starts - lo]) / (ends - starts + 1)
+    return w / w.mean()
 
 
 def kelly_binary(p_win: np.ndarray, win: np.ndarray, loss: np.ndarray, frac: float = 0.25, cap: float = 1.0) -> np.ndarray:

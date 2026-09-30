@@ -6,3 +6,4 @@ lightgbm>=4.3
 pyarrow>=16
 ccxt>=4.5,<5
 pytest>=8
+purgedcv>=0.1.8   # независимая сверка PSR/DSR/MinTRL/PBO в тестах
