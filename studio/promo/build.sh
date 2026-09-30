@@ -7,15 +7,15 @@ cd "$(dirname "$0")"
 FF="${FFMPEG:-ffmpeg}"
 LOUD="loudnorm=I=-14:TP=-1:LRA=9"          # громкость под соцсети
 
-python3 sound.py full
-python3 sound.py ad
+${PYTHON:-python3} sound.py full
+${PYTHON:-python3} sound.py ad
 
 # полный ролик
 "$FF" -y -loglevel error -i promo.mp4 -i promo_audio.wav -map 0:v -map 1:a -c:v copy \
   -af "$LOUD" -c:a aac -b:a 256k -ar 48000 -shortest -movflags +faststart promo_sound.mp4
 
 # рекламная нарезка: куски из promo.mp4, стыки ровно в долю 120 BPM (см. AD_CUTS в sound.py)
-CUTS=$(python3 -c "from sound import AD_CUTS; print(' '.join(f'{a}:{b}' for a, b in AD_CUTS))")
+CUTS=$(${PYTHON:-python3} -c "from sound import AD_CUTS; print(' '.join(f'{a}:{b}' for a, b in AD_CUTS))")
 FILTER=""; LABELS=""; i=0
 for c in $CUTS; do
   a=${c%%:*}; b=${c##*:}

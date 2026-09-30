@@ -6,3 +6,6 @@ ad_18s.mp4
 *.wav
 __pycache__/
 still_*.png
+.venv/
+node_modules/
+package-lock.json
