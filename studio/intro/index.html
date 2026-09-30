@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Интро аккаунта</title>
+<link rel="stylesheet" href="../promo/fonts/fonts.css">
+<style>
+/* Кривые и тайминги — из библиотеки приёмов Студии (anima/приёмы):
+   мягкий вход cubic-bezier(.16,1,.3,1) · шторка (.76,0,.24,1) · одна пружина (.68,-.6,.32,1.6) на весь ролик */
+:root{--bg:#06070a;--tx:#f4f1ea;--mu:#8b909a;--gold:#e9c47d;--gold2:#fff1cf;--em:#35e8a8}
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;background:var(--bg);overflow:hidden;transform-origin:0 0;
+  font-family:Manrope,sans-serif;color:var(--tx);-webkit-font-smoothing:antialiased}
+.abs{position:absolute}
+.mono{font-family:'JetBrains Mono',monospace}
+.m{display:block;overflow:hidden;padding:.06em 0 .14em;margin:-.06em 0 -.14em}
+.r{display:inline-block;will-change:transform}
+.gold{background:linear-gradient(100deg,#a8792f 0%,#f3d796 30%,#fff6de 48%,#e9c47d 62%,#8f6a2c 100%);background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+/* световая рамка 1px через mask-composite (A-16 / D-28) */
+.glass{position:absolute;background:rgba(17,16,15,.35);backdrop-filter:blur(20px);border-radius:28px}
+.glass:after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.5px;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,241,207,.75),rgba(233,196,125,.12) 35%,rgba(233,196,125,.05) 65%,rgba(255,241,207,.55));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+
+/* A — знак */
+#markWrap{left:780px;top:360px;width:360px;height:360px}
+#mark{width:100%;height:100%;overflow:visible}
+#mark polygon{transform-box:fill-box;transform-origin:left center}
+#logoStrips{position:absolute;inset:0;display:none}
+#logoStrips img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#halo{left:660px;top:240px;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(233,196,125,.28),transparent 62%)}
+#wm{left:900px;top:392px;white-space:nowrap}
+#wmName{font-family:Unbounded;font-weight:800;font-size:124px;letter-spacing:-.02em;line-height:1}
+#wmHandle{font-size:40px;color:var(--gold);margin-top:22px;letter-spacing:.04em}
+#wmLine{left:900px;top:655px;height:2px;width:0;background:linear-gradient(90deg,#e9c47d,transparent)}
+
+/* шторка (A-23) */
+#curtain{left:0;top:0;width:1920px;height:1080px;background:linear-gradient(100deg,#b88a3e,#f3d796 45%,#e0b76c);clip-path:inset(0 0 0 100%)}
+#curtainWord{position:absolute;left:0;right:0;top:470px;text-align:center;font-family:Unbounded;font-weight:800;font-size:110px;color:#17110a;letter-spacing:.14em}
+
+/* B — профиль X */
+#prof{left:0;top:0;width:1920px;height:1080px;opacity:0}
+#coverBox{left:300px;top:70px;width:1320px;height:440px;border-radius:32px;overflow:hidden;background:#0d0f14}
+.slice{position:absolute;top:0;height:440px;overflow:hidden}
+.slice .ci{position:absolute;top:0;width:1320px;height:440px;background-size:cover;background-position:center}
+#coverFrame{left:300px;top:70px;width:1320px;height:440px;border-radius:32px;pointer-events:none;background:transparent;backdrop-filter:none}
+#avatar{left:370px;top:405px;width:200px;height:200px;border-radius:50%;background:#0b0d12;border:8px solid var(--bg);box-sizing:border-box;overflow:hidden;
+  box-shadow:0 0 0 2px rgba(233,196,125,.6),0 30px 80px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center}
+#avatar img{width:100%;height:100%;object-fit:cover}
+#avatar svg{width:70%;height:70%}
+#pName{left:370px;top:630px;font-family:Unbounded;font-weight:800;font-size:60px;white-space:nowrap}
+#pName .vf{display:inline-block;width:46px;height:46px;border-radius:50%;background:var(--gold);color:#140e05;font-size:28px;text-align:center;line-height:46px;margin-left:18px;vertical-align:10px;font-family:Manrope}
+#pHandle{left:370px;top:718px;font-size:34px;color:var(--mu)}
+#pBio{left:370px;top:778px;font-size:34px;font-weight:500;line-height:1.35;color:#dcd8cf;width:1000px}
+#pMeta{left:370px;top:890px;font-size:28px;color:var(--mu);white-space:nowrap}
+#pMeta b{color:var(--gold);font-weight:700}
+#follow{left:1290px;top:540px;height:88px;padding:0 54px;border-radius:999px;display:flex;align-items:center;font-family:Unbounded;font-weight:600;font-size:32px;
+  background:var(--tx);color:#0b0c10;white-space:nowrap;overflow:hidden}
+#follow .ok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#0b0c10;color:var(--tx);border:2px solid rgba(244,241,234,.35);border-radius:999px;opacity:0}
+#cursor{left:0;top:0;width:44px;height:44px;opacity:0}
+
+/* C — о чём аккаунт */
+#about{left:0;top:0;width:1920px;height:1080px;opacity:0}
+#aHead{left:140px;top:150px;font-family:Unbounded;font-weight:600;font-size:84px;letter-spacing:-.02em;line-height:1.08;white-space:nowrap}
+#aKick{left:144px;top:100px;font-size:24px;letter-spacing:.35em;color:var(--gold)}
+#bars{left:1040px;top:120px;width:760px;height:420px}
+.card{width:520px;height:250px;top:640px;box-sizing:border-box;padding:40px 42px}
+.card small{display:block;font-family:'JetBrains Mono';font-size:22px;letter-spacing:.25em;color:var(--gold);margin-bottom:20px}
+.card b{display:block;font-family:Unbounded;font-weight:600;font-size:40px;line-height:1.15}
+.card span{display:block;margin-top:14px;font-size:26px;color:var(--mu)}
+
+/* D — финал */
+#end{left:0;top:0;width:1920px;height:1080px;opacity:0}
+#eMark{left:885px;top:170px;width:150px;height:150px}
+#eName{left:0;right:0;top:370px;text-align:center;font-family:Unbounded;font-weight:800;font-size:150px;letter-spacing:-.02em;white-space:nowrap}
+#eSub{left:0;right:0;top:580px;text-align:center;font-size:38px;color:#cfcac0;font-weight:500}
+#ePill{overflow:hidden;left:50%;top:690px;height:120px;padding:0 60px;display:flex;align-items:center;gap:24px;border-radius:999px;white-space:nowrap;background:rgba(233,196,125,.1)}
+#ePill .mono{font-size:46px;font-weight:700;color:var(--gold2)}
+#ePill .x{font-family:Unbounded;font-weight:800;font-size:44px}
+#eSw{position:absolute;top:0;bottom:0;width:160px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);transform:skewX(-20deg)}
+#eTg{left:0;right:0;top:860px;text-align:center;font-size:30px;color:var(--mu)}
+#eTg b{color:var(--tx)}
+
+#vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
+#grain{position:absolute;left:0;top:0;width:1920px;height:1080px;opacity:.06;mix-blend-mode:overlay;image-rendering:pixelated}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" class="abs" width="1920" height="1080"></canvas>
+
+  <!-- A · знак + имя -->
+  <div id="halo" class="abs"></div>
+  <div id="markWrap" class="abs">
+    <svg id="mark" viewBox="0 0 120 120"></svg>
+    <div id="logoStrips"></div>
+  </div>
+  <div id="wmLine" class="abs"></div>
+  <div id="wm" class="abs">
+    <div class="m"><span class="r" id="wmName"></span></div>
+    <div class="m"><span class="r mono" id="wmHandle"></span></div>
+  </div>
+
+  <div id="curtain" class="abs" style="display:none"><div id="curtainWord">ПРОФИЛЬ</div></div>
+
+  <!-- B · профиль -->
+  <div id="prof" class="abs">
+    <div id="coverBox" class="abs"></div>
+    <div id="coverFrame" class="glass"></div>
+    <div id="follow" class="abs">Подписаться<div class="ok">Вы подписаны</div></div>
+    <div id="avatar" class="abs"></div>
+    <div class="abs m" id="pName"><span class="r"><span id="pNameT"></span><span class="vf">✓</span></span></div>
+    <div class="abs m" id="pHandle"><span class="r mono" id="pHandleT"></span></div>
+    <div class="abs" id="pBio"></div>
+    <div class="abs m" id="pMeta"><span class="r" id="pMetaT"></span></div>
+    <svg id="cursor" class="abs" viewBox="0 0 24 24"><path d="M4 2l16 10-7 1.6L9.5 21z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg>
+  </div>
+
+  <!-- C · о чём аккаунт -->
+  <div id="about" class="abs">
+    <div id="aKick" class="abs mono">О ЧЁМ АККАУНТ</div>
+    <div id="aHead" class="abs"><div class="m"><span class="r">Рынок читает ИИ.</span></div><div class="m"><span class="r">Решения — <span class="gold" id="aAcc">за тобой.</span></span></div></div>
+    <canvas id="bars" class="abs" width="760" height="420"></canvas>
+    <div class="glass card" style="left:140px"><small>01 · АНАЛИЗ</small><b>ИИ-разбор рынка</b><span>режимы, волны, сентимент</span></div>
+    <div class="glass card" style="left:700px"><small>02 · СИГНАЛЫ</small><b>Вход · стоп · цель</b><span>с уверенностью модели</span></div>
+    <div class="glass card" style="left:1260px"><small>03 · ПРАКТИКА</small><b>Разборы сделок</b><span>что сработало и почему</span></div>
+  </div>
+
+  <!-- D · финал -->
+  <div id="end" class="abs">
+    <svg id="eMark" class="abs" viewBox="0 0 120 120"></svg>
+    <div id="eName" class="abs"><div class="m"><span class="r" id="eNameT"></span></div></div>
+    <div id="eSub" class="abs"><div class="m"><span class="r">ИИ-советник для трейдинга</span></div></div>
+    <div id="ePill" class="glass"><span class="x">𝕏</span><span class="mono" id="ePillT"></span><div id="eSw"></div></div>
+    <div id="eTg" class="abs"></div>
+  </div>
+
+  <div id="vig"></div>
+  <canvas id="grain" width="480" height="270"></canvas>
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+const Q = new URLSearchParams(location.search);
+const CONFIG = {
+  name:   Q.get('name')   || 'REGIME AI',
+  handle: Q.get('handle') || '@regime_ai',
+  bio:    Q.get('bio')    || 'ИИ-советник для трейдинга.|Решения — на основе данных, а не эмоций.',
+  joined: Q.get('joined') || '2026',
+  tg:     Q.get('tg')     || '@regime_ai_bot',
+  logo:   Q.get('logo')   || 'assets/logo.png',   // квадратный логотип, лучше PNG с прозрачностью
+  cover:  Q.get('cover')  || 'assets/cover.jpg',  // обложка X, 1500×500
+};
+const DURATION = 15, FPS = 30, W = 1920, H = 1080;
+
+/* ============ helpers ============ */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const C = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), P = (t, a, b) => C((t - a) / (b - a)), L = (a, b, p) => a + (b - a) * p;
+const st = (el, o) => { for (const k in o) el.style[k] = o[k]; };
+function bezier(x1, y1, x2, y2) {
+  const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx, cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+  const X = t => ((ax * t + bx) * t + cx) * t, Y = t => ((ay * t + by) * t + cy) * t, dX = t => (3 * ax * t + 2 * bx) * t + cx;
+  return p => { if (p <= 0) return 0; if (p >= 1) return 1; let t = p;
+    for (let i = 0; i < 8; i++) { const d = dX(t); if (Math.abs(d) < 1e-6) break; t -= (X(t) - p) / d; } return Y(C(t)); };
+}
+const soft = bezier(.16, 1, .3, 1), wipe = bezier(.76, 0, .24, 1), spring = bezier(.68, -.6, .32, 1.6);
+const inE = p => p * p * p;
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+// type-rise (E-21): из-под маски со сдвига 118 %, 0.85 с, мягкая кривая
+const rise = (el, t, t0, dur = .85, out = null, outDur = .5) => {
+  const p = soft(P(t, t0, t0 + dur)), q = out === null ? 0 : wipe(P(t, out, out + outDur));
+  el.style.transform = `translate3d(0,${(1 - p) * 118 - q * 118}%,0)`; };
+
+/* ============ знак: 6 полос (E-15), задержки 0.04 … 0.29 с, 0.5 с каждая ============ */
+const STRIPS = [[14, 96, 32, 96, 44, 76, 26, 76], [30, 70, 48, 70, 60, 50, 42, 50], [46, 44, 64, 44, 76, 24, 58, 24],
+  [50, 96, 68, 96, 80, 76, 62, 76], [66, 70, 84, 70, 96, 50, 78, 50], [70, 96, 88, 96, 100, 76, 82, 76]];
+const markSVG = id => { $(id).innerHTML = `<defs><linearGradient id="g${id.slice(1)}" x1="0" y1="1" x2="1" y2="0">
+  <stop offset="0" stop-color="#8f6a2c"/><stop offset=".55" stop-color="#e9c47d"/><stop offset="1" stop-color="#fff1cf"/></linearGradient></defs>` +
+  STRIPS.map(s => `<polygon points="${s.join(' ')}" fill="url(#g${id.slice(1)})"/>`).join(''); };
+markSVG('#mark'); markSVG('#eMark');
+const DELAYS = [.04, .09, .14, .19, .24, .29];
+function assemble(sel, t, t0) { $$(sel + ' polygon').forEach((p, i) => { const k = soft(P(t, t0 + DELAYS[i], t0 + DELAYS[i] + .5));
+  p.style.transform = `scaleX(${k}) translateX(${(1 - k) * -12}px)`; p.style.opacity = C(k * 3); }); }
+
+/* ============ ассеты: логотип и обложка (с запасным вариантом) ============ */
+let HAS_LOGO = false, HAS_COVER = false;
+const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.onerror = () => r(null); i.src = src; });
+function fallbackCover() {  // если обложки нет — рисуем фирменную: золотой график над тёмным горизонтом
+  const cv = document.createElement('canvas'); cv.width = 1500; cv.height = 500; const g = cv.getContext('2d'), r = rng(9);
+  const bgG = g.createLinearGradient(0, 0, 1500, 500); bgG.addColorStop(0, '#0b0d13'); bgG.addColorStop(1, '#17120a'); g.fillStyle = bgG; g.fillRect(0, 0, 1500, 500);
+  const sun = g.createRadialGradient(1120, 330, 0, 1120, 330, 520); sun.addColorStop(0, 'rgba(255,214,140,.55)'); sun.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = sun; g.fillRect(0, 0, 1500, 500);
+  g.strokeStyle = 'rgba(233,196,125,.08)'; for (let x = 0; x < 1500; x += 50) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 500); g.stroke(); }
+  let y = 380; const pts = []; for (let x = 0; x <= 1500; x += 10) { y += (r() - .56) * 16; y = C(y, 90, 440); pts.push([x, y]); }
+  g.beginPath(); pts.forEach(([x, y]) => g.lineTo(x, y)); g.lineTo(1500, 500); g.lineTo(0, 500); const fg = g.createLinearGradient(0, 100, 0, 500);
+  fg.addColorStop(0, 'rgba(233,196,125,.25)'); fg.addColorStop(1, 'rgba(233,196,125,0)'); g.fillStyle = fg; g.fill();
+  g.beginPath(); pts.forEach(([x, y]) => g.lineTo(x, y)); g.strokeStyle = '#f3d796'; g.lineWidth = 4; g.shadowColor = '#e9c47d'; g.shadowBlur = 24; g.stroke();
+  g.shadowBlur = 0; g.font = "500 26px 'JetBrains Mono'"; g.fillStyle = 'rgba(244,241,234,.55)'; g.fillText('AI · MARKET REGIMES · SIGNALS', 60, 70);
+  return cv.toDataURL('image/jpeg', .92);
+}
+async function setupAssets() {
+  await document.fonts.load("500 26px 'JetBrains Mono'");
+  const [logo, cover] = await Promise.all([load(CONFIG.logo), load(CONFIG.cover)]);
+  HAS_LOGO = !!logo; HAS_COVER = !!cover;
+  const cov = HAS_COVER ? CONFIG.cover : fallbackCover();
+  // обложка режется на 5 вертикальных полос — они выезжают каскадом с шагом 80 мс
+  $('#coverBox').innerHTML = Array.from({ length: 5 }, (_, i) =>
+    `<div class="slice" style="left:${i * 264}px;width:${i === 4 ? 264 : 265}px"><div class="ci" style="left:${-i * 264}px;background-image:url('${cov}')"></div></div>`).join('');
+  $('#avatar').innerHTML = HAS_LOGO ? `<img src="${CONFIG.logo}">` : $('#mark').outerHTML.replace('id="mark"', '');
+  if (HAS_LOGO) {  // свой логотип собирается теми же 6 полосами — диагональными срезами картинки
+    $('#mark').style.display = 'none'; $('#eMark').outerHTML = `<img id="eMark" class="abs" src="${CONFIG.logo}" style="object-fit:contain">`;
+    const box = $('#logoStrips'); box.style.display = 'block';
+    box.innerHTML = Array.from({ length: 6 }, (_, i) => { const a = i / 6 * 100, b = (i + 1) / 6 * 100;
+      return `<img src="${CONFIG.logo}" style="clip-path:polygon(${a - 12}% 100%,${b - 12}% 100%,${b + 12}% 0,${a + 12}% 0)">`; }).join('');
+  }
+}
+
+/* ============ static text ============ */
+$('#wmName').textContent = CONFIG.name; $('#wmHandle').textContent = CONFIG.handle;
+$('#pNameT').textContent = CONFIG.name; $('#pHandleT').textContent = CONFIG.handle;
+$('#pBio').innerHTML = CONFIG.bio.split('|').map(l => `<div class="m"><span class="r">${l}</span></div>`).join('');
+$('#pMetaT').innerHTML = `Присоединился · <b>${CONFIG.joined}</b> &nbsp;&nbsp; Telegram · <b>${CONFIG.tg}</b>`;
+$('#eNameT').innerHTML = CONFIG.name.replace(/(\S+)$/, '<span class="gold" id="eAcc">$1</span>');
+$('#ePillT').textContent = CONFIG.handle;
+$('#eTg').innerHTML = `Подробности и доступ — в Telegram: <b>${CONFIG.tg}</b>`;
+
+/* grain + фон */
+const GR = []; for (let k = 0; k < 5; k++) { const cv = document.createElement('canvas'); cv.width = 480; cv.height = 270; const x = cv.getContext('2d'),
+  d = x.createImageData(480, 270), r = rng(50 + k); for (let i = 0; i < d.data.length; i += 4) { const v = r() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+  x.putImageData(d, 0, 0); GR.push(cv); }
+const bg = $('#bg').getContext('2d'), grain = $('#grain').getContext('2d'), bars = $('#bars').getContext('2d');
+function drawBG(t) {
+  bg.clearRect(0, 0, W, H);
+  // медленно плывущее тёплое пятно (параллакс по окружности вместо курсора — C-17)
+  const cx = 960 + Math.cos(t * .5) * 260, cy = 540 + Math.sin(t * .4) * 140, gr = bg.createRadialGradient(cx, cy, 0, cx, cy, 900);
+  gr.addColorStop(0, 'rgba(233,176,90,.10)'); gr.addColorStop(1, 'rgba(233,176,90,0)'); bg.fillStyle = gr; bg.fillRect(0, 0, W, H);
+  bg.fillStyle = 'rgba(233,196,125,.09)'; const off = (t * 10) % 64;
+  for (let y = 0; y < H; y += 64) for (let x = -64; x < W; x += 64) bg.fillRect(x + off, y + 24, 2, 2);
+}
+// B-06: 32 столбика с шагом 30 мс; последние 4 — «прогноз» на 28 %
+const BARV = (() => { const r = rng(4); let v = .3; return Array.from({ length: 32 }, (_, i) => (v = C(v + (r() - .38) * .12, .15, .95))); })();
+function drawBars(t, t0) {
+  const g = bars; g.clearRect(0, 0, 760, 420); const bw = 760 / 32;
+  BARV.forEach((v, i) => { const p = soft(P(t, t0 + i * .03, t0 + i * .03 + .7)); if (!p) return; const h = v * 380 * p;
+    const gr = g.createLinearGradient(0, 420 - h, 0, 420); gr.addColorStop(0, i > 27 ? 'rgba(53,232,168,.28)' : '#e9c47d'); gr.addColorStop(1, 'rgba(233,196,125,.05)');
+    g.fillStyle = gr; g.globalAlpha = i > 27 ? .28 : 1; g.fillRect(i * bw + 4, 420 - h, bw - 8, h); g.globalAlpha = 1; });
+}
+
+/* ============ timeline ============ */
+function renderAt(t) {
+  drawBG(t);
+  /* A · 0–3.9: знак собирается, уходит влево, имя выезжает из-под маски */
+  const aOut = wipe(P(t, 3.3, 3.9));
+  const shift = soft(P(t, 1.5, 2.4));
+  assemble('#mark', t, .35);
+  if (HAS_LOGO) $$('#logoStrips img').forEach((im, i) => { const k = soft(P(t, .35 + DELAYS[i], .85 + DELAYS[i]));
+    st(im, { opacity: C(k * 2), transform: `translate(${(1 - k) * -40}px,${(1 - k) * 40}px)` }); });
+  st($('#markWrap'), { transform: `translateX(${-shift * 330}px) scale(${L(1, .72, shift) * L(1, .9, aOut)})`, opacity: 1 - aOut });
+  st($('#halo'), { opacity: soft(P(t, .3, 1.2)) * (1 - aOut) * (.8 + Math.sin(t * 3) * .2), transform: `translateX(${-shift * 330}px)` });
+  st($('#wm'), { transform: `translateX(${L(60, -120, shift)}px)`, opacity: 1 - aOut });
+  rise($('#wmName'), t, 1.75); rise($('#wmHandle'), t, 1.89);   // каскад: шаг 140 мс
+  $('#wmName').className = 'r gold'; $('#wmName').style.backgroundPosition = `${L(100, 0, P(t, 2.0, 3.2))}% 0`;
+  st($('#wmLine'), { width: soft(P(t, 2.1, 2.9)) * 560 + 'px', opacity: 1 - aOut, transform: `translateX(-120px)` });
+
+  /* шторка 3.5–4.6 (A-23): золото закрывает кадр справа налево и уходит дальше */
+  const cIn = wipe(P(t, 3.45, 4.0)), cOut = wipe(P(t, 4.05, 4.6));
+  st($('#curtain'), { clipPath: `inset(0 ${cOut * 100}% 0 ${(1 - cIn) * 100}%)`, display: t > 3.4 && t < 4.7 ? 'block' : 'none' });
+  const cw = soft(P(t, 3.7, 4.2)); st($('#curtainWord'), { opacity: cw * (1 - cOut), letterSpacing: L(.4, .14, cw) + 'em' });
+
+  /* B · 4.0–9.3: профиль X собирается */
+  const bOut = wipe(P(t, 8.9, 9.4));
+  st($('#prof'), { opacity: t > 3.95 ? 1 - bOut : 0, transform: `scale(${L(1, 1.04, P(t, 4, 9.4))}) translateY(${-bOut * 60}px)` });
+  $$('.slice').forEach((s, i) => { const p = soft(P(t, 4.1 + i * .08, 4.95 + i * .08));
+    st(s, { transform: `translateY(${(1 - p) * 104}%)` }); s.firstChild.style.transform = `scale(${L(1.12, 1, p) * L(1, 1.05, P(t, 5, 9.4))})`; });
+  st($('#coverFrame'), { opacity: soft(P(t, 4.7, 5.3)) });
+  const av = spring(P(t, 5.0, 5.55));   // единственная пружина в ролике
+  st($('#avatar'), { transform: `scale(${Math.max(0, av)})` });
+  rise($('#pName .r'), t, 5.35); rise($('#pHandleT'), t, 5.47);
+  $$('#pBio .r').forEach((r, i) => rise(r, t, 5.62 + i * .12)); rise($('#pMetaT'), t, 5.9);
+  const fb = soft(P(t, 5.5, 6.2)); st($('#follow'), { opacity: fb, transform: `translateY(${(1 - fb) * 30}px) scale(${1 - Math.sin(P(t, 7.55, 7.75) * Math.PI) * .06})` });
+  // курсор подходит и нажимает «Подписаться»
+  const cm = bezier(.45, 0, .2, 1)(P(t, 6.6, 7.5)), bx = 1290 + 190, by = 540 + 50;
+  st($('#cursor'), { opacity: P(t, 6.5, 6.7) * (1 - P(t, 8.3, 8.6)), transform: `translate(${L(1780, bx, cm)}px,${L(1040, by, cm)}px) scale(${1 - Math.sin(P(t, 7.55, 7.75) * Math.PI) * .2})` });
+  $('#follow .ok').style.opacity = P(t, 7.65, 7.8);
+
+  /* C · 9.1–12.4: о чём аккаунт */
+  const cOut2 = wipe(P(t, 12.0, 12.5));
+  st($('#about'), { opacity: t > 9.0 ? 1 - cOut2 : 0, transform: `translateY(${-cOut2 * 50}px)` });
+  st($('#aKick'), { opacity: soft(P(t, 9.2, 9.7)) });
+  $$('#aHead .r').forEach((r, i) => rise(r, t, 9.3 + i * .14));
+  $('#aAcc').style.backgroundPosition = `${L(100, 0, P(t, 9.8, 11.5))}% 0`;   // E-22: заливка акцента
+  drawBars(t, 9.5);
+  $$('.card').forEach((c, i) => { const p = soft(P(t, 10.0 + i * .12, 10.85 + i * .12));
+    st(c, { opacity: p, transform: `translateY(${(1 - p) * 70}px)` }); });
+
+  /* D · 12.3–15: финал — знак, имя с бликом, пилюля @handle */
+  st($('#end'), { opacity: t > 12.25 ? P(t, 12.25, 12.5) : 0 });
+  if (!HAS_LOGO) assemble('#eMark', t, 12.3); else st($('#eMark'), { opacity: soft(P(t, 12.35, 12.9)), transform: `scale(${L(.7, 1, soft(P(t, 12.35, 13)))})` });
+  rise($('#eNameT'), t, 12.55); rise($('#eSub .r'), t, 12.72);
+  const acc = $('#eAcc'); if (acc) acc.style.backgroundPosition = `${100 - ((t - 12.8) / 3 * 200 % 200)}% 0`;   // A-08: блик, 3 с на проход
+  const pp = soft(P(t, 12.95, 13.8));
+  st($('#ePill'), { opacity: pp, transform: `translateX(-50%) translateY(${(1 - pp) * 40}px)` });
+  $('#eSw').style.left = L(-200, $('#ePill').offsetWidth + 60, wipe(P(t, 13.6, 14.6))) + 'px';
+  st($('#eTg'), { opacity: soft(P(t, 13.3, 13.9)) });
+  $('#stage').style.filter = `brightness(${P(t, 0, .25) * (1 - P(t, 14.7, 15))})`;
+  grain.imageSmoothingEnabled = false; grain.drawImage(GR[Math.floor(t * FPS) % 5], 0, 0);
+}
+window.renderAt = renderAt; window.DURATION = DURATION; window.FPS = FPS; window.W = W; window.H = H;
+
+function fitStage() { const s = Math.min(innerWidth / W, innerHeight / H); st($('#stage'), { transform: `scale(${s})`, left: (innerWidth - W * s) / 2 + 'px' }); }
+Promise.all([document.fonts.ready, setupAssets()]).then(() => {
+  window.__ready = true;
+  if (Q.has('render')) return renderAt(+Q.get('t') || 0);
+  fitStage(); addEventListener('resize', fitStage);
+  let t0 = performance.now(), paused = false, pt = 0;
+  addEventListener('click', () => { paused = !paused; t0 = performance.now() - pt * 1000; });
+  (function loop(now) { if (!paused) { pt = ((now - t0) / 1000) % DURATION; renderAt(pt); } requestAnimationFrame(loop); })(performance.now());
+});
+</script>
+</body>
+</html>

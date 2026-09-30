@@ -1,0 +1,548 @@
+[
+ {
+  "category": "Production ML trading frameworks",
+  "projects": [
+   {
+    "name": "Freqtrade + FreqAI",
+    "url": "https://github.com/freqtrade/freqtrade",
+    "license": "GPL-3.0",
+    "stars": "~54.7k",
+    "last_commit": "2026-09-29 (f6a7b76), very active",
+    "what_it_does": "Crypto trading bot (CCXT exchanges) with a built-in ML layer (FreqAI): user defines features (feature_engineering_*) and targets (set_freqai_targets) in the strategy; FreqAI slides a train window, trains LightGBM/XGBoost/CatBoost/PyTorch MLP/Transformer/SB3 RL, predicts the next backtest window, retrains live every live_retrain_hours, and adds outlier/drift filters (SVM, DBSCAN, Dissimilarity Index, PCA). Has Telegram bot integration out of the box.",
+    "validation_audit": "Split/retraining: freqtrade/freqai/data_kitchen.py:316-380 split_timerange() builds strictly sequential windows: train = train_period_days, backtest = the backtest_period_days immediately after, window slides by bt_period. freqai_interface.py:348-352 truncates the frame at tr_train.stopdt BEFORE calling set_freqai_targets(), so shift(-N) labels of the last N training candles become NaN and are dropped: no label spill from the backtest window into training (good; better than most hobby repos). Live: data_kitchen.py:533-583 check_if_new_training_required() retrains when elapsed > live_retrain_hours on the last train_period_days. Internal train/test split (data_kitchen.py:124-160) uses sklearn train_test_split with shuffle forced False (line 136) and test_size default 0.25 (docs/freqai-configuration.md:28), i.e. the tail of the train window; NO purge/embargo between train tail and test head, so the internal validation/early-stopping metric is mildly optimistic (labels of last train rows overlap first test rows). shuffle_after_split / reverse_train_test_order flags exist (lines 167-190) and would make the internal metric meaningless if a user enables them. Scalers (MinMax, PCA, DI) are fit on train only via feature_pipeline.fit_transform then transform on test/predict (base_models/BaseRegressionModel.py:56-79, freqai_interface.py:1027-1044): correct. Leak vector left to the user: indicators are populated once over the whole backtest timerange (freqai_interface.py:340-343), so any full-series normalisation in feature_engineering_* leaks (docs admit this). Costs: freqtrade backtester applies exchange taker fee from config or worst-case exchange tier (freqtrade/optimize/backtesting.py:270-281, 973); no slippage model, fills at candle open/limit assumptions. Results are OOS in the walk-forward sense but the backtest windows are contiguous with no embargo; no PBO/DSR-style multiple-testing control; hyperopt on the same data is the usual overfit path.",
+    "reuse": "Ideas to borrow (GPL blocks code copying into our paid service unless we AGPL/GPL our stack): (1) the 'truncate frame before computing targets' trick to kill window-boundary label leakage; (2) Dissimilarity Index (freqtrade/freqai/utils + datasieve DissimilarityIndex): distance of live features to the training set as a per-signal confidence/abstain gate; (3) fit_live_predictions (freqai_interface.py:725-741): fit a Gaussian to the last N predictions and only signal beyond mean +/- k*std, i.e. adaptive thresholds instead of fixed ones; (4) live_retrain_hours/train_period_days/expiration_hours as the config vocabulary for our retrain scheduler; (5) shuffle-forced-False default is a good sanity check. Do NOT adopt as a runtime: GPL-3, and its target is single-exchange bot execution, not a multi-user signal service.",
+    "verdict": "borrow-ideas",
+    "leak_or_red_flags": "No hard leak in the default path. Soft issues: no purge between internal train/test tail split (data_kitchen.py:145-156); shuffle_after_split option; indicators computed on full range; no slippage model; GPL-3."
+   },
+   {
+    "name": "Microsoft Qlib",
+    "url": "https://github.com/microsoft/qlib",
+    "license": "MIT",
+    "stars": "~47-49k",
+    "last_commit": "2026-09-16 (be72549), active",
+    "what_it_does": "AI-oriented quant research platform: expression-based factor engine (Alpha158/Alpha360), DataHandler with learn/infer processor pipelines, 25+ benchmarked models (LightGBM, TRA, HIST, Transformer, TFT...), rolling retraining (qlib/contrib/rolling), concept-drift adaptation (DDG-DA meta-controller), portfolio backtest with TopkDropoutStrategy, MLflow recorders, RL for order execution.",
+    "validation_audit": "Labels: qlib/contrib/data/handler.py:90,152 label = Ref($close,-2)/Ref($close,-1)-1, i.e. next-next-day return, deliberately skipping one bar so the signal at t can be executed at t+1 close: honest execution-lag label. Normalisers require fit_start_time/fit_end_time and the code comments explicitly say fit_end_time must not include test data (qlib/data/dataset/processor.py:197-205); benchmark yaml sets fit_end_time=2014-12-31 = train end, segments train 2008-2014 / valid 2015-2016 / test 2017-2020 (examples/benchmarks/LightGBM/workflow_config_lightgbm_Alpha158.yaml:5-10, 53-56). CSZScoreNorm on the label is cross-sectional per date (learn-only), so no temporal leak. Task generator qlib/workflow/task/gen.py:305 (RollingGen/horizon) carries a label_leak_n parameter and truncates the train segment by the label horizon: purge is a first-class concept. Costs: exchange defaults open_cost 0.15% / close_cost 0.25% / min_cost 5 (qlib/backtest/exchange.py:48-50), benchmark uses 0.05%/0.15%; limit_threshold 9.5% models A-share limit-up/down; deal_price=close. Results are strictly OOS on the test segment, but valid+test are single fixed splits per benchmark, no CPCV/PBO. Crypto: scripts/data_collector/crypto is Coingecko daily-only and README says it cannot be used for backtesting (no OHLC): we would have to load our own dumps.",
+    "reuse": "Adopt selectively (MIT is clean): (1) copy the 'skip one bar' label convention Ref(close,-2)/Ref(close,-1) into signal_lab labels for 4h bars (predict return from next-bar open/close, not from current close); (2) port RollingGen's label_leak_n/horizon purge logic (qlib/workflow/task/gen.py:305-345) as a check against our purged walk-forward; (3) the DataHandlerLP learn_processors vs infer_processors split with fit_start/fit_end is the cleanest pattern for stateful transforms, replicate in our feature pipeline; (4) DDG-DA (examples/benchmarks_dynamic/DDG-DA) is worth a read for regime-drift-aware sample weighting, directly relevant to our HMM regimes; (5) Alpha158 expression list as a feature bank for LightGBM meta-labeling (cross-sectional factors matter less for 1-10 coins, so cherry-pick the time-series ones). Not worth adopting the whole platform: A-share daily-centric, heavy, dumps needed for crypto intraday.",
+    "verdict": "borrow-ideas",
+    "leak_or_red_flags": "No leaks found in defaults; the leak risk is user misconfiguring fit_end_time. Benchmarks use a single fixed test split; crypto support is daily Coingecko only, no OHLC."
+   },
+   {
+    "name": "Microsoft RD-Agent / RD-Agent(Q)",
+    "url": "https://github.com/microsoft/RD-Agent",
+    "license": "MIT",
+    "stars": "~14.8k",
+    "last_commit": "2026-09-23 (484776c), active",
+    "what_it_does": "LLM multi-agent loop that proposes factor hypotheses, writes factor code (CoSTEER), runs Qlib backtests in Docker, reads IC/annualized return/max drawdown, and feeds them back to the LLM to evolve the next hypothesis. RD-Agent(Q) (NeurIPS 2025) jointly optimises factors and models; paper claims ~2x annualized return vs Alpha360 with 70% fewer factors on CSI300.",
+    "validation_audit": "rdagent/scenarios/qlib/developer/feedback.py:17-21 IMPORTANT_METRICS = IC, 1day.excess_return_with_cost.annualized_return, ...max_drawdown; these are read from the Qlib recorder (rdagent/scenarios/qlib/experiment/factor_template/read_exp_res.py) whose backtest window is the TEST segment (factor_template/conf_baseline.yaml:50-52 backtest start_time = test_start, default 2017-01-01; segments valid 2015-2016, test 2017-). So the hypothesis-evolution loop is selecting factors on test-period performance: every iteration is another draw on the hold-out, i.e. systematic data snooping inflating reported test IC. Defaults in rdagent/app/qlib_rd_loop/conf.py:77 train_start 2008. The paper (arXiv 2505.15155v2) responds to leakage criticism by re-running with train 2008-2021 / valid 2022-2023 / test 2024-2025 and hiding raw data from the LLM; the released code still uses the test-window backtest as feedback. Costs are Qlib's (with_cost metrics) so fees are included. IC deduplication threshold 0.99 (factor_runner.py:60-61) only removes near-duplicates, not multiple-testing inflation.",
+    "reuse": "Borrow the architecture only: hypothesis -> code -> backtest -> LLM feedback is exactly our 'Claude as judge' loop. If we automate factor search with Claude, we MUST fix what RD-Agent gets wrong: feed the LLM validation-window metrics, keep a locked test window, and charge each iteration against PBO/DSR (we already have these in signal_lab). The CoSTEER factor-coder prompts (rdagent/scenarios/qlib/prompts.yaml, factor_coder.py) are reusable templates for having Claude write pandas feature functions with unit checks. MIT, so code can be lifted.",
+    "verdict": "borrow-ideas",
+    "leak_or_red_flags": "Selection-on-test: LLM loop iterates on metrics computed over the test segment (feedback.py:17-21 + factor_template/conf_baseline.yaml:50-52). Expect the headline 2x return to shrink badly on a truly untouched period."
+   },
+   {
+    "name": "NautilusTrader",
+    "url": "https://github.com/nautechsystems/nautilus_trader",
+    "license": "LGPL-3.0",
+    "stars": "~29k",
+    "last_commit": "2026-09-30 (4d2e409), very active, Rust core",
+    "what_it_does": "Production-grade event-driven engine: identical strategy code for backtest and live, nanosecond clock, L1/L2/L3 order-book matching engine, fill/latency/fee models, adapters for Binance, Bybit, OKX, dYdX, Hyperliquid, IB, Databento, etc. No ML layer; it is the execution/backtest substrate.",
+    "validation_audit": "No labels or train/test logic (not an ML framework). Costs: FillModel with prob_fill_on_limit / prob_slippage (crates/execution/src/models/fill.rs, python/tests/unit/backtest/test_backtest_configs.py), StaticLatencyModel (crates/backtest tests), FeeModel with maker/taker per instrument (crates/backtest/tests/integration/fee_model.rs). Event-driven replay removes the look-ahead class of bugs common in vectorised backtests (orders can only see data already emitted). Look-ahead is still possible in user indicators, but not in the engine.",
+    "reuse": "Best candidate if we ever want a faithful bar/orderbook-level replay of our Telegram signals (entry/stop/target with realistic fills and fees) or later execute for users. LGPL allows use as an unmodified library in a closed paid service. Overkill for the current stage (signal-only product, 4h-3d horizon); keep on the radar for when we need a Bybit/Binance live adapter and a proper fill model. Our signal_lab could emit signals that a thin Nautilus strategy consumes for a 'realistic PnL' report.",
+    "verdict": "watch",
+    "leak_or_red_flags": "None found; heavy Rust build, large API surface, frequent breaking releases (MIGRATION_V2.md)."
+   },
+   {
+    "name": "vectorbt (OSS) / vectorbt PRO",
+    "url": "https://github.com/polakowo/vectorbt",
+    "license": "Apache-2.0 + Commons Clause (OSS); PRO is proprietary paid",
+    "stars": "~9.2k",
+    "last_commit": "2026-09-26 (docs only; OSS is in maintenance, features go to PRO)",
+    "what_it_does": "Numba-vectorised backtester: Portfolio.from_signals/from_orders with fees, slippage, sizing broadcast across thousands of parameter combos; rolling/expanding split helpers; PRO adds CV splitters, limit orders, leverage, portfolio optimisation, pattern recognition.",
+    "validation_audit": "No labeling logic. Costs: fees and slippage are first-class args (vectorbt/portfolio/base.py:257, 348: fees=0.001, slippage=0.001) applied per order. Splits: range_split/rolling_split/expanding_split (vectorbt/generic/accessors.py:1774-1886) give walk-forward windows but NO purge/embargo parameter in OSS; PRO's Splitter has gap/purge. Vectorised execution means signals computed on the full series can silently use future info (the engine does not protect you), and fills at bar close by default unless you shift signals.",
+    "reuse": "Do not build on it: Commons Clause forbids selling a service whose value derives substantially from the software, and everything new is in the paid PRO. Ideas worth keeping: broadcasted parameter grids for cheap sensitivity/PBO scans, and the from_signals API shape (entries/exits/sl_stop/tp_stop) which maps well to our entry/stop/target signal format. Our own numpy triple-barrier evaluator already covers this.",
+    "verdict": "avoid",
+    "leak_or_red_flags": "License incompatible with a paid service; OSS branch frozen; no purge in OSS splitters; vectorised engine leaves look-ahead prevention entirely to the user."
+   },
+   {
+    "name": "Jesse",
+    "url": "https://github.com/jesse-ai/jesse",
+    "license": "MIT",
+    "stars": "~8.6k",
+    "last_commit": "2026-09-27 (840beb9), active",
+    "what_it_does": "Python crypto bot/backtester with strategy DSL, hyperparameter optimizer, and a new research toolkit: ML gather/train pipeline (record_features/record_label inside a strategy, sklearn training), rule significance testing (stationary bootstrap of signal-only next-bar returns), Monte Carlo (trade shuffling and synthetic candles), plus an MCP server for Claude/Codex.",
+    "validation_audit": "Labels: jesse/research/ml.py:52-140 gather_ml_data() runs a backtest and collects {time, features, label} points the strategy records itself, so label look-ahead is entirely up to the user's record_label placement (typically at trade close, timestamped at entry: fine if the split is by entry time). Split: ml.py:99-108 strict chronological cut at test_ratio, no shuffle, but no purge/embargo between train end and test start, and no walk-forward: a single split. Significance: rule_significance_testing/rule_significance.py docstring + bootstrap.py:11-30: signal-only backtest collects +1/-1/0 at each bar, next-bar returns are detrended (zero-centred) and a stationary (geometric block, mean length 10) bootstrap yields a p-value for H0 'expected next-bar detrended return <= 0'. This is a proper, if simple, White-style test. Costs: exchange fee from config (jesse/config.py:42,122,179), no slippage model (grep for slippage returns no simulation code). Backtests are in-sample unless the user splits candle ranges manually.",
+    "reuse": "MIT, so code can be copied. Lift jesse/research/rule_significance_testing (stationary bootstrap with block resampling) as an additional placebo/significance test in signal_lab: it is complementary to our PBO/DSR (they test selection bias; this tests a single rule against a serial-dependence-preserving null). Also monte_carlo/monte_carlo_trades.py (trade-order reshuffling for drawdown distributions) is directly useful for the 'expected drawdown' line in Telegram. Their ML pipeline is simpler than ours (no purge, no calibration): nothing to take.",
+    "verdict": "borrow-ideas",
+    "leak_or_red_flags": "ML split has no purge (ml.py:99-108); no slippage; label correctness delegated to user code."
+   },
+   {
+    "name": "Hummingbot",
+    "url": "https://github.com/hummingbot/hummingbot",
+    "license": "Apache-2.0",
+    "stars": "~20.3k",
+    "last_commit": "2026-09-22 (9af100d), active",
+    "what_it_does": "Market-making/arbitrage/grid/DCA bot framework for 140+ CEX/DEX venues; Strategy V2 has DirectionalTradingControllerBase with a TripleBarrierConfig (stop_loss/take_profit/time_limit/trailing) and PositionExecutor, plus a simple candle-based backtesting engine for controllers.",
+    "validation_audit": "No ML/labels. Backtest costs: executors_simulator/position_executor_simulator.py:45-49 subtracts 2*trade_cost per round trip, default trade_cost 0.0002 (backtesting_engine_base.py:225); no slippage or latency model; fills are assumed at the bar price. Directional controller triple barrier (directional_trading_controller_base.py:60-135) is an execution construct, not a labeling one, and evaluation is plain in-sample simulation; no train/test concept.",
+    "reuse": "Apache-2.0 is clean. The interesting part is the execution side, not research: the PositionExecutor + TripleBarrierConfig semantics (stop, target, time limit, trailing, order types) are a ready-made spec for what our Telegram signal should carry so a user could execute it verbatim. If we ever offer auto-execution, a Hummingbot controller consuming our HMAC signal API is the shortest path. Its backtester is too naive (flat 2 bps) for research.",
+    "verdict": "watch",
+    "leak_or_red_flags": "Backtest ignores slippage/latency; focus is market making, not prediction."
+   },
+   {
+    "name": "OctoBot",
+    "url": "https://github.com/Drakkar-Software/OctoBot",
+    "license": "GPL-3.0-or-later",
+    "stars": "~6.7k",
+    "last_commit": "2026-09-21 (85ae511), active",
+    "what_it_does": "Retail-oriented multi-exchange bot with 'tentacles' plugin system, TradingView webhook automation, grid/DCA, LLM connectors (OpenAI/Ollama) for signal evaluation, strategy_design_optimizer (grid search over indicator parameters scored on backtests), web UI.",
+    "validation_audit": "No ML training or labeling code in core; strategy_optimizer/strategy_design_optimizer.py scores parameter combinations on full in-sample backtests with no hold-out or walk-forward. Fees via exchange config; no slippage model. Results are in-sample optimisation, the classic overfit setup.",
+    "reuse": "Nothing to take: GPL, retail UI focus, optimizer is pure in-sample grid search, LLM connector is prompt-only. Only relevance is as evidence that 'ask ChatGPT for a signal' bots already exist at retail, which is competition/noise, not a research reference.",
+    "verdict": "avoid",
+    "leak_or_red_flags": "In-sample optimizer with no OOS; GPL."
+   },
+   {
+    "name": "QuantConnect Lean",
+    "url": "https://github.com/QuantConnect/Lean",
+    "license": "Apache-2.0",
+    "stars": "~21.8k",
+    "last_commit": "2026-09-29 (03b95eb), very active",
+    "what_it_does": "Institutional C# event-driven engine with Python algorithms, alpha/portfolio/execution framework, fee/slippage/fill/margin/buying-power models per brokerage (Common/Orders/Fees, Common/Orders/Slippage: Constant, VolumeShare, MarketImpact), Optimizer, and ObjectStore-based ML examples (Keras/PyTorch/TensorFlow retrained on a schedule inside the algorithm).",
+    "validation_audit": "ML examples (Algorithm.Python/KerasNeuralNetworkAlgorithm.py:46-68, PytorchNeuralNetworkAlgorithm.py) retrain every Monday on History() data available at that time, so by construction no future data enters training: event-driven scheduling gives an honest walk-forward. Costs: pluggable FeeModel (Binance spot/futures, Alpaca, etc.) and slippage models, realistic fills; crypto data via QuantConnect cloud or your own. No built-in purged CV / statistical significance tooling; optimizer is grid/Euler over parameters with no OOS control (Optimizer/). No walk-forward optimizer in repo (grep returns nothing).",
+    "reuse": "Apache-2.0 is clean but Lean is a .NET runtime with its own data format: too heavy to embed. Ideas: 'train inside the event loop on History()' pattern guarantees no look-ahead in retraining; our retrain job should similarly pull only bars with close_time < now. The brokerage fee/slippage model catalogue (Common/Orders/Fees/Binance*FeeModel.cs, Slippage/MarketImpactSlippageModel.cs) gives numbers we can copy for our cost assumptions per venue.",
+    "verdict": "watch",
+    "leak_or_red_flags": "None; complexity and data-format lock-in are the costs."
+   },
+   {
+    "name": "backtesting.py (kernc) and backtrader (successor context)",
+    "url": "https://github.com/kernc/backtesting.py",
+    "license": "AGPL-3.0 (backtesting.py); GPL-3.0 (backtrader, frozen since 2023)",
+    "stars": "~9k (backtesting.py); backtrader ~16k but unmaintained",
+    "last_commit": "backtesting.py active in 2026 (per CHANGELOG); backtrader last release 2023-04",
+    "what_it_does": "Lightweight single-asset Python backtesters. backtesting.py: Strategy class, Backtest(commission=, spread=), optimize() with grid/skopt, plotting. backtrader: the older de-facto standard, effectively frozen; Nautilus/vectorbt/Jesse are the practical successors.",
+    "validation_audit": "Not cloned (out of scope for the deep read; known from prior use): backtesting.py fills at next bar open by default (no look-ahead in engine), commission as fraction, no slippage/latency beyond spread; optimize() is in-sample only, no walk-forward or purge. backtrader same class of engine, commission schemes, no OOS tooling.",
+    "reuse": "Nothing: AGPL-3 (backtesting.py) would force us to open-source a networked service using it; backtrader is GPL and dead. Our numpy triple-barrier evaluator plus PBO/DSR already exceeds what either offers for research.",
+    "verdict": "avoid",
+    "leak_or_red_flags": "AGPL/GPL licenses; in-sample optimizers."
+   }
+  ],
+  "blocked": [
+   "api.github.com is blocked by the proxy (returned null JSON), so star counts come from web search/WebFetch of github.com pages (approximate as of 2026-09).",
+   "backtesting.py and backtrader were assessed from documentation and prior knowledge, not cloned (lowest relevance; both AGPL/GPL).",
+   "vectorbt PRO is closed-source and paid, so its splitter/purge implementation could not be inspected."
+  ]
+ },
+ {
+  "category": "Deep learning / foundation models / LLM trading agents (2024–2026)",
+  "projects": [
+   {
+    "name": "Kronos (financial K-line foundation model)",
+    "url": "https://github.com/shiyu-coder/Kronos",
+    "license": "MIT",
+    "stars": "39.7k",
+    "last_commit": "2026-04-13",
+    "what_it_does": "Decoder-only transformer pre-trained on ~12B OHLCV bars from 45 exchanges (pretraining corpus ends June 2024 per paper/AAAI-2026). Tokenizer quantizes OHLCV into hierarchical tokens; autoregressive sampling gives multi-path price forecasts. Ships fine-tune pipeline on Qlib CSI300 with top-K backtest.",
+    "validation_audit": "Cloned /tmp/scout/Kronos. Fine-tune pipeline is mostly honest: finetune/dataset.py:104-114 z-scores each window using ONLY the lookback part (no future stats); splits are time-based (finetune/config.py:33-36); qlib backtest charges open_cost 0.1%, close_cost 0.15% (finetune/qlib_test.py:138) and reports with/without cost (:149-150). Signal = predicted close minus last close (qlib_test.py:277-282). Problems: (1) config.py:33-35 val range 2022-09..2024-06 overlaps train end 2022-12 and test range 2024-04..2025-06 overlaps val end 2024-06 — model selection sees ~3 months of test; (2) released pretrained weights saw data up to 2024-06, so any 'zero-shot' test before that is in-sample, and the repo's own test range starts 2024-04 (inside pretraining); (3) README:306 admits the top-K backtest ignores slippage/impact. Independent 5-min BTC test (1023jack.com, 249 OOS trades, chronological split): Kronos Brier 0.189 vs Brownian baseline 0.188 — indistinguishable. Paper reports RankIC lift vs generic TSFMs, not net-of-cost profitability.",
+    "reuse": "Do NOT use as the direction signal (no measurable edge on BTC OOS). Borrow: (a) the per-window lookback-only normalization pattern (dataset.py:104-114) as the template for any NN features in signal_lab; (b) its sampled multi-path forecasts as a cheap, honest *distribution* feature (predicted range / quantile spread over 4h–3d horizon) fed to meta-labeling, evaluated with our purged walk-forward and only on data after 2024-06 (pretraining cutoff). MIT is fine for a paid service. Treat Kronos-large (closed) as unavailable.",
+    "verdict": "borrow-ideas",
+    "leak_or_red_flags": "Val/test date-range overlap in finetune/config.py:33-35; pretraining data through 2024-06 makes pre-2024-07 evaluations in-sample; no slippage in backtest; independent BTC test shows zero edge vs random walk."
+   },
+   {
+    "name": "TradingAgents (TauricResearch, v0.5.x)",
+    "url": "https://github.com/TauricResearch/TradingAgents",
+    "license": "Apache-2.0",
+    "stars": "109.3k",
+    "last_commit": "2026-09-29",
+    "what_it_does": "Multi-agent LLM 'trading firm' (analysts → bull/bear debate → trader → risk debate → PM) built on LangGraph. v0.3–0.5 (2026) added point-in-time filters for news/fundamentals/FRED and a backtest sweep over a ticker×date grid that scores decisions after a holding window.",
+    "validation_audit": "Cloned /tmp/scout/TradingAgents. Point-in-time is real for data feeds: tools.py:34,58 clamp windows with as_of(); reddit.py:38-47 drops posts after end_date; CHANGELOG:176-190 & 233-240 document fixed look-ahead in FRED vintages, StockTwits/Reddit, Alpha Vantage fundamentals, memory recall (trading_graph.py:147). Backtest is NOT a backtest: backtest.py:88-90 scores hit-rate only for Buy/Sell/Over/Underweight, Hold is unscored; memory/settlement.py:52-74 measures close-to-close raw return minus SPY over holding_days=5, no fees/slippage, no position sizing, no equity curve; backtest.py:123-125 itself says 'one model sampling per cell, text feeds are not archived… indicative rather than repeatable'. No control for LLM parametric knowledge — any backtest date before the backbone's cutoff is contaminated (paper's Jan–Mar 2024 window is inside GPT-4o training). Original paper: 3 tickers, 3 months. Independent reproduction (trading-agents-lab, below) with anonymized prompts and 10 bps costs: agents −0.9% vs buy&hold +15.7% on AAPL Q2-2026.",
+    "reuse": "Do not adopt as signal engine (cost: ~$3–4 in LLM calls per decision, no demonstrated edge, unrepeatable). Borrow: the as_of()/as_of_window() vendor-clamp pattern (dataflows/date_window + tools.py) for our news/on-chain inputs, and the 'settle after holding window vs benchmark' idea for a live signal scoreboard in the bot (we already have hit/expectancy tracking — add benchmark-relative alpha). Also the Bull/Bear debate prompt structure could serve as a Claude-as-judge template, but judged only post-cutoff and forward.",
+    "verdict": "borrow-ideas",
+    "leak_or_red_flags": "Backtest without costs, hit-rate excludes Hold, single LLM sample, LLM knowledge-cutoff leakage unaddressed; 109k stars ≠ evidence."
+   },
+   {
+    "name": "trading-agents-lab (rigorous TradingAgents reproduction)",
+    "url": "https://github.com/Kantamaniprakash/trading-agents-lab",
+    "license": "MIT",
+    "stars": "0",
+    "last_commit": "2026-07-06",
+    "what_it_does": "Faithful reimplementation of TradingAgents plus the quant harness the paper lacked: 11.5y × 10 tickers, anonymized prompts (ticker/date masked, prices rebased to 100, volume as % avg), 10 bps costs always on, LightGBM expanding-window walk-forward with embargo as baseline, 62 tests incl. no-lookahead perturbation tests, cached deterministic LLM calls.",
+    "validation_audit": "Cloned /tmp/scout/trading-agents-lab. src/tradinglab/backtest/engine.py:3-5 'ONLY place signals are shifted', :50 position = sig.shift(1), :54-56 turnover cost 10 bps. models/ml.py:74-107 embargo = max(embargo_days, horizon) with explicit warning about label overlap. features/dataset.py:108 forward label shift(-horizon). README:289-308 lists survivorship bias, residual memorization risk, snapshot fundamentals. Results: anonymized agent desk −0.9% (Sharpe −1.21) vs B&H +15.7% on AAPL Mar–Jun 2026 (n=64 days, one ticker — authors say 'methodology demo'); LightGBM walk-forward L/S 2021+ : −19% cum (Sharpe −0.51), long-only +76% (Sharpe 0.48); turnover 0.35–0.69/day at 10 bps eats 9–17%/yr. Adversarial review fixed 17 issues (embargo gaps, drawdown/Sortino math, cost errors, warm-up phantom positions, anonymization channels).",
+    "reuse": "Adopt the methodology, not the agent: (1) anonymization v2 recipe (rebased index, % volume, masked dates) for any Claude-as-judge evaluation so we measure skill vs recall; (2) the 'delta between named and anonymized prompts = leak' probe (README roadmap item 1); (3) the single-shift-point rule and perturbation tests (tests/test_engine.py) as a CI pattern for signal_lab. Its finding that daily turnover kills LightGBM edge after 10 bps matches our 51–55% conclusion and argues for our slow-trend/4h–3d horizon.",
+    "verdict": "borrow-ideas",
+    "leak_or_red_flags": "None found in code; honest limitations section. Tiny project (0 stars, 13 commits) — use as reference, not dependency."
+   },
+   {
+    "name": "TLOB (Transformer for LOB price-trend prediction)",
+    "url": "https://github.com/LeonardoBerti00/TLOB",
+    "license": "MIT",
+    "stars": "178",
+    "last_commit": "2026-02-24",
+    "what_it_does": "DeepLOB successor: dual-attention transformer + MLPLOB on FI-2010, LOBSTER (TSLA/INTC) and a Kaggle BTC LOB dataset; 3-class trend labels at horizons of 10–100 LOB events; includes DeepLOB/BiN-CTABL baselines and a backtesting.py script.",
+    "validation_audit": "Cloned /tmp/scout/TLOB. Labels: utils/utils_data.py:127-161 compare mean of next h mid-prices vs mean of previous len mid-prices; threshold alpha = mean|pct_change|/2 computed over the WHOLE array passed in, and test labels are produced by calling labeling(test_input) (preprocessing/btc.py:153,163) — the class threshold for the test set is derived from test-set statistics (mild leak of test distribution into label definition; also forces balanced classes). Normalization is clean: z-score fit on train and reused (lobster.py:264-266, utils_data.py:11). Split is chronological by day 80/10/10 (btc.py:217-222, constants.py:70); FI-2010 uses the standard fixed test days (fi_2010.py:8-15). Backtest: run_backtesting.py:34 market_fee = 0, :246 Backtest(commission=0.00005) — 0.5 bps, far below any real crypto taker fee; strategy pyramids up to 31 orders. Paper itself concedes F1 collapses when trends are defined by the spread and that predictability declined (−6.68 F1 over years). Horizons are LOB events (seconds), i.e. sub-minute.",
+    "reuse": "Not usable for a 4h–3d Telegram service: signals live at event horizon and die under realistic fees (their own admission). Borrow only the 'threshold trend label from smoothed future-vs-past mean' idea if we ever want a 3-class variant of triple-barrier, but compute the threshold on train only and set it ≥ round-trip cost. Otherwise skip.",
+    "verdict": "avoid",
+    "leak_or_red_flags": "Label threshold computed from the split being labeled incl. test (utils_data.py:152 via btc.py:153); backtest commission 0.5 bps and market_fee=0; sub-second horizon."
+   },
+   {
+    "name": "ai-hedge-fund (virattt)",
+    "url": "https://github.com/virattt/ai-hedge-fund",
+    "license": "MIT",
+    "stars": "63.8k",
+    "last_commit": "2026-09-26",
+    "what_it_does": "LLM 'investor persona' agents (Buffett, Graham, Lynch…) producing bullish/bearish signals on US equities from fundamentals; 2026 rewrite adds a backtester that blinds ticker/dates (t-0, t-1 period labels), a fund/rebalance pipeline and a SimBroker.",
+    "validation_audit": "Cloned /tmp/scout/ai-hedge-fund. Blinding is real: features/snapshot.py:89-102 withholds calendar dates and ticker, test asserts as_of never leaks (features/test_snapshot.py:120); pipeline/run_cycle.py:36,122 assesses at a cutoff and executes on a later session. But: brokers/sim.py:5 'Slippage/costs are a declared future addition' — zero costs; backtesting/engine.py:110-147 fills at the close of the signal date and at close after holding_days, no benchmark, equal-dollar per trade; backtesting/__main__.py:43 default START_DATE 2024-06-01 — inside every current LLM's training data, blinding mitigates but does not remove regime recall (they say so). README: 'educational and research purposes only', no published OOS metrics. Daily/weekly equities fundamentals only — no crypto, no 4h.",
+    "reuse": "Borrow the blinded-snapshot design (period labels t-0…t-n, no dates, no tickers) for any Claude-as-judge input in our pipeline; it is the cleanest implementation of prompt-level anonymization I saw. Nothing else transfers (no costs, equities fundamentals).",
+    "verdict": "borrow-ideas",
+    "leak_or_red_flags": "No transaction costs by design (sim.py:5); default backtest window inside LLM training data; no benchmark or statistical tests."
+   },
+   {
+    "name": "FinRL (AI4Finance)",
+    "url": "https://github.com/AI4Finance-Foundation/FinRL",
+    "license": "MIT",
+    "stars": "16.5k",
+    "last_commit": "2026-09-28",
+    "what_it_does": "Deep-RL stock/crypto/portfolio trading library (PPO/A2C/DDPG/SAC via SB3 / ElegantRL), gym envs with buy/sell cost and turbulence kill-switch, single train/test/trade date split.",
+    "validation_audit": "Cloned /tmp/scout/FinRL. Costs exist and are applied per trade (meta/env_stock_trading/env_stocktrading.py:129-138, examples use 0.1%). Split is a single fixed cut: finrl/config.py:10-17 train 2014-01-06..2025-12-31, test/trade 2026-01-01..2026-03-20 — no walk-forward, no purging, and the same 'test' window serves as model selection and as the reported 'trade' window. Execution happens at the same bar's close that the agent observed (env_stocktrading.py ~step: trades filled with self.data close, then self.day += 1) — mildly optimistic vs next-open. Reward is raw asset delta (no risk adjustment), and DRL results are seed-unstable (widely reported). No statistical significance tooling.",
+    "reuse": "Nothing to adopt: DRL on daily OHLCV with a single split is exactly the overfit pattern our PBO/DSR tooling is built to reject. Only the env cost accounting (env_stocktrading.py:129-138) is a reasonable reference; our signal_lab already has per-trade fees.",
+    "verdict": "avoid",
+    "leak_or_red_flags": "Single non-purged split with test==trade window (config.py:10-17); same-bar close execution; no OOS robustness evidence."
+   },
+   {
+    "name": "FinRL Contest 2025 – Task 2 AlphaSeek Crypto (BTC 1-sec LOB)",
+    "url": "https://github.com/Open-Finance-Lab/FinRL_Contest_2025",
+    "license": "not stated in repo (no LICENSE file cloned; parent FinRL is MIT)",
+    "stars": "66",
+    "last_commit": "2025-10-20",
+    "what_it_does": "Starter kit: LSTM+GRU regressor turns Alpha101 factors from 1-second BTC LOB into 'strong factors', then DQN-family agents trade in a vectorized market-replay simulator; ensemble by voting; organizers evaluate on hidden later data.",
+    "validation_audit": "Cloned /tmp/scout/FinRL_Contest_2025. Labels: seq_data.py:1251-1283 compare future moving averages (offsets = cumsum of win sizes) vs past MA and bucket by np.quantile thresholds computed over the ENTIRE series (:1263,:1267) — quantiles include the validation tail, so label definition leaks global distribution; feature scaling likewise uses global quantiles (:1232-1233). Split chronological 80/20 (seq_run.py:37-45). Costs: trade_simulator.py:12 default slippage 5e-5, but the training/eval scripts override to slippage = 7e-7 (erl_run.py:476, task2_eval.py:154) — effectively zero for a 1-second BTC strategy. Horizon: seconds. Hidden test set held by organizers is the only honest OOS.",
+    "reuse": "Nothing for a 4h–3d service; 1-sec LOB RL is the opposite of our product. Only note the 'organizer-held hidden test set' as the right way to run an internal model contest.",
+    "verdict": "avoid",
+    "leak_or_red_flags": "Global-quantile label thresholds and scaling over full series (seq_data.py:1232-1233, 1263-1267); slippage 7e-7 in eval (task2_eval.py:154)."
+   },
+   {
+    "name": "TradeMaster (NTU)",
+    "url": "https://github.com/TradeMaster-NTU/TradeMaster",
+    "license": "Apache-2.0",
+    "stars": "3.1k",
+    "last_commit": "2025-06-04",
+    "what_it_does": "Modular RL-for-quant platform: algorithmic trading, portfolio mgmt (EIIE, SARL, Investor-Imitator), order execution, HFT (EarnHFT, MacroHFT), market-dynamics modeling, plus FinAgent LLM module.",
+    "validation_audit": "Cloned /tmp/scout/TradeMaster. Envs charge transaction_cost_pct 0.001 (environments/portfolio_management/sarl_environment.py:39, eiie_environment.py:43); configs use fixed train/valid/test date splits, no walk-forward; results are single-run DRL curves in tutorials. Effectively unmaintained since 2025-06 (last 'news' Feb-2025).",
+    "reuse": "Nothing to adopt; the market-dynamics-modeling (regime segmentation) module overlaps conceptually with our HMM regimes but is heavier and stale. Watch only if they publish the 2026 FinAgent benchmark with costs.",
+    "verdict": "watch",
+    "leak_or_red_flags": "Stale (15 months), single splits, DRL seed variance unreported."
+   },
+   {
+    "name": "Agentic Trading Lab (Open-Finance-Lab/AgenticTrading)",
+    "url": "https://github.com/Open-Finance-Lab/AgenticTrading",
+    "license": "OpenMDW-1.0 (permissive, MIT-like)",
+    "stars": "766",
+    "last_commit": "2026-09-30",
+    "what_it_does": "Experiment platform for LLM trading agents: define prompt+model+data, run backtests and paper trading (Alpaca/Robinhood), open leaderboard comparing LLMs vs baselines/indices on the same window; hourly-agent backtest scripts; adapter for ai-hedge-fund.",
+    "validation_audit": "Cloned /tmp/scout/AgenticTrading. Data cutoff is enforced for the ai-hedge-fund adapter (dashboard/backend/infrastructure/ai_hedge_fund/adapter.py:348-356 'data cutoff must be before the decision date'); orchestration RL engine models commission 0.001 and slippage 0.001 (orchestration/.../dag_planner.py:182-183, rl_policy_engine.py:492-494). Leaderboard metrics are returns/risk/drawdown; whether costs are on in the dashboard backtests is not documented in README. LLM knowledge-cutoff leakage is not addressed anywhere in dashboard/backend (grep found none). Very active (1.8k commits), contest-driven.",
+    "reuse": "Watch as a benchmark venue: if we want an external comparison of a Claude-judge variant vs LLM agents on the same window, this leaderboard is the place. Do not embed; the value for us is the paper-trading harness idea (forward test after cutoff), which we should do ourselves in the bot.",
+    "verdict": "watch",
+    "leak_or_red_flags": "Costs not surfaced in leaderboard docs; no anonymization/cutoff control for LLM memory."
+   },
+   {
+    "name": "FinGPT / FinRobot (AI4Finance LLM stack)",
+    "url": "https://github.com/AI4Finance-Foundation/FinGPT (also https://github.com/AI4Finance-Foundation/FinRobot)",
+    "license": "FinGPT MIT; FinRobot Apache-2.0",
+    "stars": "21.3k / 8.1k",
+    "last_commit": "2026-09-23 / 2026-09-28",
+    "what_it_does": "FinGPT: LoRA-finetuned open LLMs for financial sentiment/NER and a 'Forecaster' that predicts next-week stock movement from news; FinRobot: agentic report generator (equity research, valuation via deterministic code) with a Backtrader SMA-crossover wrapper.",
+    "validation_audit": "Cloned both. FinGPT-Forecaster trained on DOW30 news 2023-05..2024-05; README gives no accuracy, no backtest, no costs; the ticker-week label overlaps Llama-3 pretraining (cutoff 2023-12) so any reported movement accuracy would be contaminated (external audits report ~147% relative inflation pre-cutoff). FinRobot: only backtest is a generic Backtrader SMA_CrossOver tool (finrobot_autogen/finrobot/functional/quantitative.py:52-82); no evaluation of signal quality at all — it is a report writer.",
+    "reuse": "Nothing for direction signals. FinGPT's sentiment LoRA could label news for a regime/news feature, but we would still need to measure it purged-walk-forward post-cutoff; cheaper to call Claude. FinRobot's 'models reason, code computes' principle matches how we already use Claude as judge.",
+    "verdict": "avoid",
+    "leak_or_red_flags": "No OOS evaluation; training window inside LLM pretraining; demos only."
+   },
+   {
+    "name": "Chronos-2 / TimesFM-2.5 (generic TS foundation models, finance evaluations)",
+    "url": "https://github.com/amazon-science/chronos-forecasting (Apache-2.0); https://github.com/google-research/timesfm (Apache-2.0)",
+    "license": "Apache-2.0 (both)",
+    "stars": "n/a (not cloned; audited via 2025–2026 papers)",
+    "last_commit": "active 2026",
+    "what_it_does": "Zero-shot univariate/multivariate forecasters. Finance results: arXiv 2606.27100 (rolling-origin, AAPL/AMZN/GOOG/JPM/META daily returns): Chronos-large directional accuracy ≈51%, OOS R² −1.4%; TimesFM-500M <50%, R² −2.8%; DM tests beat random walk only sporadically. Rahimikia et al. 2511.18578: off-the-shelf TSFMs poor zero-shot and after fine-tuning; only from-scratch finance pretraining with expanding-window (23 yearly vintages, no overlap) yields gains. arXiv 2609.20554: vintages trained on post-origin data do not even improve accuracy (higher MSFE in 18/20 US combos).",
+    "validation_audit": "Not repo-level; evidence from three independent 2025–2026 studies plus the Santa Clara Chronos-2 multivariate study (small gains for equities, mostly for rates). Contamination caveat from benchmark audits: pretraining/test overlap inflates TSFM accuracy 47–184%, so any pre-cutoff finance backtest of Chronos/TimesFM is suspect.",
+    "reuse": "Confirms our 'TS foundation models ≈50%' finding — do not use as direction signal. Possible narrow use: Chronos-2 quantile forecasts of realized volatility as an input to vol targeting/stop distance (the one place these models are reported to add value), evaluated post-cutoff only.",
+    "verdict": "avoid",
+    "leak_or_red_flags": "Pretraining/test overlap in most published finance evals; no directional edge in leakage-free tests."
+   }
+  ],
+  "blocked": [
+   "arxiv.org, huggingface.co, papers.cool, tsfm.ai, jonathankinlay.com blocked by egress proxy — paper numbers taken from WebSearch snippets, not full PDFs (Kronos pretraining cutoff June-2024 and Chronos/TimesFM figures are from search-result summaries).",
+   "api.github.com blocked for unattached repos (stars fetched via WebFetch of repo pages; Chronos/TimesFM star counts not fetched).",
+   "git clone of zcakhaa/DeepLOB failed (repo appears removed/renamed; auth prompt) — DeepLOB audited via its successor TLOB, which ships a DeepLOB baseline.",
+   "Did not run any model (no GPU/weights); audit is code-reading only."
+  ]
+ },
+ {
+  "category": "Russian market (MOEX) and Russian-language open-source robots",
+  "blocked": [
+   "api.github.com returns 403 through the agent proxy and `gh` CLI is not installed; star counts / push dates were taken from the GitHub MCP search tool instead (values as of 2026-09-30).",
+   "glebvadimovichstepanov-cmd/RoboMOEX and cia76/BackTraderFinam could not be cloned (repo missing/private: 'could not read Username'), so they were not audited.",
+   "Finam Trade API hackathon 2025 winner repos were not found by search; the only 2025-2026 Finam-related code found is the official FinamWeb/finam-trade-api SDK + examples."
+  ],
+  "projects": [
+   {
+    "name": "khovala/moex-ml-trading",
+    "url": "https://github.com/khovala/moex-ml-trading",
+    "license": "MIT (LICENSE, (c) 2026 Sergei Eliseev)",
+    "stars": "0 (created 2026-03-10)",
+    "last_commit": "2026-09-14",
+    "what_it_does": "'End-to-end ML trading platform for MOEX' on T-Invest API: LightGBM/XGBoost + wrappers for Chronos/TimesFM/PatchTST/TFT/Moirai, news RSS encoder, Airflow/MLflow/Terraform/Grafana, 1-min bars for ~10 TQBR tickers, claims '76.7% directional accuracy, PF 2.0, +12.1%/31 days'.",
+    "validation_audit": "LEAK CONFIRMED. Target is the CURRENT bar return, not the next one: src/training/stages/model_training.py:91 `model.fit(rows, target_key=\"return_1\")` and return_1 is defined in src/features/market/engineering.py:41-42 as close_t/close_{t-1}-1. The feature list src/models/regression/lightgbm_regression.py:16-35 includes momentum_10, rsi_14, macd, zscore_20, rolling_volatility_20, atr_14 — all computed at index i including close_t (engineering.py:45-77), so the model is asked to reproduce the sign of a return that is already inside its inputs. The 'directional accuracy' metric (model_training.py:44-56 `_model_quality_proxy`) compares pred vs row['return_1'] of the same row. That is where 76.66% comes from (pipeline_final_description.md:270); the only models that don't see the current close (GRU/LSTM skeletons, binary classifier) sit at 49.85%. Split is chronological per ticker with an embargo guard (src/features/merge/datasets.py:63-101, src/data/leakage/guards.py:41-63) — good — but it cannot fix a contemporaneous target. Costs: 5 bps commission + 5 bps slippage in src/backtesting/engine.py:11-12,95-99. Author's own 90-day backtest (pipeline90_final_description.md:404-438): every ML strategy loses (Ensemble+SL -309,210 RUB, win rate 49.76%, 55% for 1H ML regression but PnL -997k); the doc admits 'mock data', '88.5% train vs ~50% test'. The '+12.1% / PF 2.0' in README is not reproduced by any artifact in the repo.",
+    "reuse": "Nothing model-wise. Two small things are worth copying: the embargo/overlap assertion pattern in src/data/leakage/guards.py (raise on train/val/test overlap per ticker) and the Prometheus /metrics + promotion-gate JSON idea (models/registry/champion.json with explicit gate reasons) for our signal-model promotion. Use it as a textbook example when explaining to the user why 'accuracy 76%' claims are meaningless without checking target alignment.",
+    "leak_or_red_flags": "Same-bar target (return_1) with same-bar features; README headline metrics contradicted by the repo's own backtest docs; 0 stars, single author, absolute macOS paths hard-coded in run_backtest_*.py.",
+    "verdict": "avoid"
+   },
+   {
+    "name": "WISEPLAT/Hackathon-MOEX-NN-Advisor",
+    "url": "https://github.com/WISEPLAT/Hackathon-MOEX-NN-Advisor",
+    "license": "No LICENSE file in repo (author's sibling libs are MIT) — treat as all-rights-reserved",
+    "stars": "39",
+    "last_commit": "2023-12-15",
+    "what_it_does": "MOEX GO ALGO hackathon (Dec 2023) 'trading advisor': LSTM on AlgoPack tradestats/orderstats/obstats 5-min metrics (pr_change, put_vol_b, imbalance_vol) predicting up/down for index constituents, Flask dashboard. Claims 95.7% test accuracy — same authors and same pattern as the Finam CNN repo the user showed.",
+    "validation_audit": "LEAK CONFIRMED, identical mechanism to Hackathon-Finam-NN-Trade-Robot. 3_train_neural_network_for_one_symbol.py:99 label `d_close = pr_close.diff()` → :109 `np.where(d_close>0,1,0)` i.e. sign(close_t − close_{t−1}). Features kept at :98 include AlgoPack `pr_change` = intra-bar price change of the SAME bar t (:104 only squashed via sigmoid3). Windowing at :137-140 uses X = rows[i:i+T], y = label[i+T−1] — the last row of the input window is bar t itself, so the net sees the sign of the current bar's move. Split is a chronological 80/20 (:117-118) but that is irrelevant. No costs, no backtest, no PnL: the 'advisor' only colors a dashboard. 5_train_..._many_symbols.py repeats the same construction.",
+    "reuse": "Do not borrow the modeling. What is useful: functions_algopack.py shows how to pull AlgoPack tradestats/orderstats/obstats per ticker with pagination (save_metric_to_file :136-172) — a compact reference if we ever add MOEX microstructure features. Also a nice negative example for our 'leak-check' docs: 95% == look-ahead.",
+    "leak_or_red_flags": "Same-bar pr_change feature vs same-bar d_close label; 20 random architectures selected on the test set (:159-236, model saved when test_acc improves → test set used for model selection).",
+    "verdict": "avoid"
+   },
+   {
+    "name": "antal679-jpg/MoexScalp (fork of bad3p/DeepScalp)",
+    "url": "https://github.com/antal679-jpg/MoexScalp",
+    "license": "MIT",
+    "stars": "0 (upstream bad3p/DeepScalp is the origin, 2025)",
+    "last_commit": "2026-09-17",
+    "what_it_does": "Deep-learning intraday scalper on MOEX TQBR via T-Invest gRPC: order book and trade tape as volume-by-price histograms → VQ-VAE / Dirichlet autoencoders → LSTM+attention forecast of the future trade distribution; long-only signal when right tail exceeds threshold. Windows + CUDA only.",
+    "validation_audit": "Target is genuinely forward-looking: TkPreprocessTimeSeriesData.py:166-190 builds the future-trade distribution from steps i+1..i+FutureStepsCount and :245-268 writes (input, future code) pairs; inputs are prior 12 steps only. Train/test is by data source file (`is_test_data_source`, :250), i.e. by session/day, not shuffled — acceptable. But: no backtest at all, no costs/slippage, no stop-loss (README 'Status & known issues' admits it), and a train/serve mismatch (20 vs 19 features) that the repo's own test_deepscalp.py flags. No pretrained models, no performance numbers anywhere. Round-robin polling means each ticker is sampled every few minutes — not scalping data.",
+    "reuse": "Not for a 4h–3d Telegram signal service. The only idea worth noting is representing the order book as a normalized volume-by-price histogram and predicting a distribution (tails) rather than a point — could inspire a 'distributional' target for our meta-labeling later, but our horizon makes L2 data irrelevant.",
+    "leak_or_red_flags": "No leak found; the red flag is the opposite — zero evidence of edge, research prototype only, requires Windows/GPU, single anonymous fork account.",
+    "verdict": "watch"
+   },
+   {
+    "name": "moexalgo/moexalgo (MOEX AlgoPack official Python client)",
+    "url": "https://github.com/moexalgo/moexalgo",
+    "license": "Apache-2.0 (pyproject classifier; commercial use OK)",
+    "stars": "151",
+    "last_commit": "2026-09-02 (v2.5.12)",
+    "what_it_does": "Official MOEX client for AlgoPack: candles (1m..1d incl. resampled 'super candles'), tradestats/orderstats/obstats (Super Candles microstructure: imbalance, put/cancel volumes, spreads), FutOI (futures open interest by client type), HI2, alerts, last two 1-min candles for the whole market, WebSocket beta, pandas DataFrames. Free tier gives delayed/limited history; full history and realtime need a paid AlgoPack subscription (~2-3k RUB/mo).",
+    "validation_audit": "Data library only — no labels, no models, no backtest, nothing to leak. Code quality is fine (typed, tests/, CHANGELOG with pagination and last-candle fixes in 2.5.10-2.5.12, auto-installs the Russian Ministry root cert in 2.5.11 which matters for non-RU hosts). moexalgo/features/{algopack.py,futoi.py,extramarket.py} enumerate the datasets.",
+    "reuse": "ADOPT as the MOEX data adapter if/when we add MOEX: `Ticker('SBER').candles(...)`, `.tradestats()/.orderstats()/.obstats()` for 5-min microstructure features and FutOI for positioning. For our 4h–3d horizon the useful AlgoPack signals are daily/5-min aggregates (imbalance_vol, put_val/cancel ratios, FutOI by physical vs legal persons) as regime features, not the intraday stream. Note: our current data layer for crypto (ccxt) would get a parallel `moexalgo` loader; the ISS free endpoint covers plain candles without a subscription.",
+    "leak_or_red_flags": "None. Practical flags: MOEX-issued cert / geo issues from foreign servers; paid subscription for full history; API terms forbid redistributing raw AlgoPack data (signals derived from it are fine).",
+    "verdict": "adopt"
+   },
+   {
+    "name": "cia76/FinamPy (+ TinvestPy, AlorPy, BCSPy, MOEXPy, FinLabPy) — Igor Chechet",
+    "url": "https://github.com/cia76/FinamPy",
+    "license": "MIT (FinamPy, TinvestPy, AlorPy pyproject `license = \"MIT\"`); FinLabPy has no LICENSE file in the clone",
+    "stars": "FinamPy 74, TinvestPy 35, AlorPy 38, QuikPy 161, FinLabPy 54, MOEXPy 3, BCSPy 10",
+    "last_commit": "FinamPy 2026-05-12 (Trade API 2.13.0), TinvestPy 2026-09-04, AlorPy 2026-05-12, FinLabPy 2026-09-26",
+    "what_it_does": "Thin, actively maintained Python wrappers over each Russian broker API (Finam Trade API v2 gRPC, T-Invest gRPC, Alor REST/WS, BCS, QUIK, MOEX AlgoPack REST/WS). FinLabPy (2025) unifies them behind one entity model with a file store, schedule, Backtrader and lightweight-charts integration; the author sells courses on top (finlab.vip) but the code is public.",
+    "validation_audit": "Connector libraries, no ML, no backtests, nothing to leak. FinamPy/FinamPy.py is a single-file client with token refresh, Examples/{Bars,Stream,Transactions}.py show history download and order flow; generated grpc stubs vendored under FinamPy/grpc. FinLabPy/BackTrader adds a broker/data feed for Backtrader; no cost model beyond Backtrader's own commission schemes.",
+    "reuse": "ADOPT as the execution/data leg for MOEX signals: one `cia76` connector per broker, all MIT, same author, same call conventions — the least-risk way to reach Finam, T-Invest and Alor from Python in 2026. For REGIME AI (signals only, no order routing) we mainly need bar downloads and quotes → FinamPy Examples/Bars.py and TinvestPy equivalents. Skip FinLabPy until it gets a license file.",
+    "leak_or_red_flags": "Single-maintainer bus factor; FinLabPy unlicensed; broker APIs change often (FinamPy pinned to Trade API 2.13 while Finam is at 2.19).",
+    "verdict": "adopt"
+   },
+   {
+    "name": "FinamWeb/finam-trade-api (official Finam Trade API v2 SDK, 2025)",
+    "url": "https://github.com/FinamWeb/finam-trade-api",
+    "license": "MIT (sdk/python/pyproject.toml); finam-skill / finam-mcp archived into this repo",
+    "stars": "24 (finam-mcp 11, finam-skill 3, both archived → merged here)",
+    "last_commit": "2026-09-23 (release 2.19.1)",
+    "what_it_does": "Official monorepo from Finam: proto specs, Python (`finam-sdk` on PyPI) and Node SDKs, Go/Kotlin bindings, example strategies (SMA 9/30 crossover, MACD zero-cross, RSI thresholds) with a `--check` mode that runs the rule on historical candles without placing orders, plus .ai/skills (Claude/Qwen agent skill) and MIGRATION_GUIDE from the old REST API.",
+    "validation_audit": "SDK + toy rule-based examples; no ML, no labels. The example 'backtests' are sanity checks: grep for commission/slippage across examples/strategies returned nothing except uv.lock noise — i.e., no transaction costs in the examples. Nothing claims performance.",
+    "reuse": "ADOPT (over cia76/FinamPy) if we go Finam: official, current (2.19.1 vs FinamPy's 2.13), MIT, proto files included, handles JWT refresh/retries/streams. The `.ai/skills` folder is a ready Claude-Code skill for the API — directly usable in our repo for the MOEX data loader. Ignore the strategies.",
+    "leak_or_red_flags": "None; young (created 2025-04), 3 open issues, Finam has already churned two side repos (mcp, skill) into this one — expect API churn.",
+    "verdict": "adopt"
+   },
+   {
+    "name": "WISEPLAT/backtrader_moexalgo (+ backtrader_finam, MOEX_Hackathon_trade_robots_examples)",
+    "url": "https://github.com/WISEPLAT/backtrader_moexalgo",
+    "license": "MIT ((c) 2023 Oleg Shpagin)",
+    "stars": "76 (backtrader_finam 17, hackathon examples 3)",
+    "last_commit": "2024-01-02 (backtrader_moexalgo); hackathon examples 2024-02-23",
+    "what_it_does": "Backtrader data feed / live store for MOEX AlgoPack (candles + Super Candles as extra lines) with many RU/EN examples; backtrader_finam is the same for Finam; MOEX_Hackathon_trade_robots_examples is a dump of other teams' GO ALGO 2023 notebooks.",
+    "validation_audit": "Plumbing only, no models. Examples use Backtrader's standard broker (commission configurable, no slippage by default). Not updated since Jan 2024 while moexalgo moved from 2.0 to 2.5 (DataFrame-only returns, resampling, WebSocket) — expect breakage. The hackathon examples repo contains other teams' code without licenses.",
+    "reuse": "Borrow the idea of exposing tradestats fields as extra Backtrader lines if we ever backtest MOEX in Backtrader; but our signal_lab is vectorized (purged WFO, triple barrier) so we would rather write a 20-line moexalgo→parquet loader than adopt Backtrader. Same author as the two leaky NN repos — the data glue is fine, the ML is not.",
+    "leak_or_red_flags": "Stale (20+ months), pinned to an old moexalgo; author's ML repos have systematic look-ahead.",
+    "verdict": "borrow-ideas"
+   },
+   {
+    "name": "AlexWan/OsEngine",
+    "url": "https://github.com/AlexWan/OsEngine",
+    "license": "Proprietary EULA (VAN Technologies LLC) — NOT open source despite the name; source visible on GitHub/GitFlic",
+    "stars": "1031",
+    "last_commit": "2026-09-29 (very active, daily commits)",
+    "what_it_does": "C#/.NET Windows platform: data loader, optimizer, tester, bot station; 60+ connectors incl. MOEX (QUIK, T-Invest, Alor, Finam), Binance, Bybit; hundreds of sample robots; large RU community (o-s-a.net).",
+    "validation_audit": "No ML of note; strategies are classical indicator bots. Tester supports commission and slippage settings and walk-forward optimisation in the Optimizer, but every result is user-run; nothing in the repo claims edge. Not audited for leaks because there is no research code to audit. LICENSE §3.2(2): modifications only for personal/internal use; §4.1(4)-(5): distributing derivative software under any name, paid or free, is prohibited; §5.3: derivatives published to their repos become their property.",
+    "reuse": "Nothing to borrow — wrong language (C#/WPF), wrong license for a paid product (we could run it internally to execute, but cannot ship anything derived from it), and its edge is execution/GUI, not research. Mention to the user as the 'most maintained RU robot platform' and why it is off the table.",
+    "leak_or_red_flags": "'Open Source' in name but EULA forbids redistribution of derivatives; Windows-only.",
+    "verdict": "avoid"
+   },
+   {
+    "name": "RussianInvestments/invest-python (official T-Invest Python gRPC client)",
+    "url": "https://github.com/RussianInvestments/invest-python",
+    "license": "Apache-2.0",
+    "stars": "137",
+    "last_commit": "2025-10-09; repo flagged archived=true in GitHub metadata (2026-08) — check the new home (T-Bank org) before depending on it",
+    "what_it_does": "Official `tinkoff-investments` PyPI client for T-Invest API v2: candles, order book, trades stream, sandbox, orders. Used by MoexScalp, EIDiamond/invest-bot (2024, 100+ stars class, classic MACD bot) and most 2022 Robot-Contest entries.",
+    "validation_audit": "Client only, nothing to leak. The contest-era bots built on it (EIDiamond/invest-bot last commit 2024-03, roman-struchev/tinkoff-invest Java 61 stars) are indicator bots with no ML and no OOS statistics.",
+    "reuse": "Use for T-Invest market data/sandbox if MOEX is added; T-Invest sandbox is the easiest free paper-trading target in Russia. Watch the archival status — cia76/TinvestPy (MIT, 2026-09) is the fallback.",
+    "leak_or_red_flags": "Archived flag; official docs say new development is under the T-Bank namespace.",
+    "verdict": "watch"
+   },
+   {
+    "name": "TheBolotnik/MOEX-trading-bot",
+    "url": "https://github.com/TheBolotnik/MOEX-trading-bot",
+    "license": "None (no LICENSE, README only)",
+    "stars": "0 (created 2026-09-28)",
+    "last_commit": "2026-09-28",
+    "what_it_does": "Spec/README for a T-Invest + SQLite + smartmoneyconcepts 'Dynamic Swing Momentum' signal bot: IMOEX regime → sector RS → breakout/pullback setups → BUY/ADD/HOLD/REDUCE/SELL to Telegram, 3–20 day horizon. Conceptually the closest to REGIME AI's product shape on MOEX.",
+    "validation_audit": "Zero code in the clone (find lists only README.md and .git). Nothing to audit; no backtest, no numbers.",
+    "reuse": "Nothing yet. Its outline (market regime → relative strength → setup → position size → Telegram signal with DB logging) mirrors what we already have; revisit only if code appears.",
+    "leak_or_red_flags": "README-only repo, 2 days old.",
+    "verdict": "watch"
+   },
+   {
+    "name": "notryheart/moex-algopack-mcp (+ moexalgo/algopack-skills)",
+    "url": "https://github.com/notryheart/moex-algopack-mcp",
+    "license": "Apache-2.0",
+    "stars": "1 (algopack-skills 3)",
+    "last_commit": "2026-06-11 (algopack-skills 2026-06-27)",
+    "what_it_does": "MCP server exposing AlgoPack (candles, tradestats/orderstats/obstats, FutOI, HI2, alerts) to Claude Desktop/Code; MOEX itself now publishes 'algopack-skills' (agent skill files) in the moexalgo org.",
+    "validation_audit": "Data tooling only; no models, no leaks. NOTES.md documents AlgoPack quirks (pagination, time zones, subscription tiers).",
+    "reuse": "If we add MOEX, wire this (or the official algopack-skills) into our 'Claude as judge' step so the judge can pull FutOI / imbalance context for a MOEX ticker at decision time. Small, Apache, easy to vendor.",
+    "leak_or_red_flags": "Tiny single-author project; depends on paid AlgoPack for anything beyond delayed data.",
+    "verdict": "borrow-ideas"
+   }
+  ]
+ },
+ {
+  "category": "Crypto-specific ML signal projects and validation-first repos (2024-2026)",
+  "projects": [
+   {
+    "name": "purgedcv (eslazarev/purged-cross-validation)",
+    "url": "https://github.com/eslazarev/purged-cross-validation",
+    "license": "MIT",
+    "stars": "35 (pypi + conda-forge, JOSS paper, 24 test files, 20+ example notebooks)",
+    "last_commit": "2026-09-27 (created 2026-05; active, v0.1.8)",
+    "what_it_does": "scikit-learn-compatible leakage-aware CV: purge() on explicit prediction/evaluation times, apply_embargo (time/row/fraction), WalkForwardSplit, PurgedKFold, PurgedGroupKFold, CombinatorialPurgedCV with backtest-path reconstruction, CSCV/PBO, PSR/DSR/DSR-full, MinTRL, MinBTL, effective_n_trials, Optuna TrialSharpeRecorder, audit_splitter/diagnostics. Not a signal project; a validation library.",
+    "validation_audit": "Cloned and read. Purge is interval-correct: src/purgedcv/_purge.py:19-80 drops train rows whose half-open [pred_time, eval_time) overlaps any merged test horizon padded by purge_horizon; disjoint test blocks purge only local zones (better than mlfinlab's convex-hull approach). Embargo modes validated (_embargo.py:19-74). DSR in _metrics.py:197 uses Bailey/LdP formula with skew/kurt and effective N. Examples include a crypto case (examples/selection_regret_crypto.ipynb): daily BTC/USDT 2021-2023, shuffled KFold picks a deep RandomForest that deploys at R2 ~ -1.6, PurgedKFold picks near-zero Ridge; they honestly report both lose money. No costs modeled in examples (they are CV demos), no look-ahead found.",
+    "reuse": "ADOPT as the CV/stat backbone of signal_lab: replace our hand-rolled purged walk-forward with WalkForwardSplit/PurgedKFold fed with triple-barrier t1 as evaluation_times; use CombinatorialPurgedCV.reconstruct_paths + path_metrics for a Sharpe distribution instead of a single path; use deflated_sharpe_ratio_full + effective_n_trials + optuna_integration.TrialSharpeRecorder to count every Optuna/threshold trial toward DSR; use audit_splitter in tests to assert zero overlap. Cross-check our PBO/DSR/MinTRL implementations in signal_lab/stats.py against it.",
+    "verdict": "adopt"
+   },
+   {
+    "name": "EdgeProof (intikhab49/edgeproof-crypto-trading-backtest)",
+    "url": "https://github.com/intikhab49/edgeproof-crypto-trading-backtest",
+    "license": "NO LICENSE FILE (all rights reserved by default; cannot legally copy code into a paid product without asking the author)",
+    "stars": "1 (created 2026-09-14, single author)",
+    "last_commit": "2026-09-25",
+    "what_it_does": "Crypto perp research harness (BTC/ETH/SOL, 15m): ATR-scaled triple-barrier labels, purged k-fold + embargo, uniqueness weights, LightGBM + LSTM/BiLSTM, PnL-after-taker-fee scoring, threshold sweep counted as trials for DSR, a positive control that plants a leaked label, and a MEXC gate scanner with ablation. Honest headline: no directional edge survives fees on 15m; only volatility (quantile range) is predictable.",
+    "validation_audit": "Cloned and read research/ml_pipeline.py. Labels: triple_barrier() lines 368-417 scans bars i+1..i+vert, first touch on high/low, drops bars where both barriers hit in one candle (or counts as loss with --ambiguous conservative) -- correct, no look-ahead; PnL for barrier hits is idealized at exactly pt_mult*vol (no gap slippage). Split: purged_folds() lines 432-459 contiguous folds, purges any train sample whose [i, t1] overlaps [test_start, test_end+embargo] -- correct; embargo = max(vert, 1% of samples). Costs: simulate() line 492 pnl = dir*ret - 2*fee with TAKER_FEE=0.0004/side (backtest.py:51); one open position at a time (no overlap). DSR lines 520-546 with skew/kurt and N = number of thresholds swept. Positive control (ml_sanity_check.py) injects 0.55*label+noise and requires DSR>=0.95 -- good hygiene. Weaknesses: only 5000 candles per symbol (~52 days of 15m), so everything is low-power; features use taker_buy_base from the same closed bar (fine); no slippage in ML harness (desk/ablation has --slippage-bps). Results claimed: PF 0.65-0.98, DSR 0.02-0.28, verdict no edge; positive control PF 4.7-5.9, DSR 1.0. Reports shipped in reports/. Consistent with our own 51-55% finding.",
+    "reuse": "BORROW IDEAS (do not copy code: no license). Three things worth reimplementing in signal_lab: (1) the positive-control / planted-leak test as a CI gate (if our pipeline cannot detect a 0.55-strength leaked label with DSR>=0.95, the pipeline is broken); (2) ambiguous-bar handling in barrier_eval.py (drop or count-as-loss when high and low both breach in one 4h candle -- we should check what we do now); (3) counting every threshold in a confidence sweep as a DSR trial. Also validates our 4h-3d horizon choice: their 15m result is no edge.",
+    "verdict": "borrow-ideas"
+   },
+   {
+    "name": "RiskLabAI.py",
+    "url": "https://github.com/RiskLabAI/RiskLabAI.py",
+    "license": "BSD-3-Clause",
+    "stars": "5 on this (re-created 2026-06) repo; package on PyPI since 2023 (v3.1.0), 86 test files, CI",
+    "last_commit": "2026-08-26",
+    "what_it_does": "Full AFML/MLAM/Causal Factor Investing implementation: tick/volume/dollar/imbalance bars, CUSUM filter, triple-barrier + meta_labeling + trend scanning, uniqueness/time-decay weights, PurgedKFold, CombinatorialPurged, adaptive/bagged/path-adaptive CPCV, leakage-aware HPO, MDI/MDA/SFI, PSR/DSR, PBO, bet sizing, HRP/NCO, structural breaks, entropy, microstructure features.",
+    "validation_audit": "Cloned and read. PurgedKFold (RiskLabAI/backtest/validation/purged_kfold.py:28-135): embargo as fraction of dataset, then three overlap conditions (train starts in test, train ends in test, train envelops test) using the data_info_range Series (index = start, value = end) -- the AFML snippet-7.x logic, correct. triple_barrier (data/labeling/labeling.py:193) is the AFML snippet 3.3 first-touch on close (not high/low, so intrabar touches are missed -- optimistic for stops, same as mlfinlab). meta_events/meta_labeling (lines 303-460) implement side-aware labels. No costs anywhere (pure library). No look-ahead found in the parts read. Docs claim parity with the Julia package only for the causal API.",
+    "reuse": "ADOPT selectively as a reference/library: sample_weights (uniqueness + time decay) for LightGBM sample_weight in v1.py; bet_sizing.py (AFML ch.10 probability-to-size) for stake sizing in Telegram signals; backtest_overfitting_simulation.py and multiple_testing.py for our PBO/DSR cross-check; cusum_filter for event-driven sampling instead of every 4h bar. Keep purgedcv for CV (cleaner API, interval-based). Note: still young repo, pin the version and vendor what you use.",
+    "verdict": "adopt"
+   },
+   {
+    "name": "mlfinpy (baobach/mlfinpy)",
+    "url": "https://github.com/baobach/mlfinpy",
+    "license": "MIT",
+    "stars": "84, 35 forks",
+    "last_commit": "2025-01-23 (stale ~20 months; open issues unanswered)",
+    "what_it_does": "Modernised fork of the last open-source mlfinlab (pre-license-change): standard/imbalance/run bars, fractional differentiation, triple-barrier get_events/get_bins/drop_labels, trend scanning, PurgedKFold + CombinatorialPurgedKFold, sequential bootstrap, sample-weight attribution, bet sizing (EF3M), structural breaks, sb_bagging. Documented on readthedocs.",
+    "validation_audit": "Cloned and read. PurgedKFold.split (mlfinpy/cross_validation/cross_validation.py:80-137): contiguous test blocks, embargo = int(N*pct_embargo) appended to test end, then ml_get_train_times (lines 19-49) drops train rows that start in, end in, or envelop the test window -- correct AFML ch.7. Sanity-check raises on train/test intersection. get_events (labeling/labeling.py:136) triple barrier on close with vertical barrier and side_prediction for meta-labels; barrier touches evaluated on close only (misses intrabar stop hits). No costs, no backtest module, no DSR/PBO (grep found none). Tests exist for CV, filters, frac_diff, bet_sizing.",
+    "reuse": "BORROW IDEAS / use as a second reference for meta-labeling (get_events with side_prediction -> get_bins gives the exact AFML meta-label convention we should match in signal_lab/labels.py), sequential bootstrap and sb_bagging for LightGBM bagging with low label uniqueness. Do not depend on it as a package: unmaintained since Jan 2025 and pandas/numpy deprecations will bite. Prefer RiskLabAI or purgedcv for anything live.",
+    "verdict": "borrow-ideas"
+   },
+   {
+    "name": "skfolio (CombinatorialPurgedCV + WalkForward)",
+    "url": "https://github.com/skfolio/skfolio",
+    "license": "BSD-3-Clause",
+    "stars": "2453, 264 forks, org-maintained",
+    "last_commit": "2026-09-29",
+    "what_it_does": "Portfolio-optimisation library on scikit-learn; contains model_selection.CombinatorialPurgedCV (with purged_size/embargo_size in observations, path reconstruction, plotting) and WalkForward, plus risk measures (CVaR, drawdown), HRP/NCO and rebalancing tooling.",
+    "validation_audit": "Read src/skfolio/model_selection/_combinatorial.py:315-390. Purge is positional: purged_size rows before and after each test fold and embargo_size after are marked -1 (lines 366-377). It does NOT know label horizons (no t1), so with triple-barrier labels you must set purged_size >= max label length in bars yourself; otherwise overlapping labels leak. Fine for fixed-horizon returns; less safe than purgedcv/mlfinpy interval purging. No look-ahead found; costs are modelled only in the portfolio layer (transaction_costs/management_fees), not in signal evaluation.",
+    "reuse": "WATCH / optional: useful later for the portfolio layer if REGIME AI expands to multi-asset (vol-target + risk-parity across BTC/ETH/alts) and for its clean rebalancing/cost model. For signal CV keep purgedcv; do not use skfolio CPCV with triple-barrier labels unless purged_size is set to max(t1-t0).",
+    "verdict": "watch"
+   },
+   {
+    "name": "DeepAlpha (stefanoviana/deepalpha)",
+    "url": "https://github.com/stefanoviana/deepalpha",
+    "license": "MIT (but pre-trained models are paywalled: 'Cloud Pro' only; repo is a marketing funnel for deepalphabot.com)",
+    "stars": "47, 17 forks, 17 open issues",
+    "last_commit": "2026-05-12",
+    "what_it_does": "CCXT multi-exchange futures bot; free repo ships LightGBM training on 1h candles for 27 coins (LOOKAHEAD=3 bars binary up/down), pump scanner, grid/DCA, Telegram bot. README claims 84.6% / 84.9% / 87.4% / 70.9% 'walk-forward validated accuracy' in different places.",
+    "validation_audit": "Cloned and read train.py. LEAK: prepare_dataset() (train.py:50-100) builds per-coin X,y and np.concatenate()s them coin after coin; train_model() (lines 102-167) then splits the concatenated array 70/15/15 by row position and calls it 'walk-forward'. Result: the 'test' set is simply the last few coins in config.COINS (CRV/ONDO/ENA/JUP/RENDER...) over the WHOLE period, while the train set contains BTC/ETH/etc. over the same dates including the test dates -- cross-sectional look-ahead through highly correlated coin returns; not a temporal split at all. Labels make_labels() (lines 37-47) are overlapping 3-bar forward returns with no purge/embargo. Metric is raw accuracy at 0.5 (line 155), no fees, no PnL, no baseline. Fees only in config.py:40 for live trading. The advertised 84.6% comes from closed-source cloud models, unverifiable. Grep of features.py found no future indexing, so the leak is in the split, not the features.",
+    "reuse": "AVOID. Nothing to borrow; the accuracy claims are the WISEPLAT pattern again (impressive number, broken evaluation). Useful only as a cautionary example: never concatenate assets and then position-split.",
+    "verdict": "avoid"
+   },
+   {
+    "name": "Azalyst Alpha Research Engine (gitdhirajsv)",
+    "url": "https://github.com/gitdhirajsv/Azalyst-Alpha-Research-Engine",
+    "license": "MIT badge in README but NO LICENSE FILE in repo (badge is not a grant; treat as all rights reserved)",
+    "stars": "3",
+    "last_commit": "2026-09-28 (created 2026-03)",
+    "what_it_does": "Cross-sectional crypto engine on 5-min data for ~444 Binance symbols: XGBoost on 5 features (kyle_lambda, amihud, ret_3d, vol_regime, rsi_14), beta-neutral rank-normalised forward 1h return, weekly rebalanced top-5 long / top-5 short, regime gating, monthly retrain, 0.2% round-trip fee, IC/DSR/kill-criteria. Claims +564.7% over 77 weeks OOS, Sharpe 3.29, DSR 0.9999.",
+    "validation_audit": "Cloned and read. CV: PurgedTimeSeriesCV (azalyst_train.py:28-64) is an expanding walk-forward with a gap of 48 bars, no interval purge (acceptable for fixed 12-bar horizon). Target: build_training_matrix_v6 (azalyst_v7_engine.py:417-591) subsamples every 12th bar to avoid overlap and embargoes 1h before train_end -- OK. BUT: (1) the README itself documents that v1->v7 rules ('BEAR_TREND short-only because longs lost -92% historically', feature set, regime rules, retrain cadence) were derived from four runs on the SAME 77-week Sep-2024..Mar-2026 window that is then reported as OOS -- the OOS period has been iterated on 4+ times, so DSR 0.9999 (counting only within-run trials) is meaningless; (2) feature adoption inside the walk-forward uses IC computed on the current OOS week (engine lines 2044-2062: compute_feature_ic_v6 on ws..we, then propose_update) -- feature selection sees the test week's outcome before the next week's model is chosen (mild but real forward info); (3) universe is all ~294-425 USDT pairs minus a stablecoin blacklist (is_excluded_symbol lines 208-216), no liquidity/volume filter, yet the top features are illiquidity measures (amihud, kyle_lambda) and short PnL is +212% -- i.e. returns come from shorting illiquid small caps at 0.1%/side with zero slippage and unlimited borrow, which is not executable; (4) weekly_summary_v7.csv shows 100% turnover every week with 10 names. No slippage term anywhere (grep). azalyst_leak_test.py 'leaked feature' test was changed to correlate y with y+noise (lines 44-58), so it no longer tests anything about features.",
+    "reuse": "AVOID as a system. One idea to borrow: their 4-gate kill criteria (OOS IC positive, feature Jaccard stability >0.5 across retrains, regime survival, ML must beat naive rank baseline via run_falsification) is a decent drift/decay monitor design for our live signal service; implement our own version in signal_lab (compare LightGBM vs Donchian baseline every retrain, alert when rolling 4-week hit-rate/IC falls to zero).",
+    "verdict": "avoid"
+   },
+   {
+    "name": "NexaQuant (gujja330)",
+    "url": "https://github.com/gujja330/NexaQuant",
+    "license": "NO LICENSE FILE (all rights reserved)",
+    "stars": "0",
+    "last_commit": "2026-09-30 (created 2026-08; repo is 427 MB, largely AI-generated docs and 'AEGIS constitution')",
+    "what_it_does": "Gold + BTC short-term system on H1/H4: rule entries (EMA trend, SMC structure/FVG), ADX and causal Gaussian-HMM regime gate, triple-barrier meta-labeling with HistGradientBoosting, exit management study, walk-forward + CPCV + PSR/DSR/PBO validator, MT5 live trader. Honest README: meta-labeler AUC 0.47-0.51 (no skill), H4 DSR 0.31, H1 DSR 0.94 mostly gold-beta.",
+    "validation_audit": "Cloned and read backtest/validator.py and engine.py. cpcv_metalabel (validator.py:101-160): 8 contiguous groups, C(8,2) test combos, purge drops train rows whose [t, t+horizon] falls within any test time +/- embargo -- correct in spirit but O(N*T) and lab_span is assumed = horizon rather than the actual barrier hit time. engine.backtest (engine.py:18-31) executes at next open with shift(1) on positions and open-to-open returns, cost_rt subtracted -- no look-ahead; trade_sim has vol-dependent slippage (trade_sim.py:34). Data is only ~2 years of one gold bull regime, 154 labelled entries / 43 OOS -- statistically empty; their own text admits this. Claims like 'H1 OOS Sharpe 8.2 / 9.86' after HMM gate on 1 regime are curve-fit artifacts. Focus is gold, BTC secondary.",
+    "reuse": "Nothing to adopt (no license, gold-centric, tiny samples). Two ideas already in our roadmap that they corroborate: HMM regime gate on causal features improved drawdown more than return; per-bar vol re-sizing churns fees, so set size once at entry (matches our vol-targeting design for Telegram signals). Their finding that exit logic (ATR stop + momentum-ride + scale-out) dominates entry quality is worth a placebo-controlled test in barrier_eval.py.",
+    "verdict": "avoid"
+   },
+   {
+    "name": "Numerai Crypto example (numerai/example-scripts, crypto/)",
+    "url": "https://github.com/numerai/example-scripts/tree/master/crypto",
+    "license": "MIT",
+    "stars": "1187 (org repo)",
+    "last_commit": "2026-09-28",
+    "what_it_does": "Official starter for Numerai Crypto: downloads crypto/v2.0 train.parquet (obfuscated cross-sectional features per symbol per date), trains LGBMRegressor on target_binned_return_20 (20-day binned forward return), scores per-date numerai_corr, submits ranked live predictions.",
+    "validation_audit": "Read crypto/example_model.ipynb. Split is a positional 70/30 on a date-sorted frame (train = data[:split]) -- chronological but no embargo for the 20-day overlapping target, so the boundary leaks ~20 days (small vs multi-year data). Features are Numerai-provided and obfuscated (cannot be audited for look-ahead; Numerai's own pipeline handles that). Evaluation is rank correlation per date, no costs, no PnL -- appropriate for a tournament, not for a signal service. Nothing to clone for labels/CV.",
+    "reuse": "WATCH as an external benchmark, not a component: submitting our LightGBM cross-sectional scores to Numerai Crypto would give an independent, free out-of-sample scoreboard for our alt-coin ranking model (era-wise corr per date is a good sanity metric to add to evaluate.py). The 20-day horizon is longer than our 4h-3d product, so it validates a different question.",
+    "verdict": "watch"
+   },
+   {
+    "name": "Zarattini 'Catching Crypto Trends' replication spec (alfred1123/Quant_Strategies docs) + Concretum paper",
+    "url": "https://github.com/alfred1123/Quant_Strategies/blob/main/docs/research/catching-crypto-trends.md",
+    "license": "NO LICENSE FILE in Quant_Strategies (all rights reserved); paper itself is SSRN 5209907 (public PDF)",
+    "stars": "n/a (docs only; Quant_Strategies is a private-style personal framework)",
+    "last_commit": "2026-09-29",
+    "what_it_does": "No working open-source replication of the Zarattini/Pagani/Barbon Donchian ensemble was found on GitHub (searched: only issue trackers, TradingView scripts, and this design doc). The Quant_Strategies doc is the best artefact: it transcribes the exact rules (9 lookbacks 5..360 on CLOSES, ratcheting mid-line stop, 25% vol target with 200% cap, 20% rebalance band on vol-driven changes only, 10 bps cost) and, importantly, lists every parameter the paper leaves UNSTATED (return type for sigma, same-bar entry/exit precedence, how the 20% band is measured, what 10 bps multiplies, close time).",
+    "validation_audit": "Read the doc. It explicitly says 'hypothesis -- not backtested here' and separates [PAPER] facts from [SUGGESTION]s; no code, so no leak to audit. Paper's own results are long-only daily, net 10 bps, Sharpe ~1.5 on a top-20 liquid rotation 2015-2025; the doc notes gross trade counts per lookback (5d: 292 trades ... 360d: 5) as a reproduction check.",
+    "reuse": "BORROW IDEAS: our Donchian-ensemble already exists; use this doc's checklist to make our implementation a faithful replication (closes not highs/lows, ratcheting mid stop, per-lookback vol-scaled weights averaged not voted, vol-only rebalance band) and to record which of the unstated choices we made. Then run our purged/placebo harness on it -- the paper is long-only daily with a 25% vol target, which maps directly onto the 'slow trend + vol targeting' conclusion already in our research notes. Write our own code; do not copy from Quant_Strategies.",
+    "verdict": "borrow-ideas"
+   },
+   {
+    "name": "PNarsis/bitcoin-direction-volatility-ml",
+    "url": "https://github.com/PNarsis/bitcoin-direction-volatility-ml",
+    "license": "NO LICENSE FILE",
+    "stars": "0 (created 2026-09-27, notebook only)",
+    "last_commit": "2026-09-27",
+    "what_it_does": "Daily BTC next-candle green/red classifier with XGBoost/CatBoost/LightGBM on TA + cross-asset (gold, DXY, SPX, VIX, ETH) + funding rate + fear&greed + SMC proxies; bonus next-day volatility-regime target.",
+    "validation_audit": "Read notebooks/btc_direction_prediction.ipynb. Target = Close(t+1)-Open(t+1)>0 (cell 5) -- fine; all cross-asset and sentiment features lagged by shift(1) (cells 3-4); prior_high uses shift(1).rolling (cell 2) -- no look-ahead found. Split: chronological 80/20 plus TimeSeriesSplit(5) without embargo (1-day horizon, so negligible). Costs: none (backtest cell 10 is long/cash with no fees; README admits it). Reports majority-class baseline, which is good. Results not stored in repo. Volatility-regime target uses a causal trailing 90-day median threshold -- sound.",
+    "reuse": "Nothing to adopt; it is a tidy educational notebook. Its one reusable pattern (always print the majority-class baseline next to accuracy, and treat volatility regime as the tractable target) we already do. Confirms again: direction on daily BTC from public features is ~coin-flip.",
+    "verdict": "avoid"
+   }
+  ],
+  "blocked": [
+   "www.gresearch.com (competition wrap-up with winners' names) is blocked by the egress proxy; kaggle.com writeups were not fetchable either, so the G-Research Crypto Forecasting 1st-3rd place solutions could not be audited. Publicly available GitHub repos for that competition (qAp, JordiCorbilla, SanchitAjmera etc.) are participant notebooks, not winning code; all top-3 reportedly used LightGBM with heavy feature engineering on a 15-minute residualised target -- a horizon and target definition (market-residual return) that is not what REGIME AI sells, so they were deprioritised.",
+   "GitHub REST API via curl returned empty (proxy), and gh CLI is not installed; star/date metadata was obtained through the GitHub MCP search tool instead.",
+   "No working open-source replication of Zarattini's Donchian ensemble exists on GitHub as of 2026-09; only design docs and issue trackers (alfred1123/Quant_Strategies, zebadee2kk/DeFi-TraderStack-Agent #137)."
+  ]
+ }
+]

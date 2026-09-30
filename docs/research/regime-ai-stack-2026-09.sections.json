@@ -1,0 +1,1412 @@
+[
+ {
+  "corrections": [
+   {
+    "claim": "ccxt 4.5.84 on PyPI (Sept 2026), MIT, unified fetch_funding_rate_history / fetch_open_interest_history / fetch_long_short_ratio_history / fetch_liquidations / watch_liquidations",
+    "verdict": "confirmed",
+    "fix": "PyPI shows latest 4.5.84. fetchLongShortRatioHistory is implemented for binance, bitget, bybit, okx. Caveat: per the CCXT method spec, fetchLiquidations (REST) is implemented only by bitfinex, deribit, gate, htx - for Binance/Bybit/OKX liquidations you must use watchLiquidations (WebSocket forceOrder streams) or Coinalyze/Binance Vision, not REST.",
+    "source": "https://pypi.org/project/ccxt/ ; https://docs.ccxt.com/docs/base-spec"
+   },
+   {
+    "claim": "Binance /futures/data/openInterestHist and long/short ratio endpoints return only the last 30 days; 1000 req/5min/IP; /fapi/v1/fundingRate 500 req/5min/IP",
+    "verdict": "confirmed",
+    "fix": "Official docs: 'Only the data of the latest 30 days is available'; topLongShortAccountRatio IP limit 1000/5min; fundingRate shares 500/5min/IP with fundingInfo.",
+    "source": "https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Top-Long-Short-Account-Ratio ; https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Get-Funding-Rate-History"
+   },
+   {
+    "claim": "data.binance.vision has um-futures metrics (OI/LSR), bookDepth, fundingRate, premiumIndexKlines, liquidationSnapshot, with .CHECKSUM files",
+    "verdict": "confirmed",
+    "fix": "Directory listings confirm data/futures/um/daily/metrics and data/futures/um/daily/bookDepth; the GitHub README only documents klines/aggTrades/trades and CHECKSUM files. fundingRate, premiumIndexKlines and liquidationSnapshot folders could not be verified from the blocked listing - treat as 'check the bucket listing before building on them'. Repo license MIT (for the download scripts, not the data).",
+    "source": "https://data.binance.vision/?prefix=data%2Ffutures%2Fum%2Fdaily%2Fmetrics%2F ; https://github.com/binance/binance-public-data/"
+   },
+   {
+    "claim": "Binance restricts Russian nationals/residents (EU sanctions, withdrawal-only above 10k EUR) and geofences IPs",
+    "verdict": "outdated",
+    "fix": "Current 2026 status: Binance still serves 'a limited number of existing Russian users' and, after the EU 21st sanctions package (July 23, 2026), stopped processing transactions with 14 sanctioned crypto platforms (Aug 2026). The specific '10k EUR withdrawal-only' rule is not confirmed by current sources - drop the number. Additionally, Russia's own crypto law took effect Sept 1, 2026 (licensed venues only; ruble-to-crypto via licensed Russian intermediaries from July 1, 2027).",
+    "source": "https://www.binance.com/en/square/post/14286777268921 ; https://www.coindesk.com/policy/2026/07/21/russia-s-parliament-passes-crypto-market-law-rules-to-take-effect-sept-1"
+   },
+   {
+    "claim": "Bybit does not list mainland Russia as restricted; OKX/Hyperliquid accessible from Russia",
+    "verdict": "confirmed",
+    "fix": "Russia is not on Bybit's excluded-jurisdictions list (only Crimea/Sevastopol/Donetsk/Luhansk), BUT Bybit has been tightening RU-specific restrictions in 2025-2026 (RUB P2P pairs delisted, enhanced KYC) and bybit.com is NOT on the Russian Ministry of Digital Development whitelist, so it is unreachable on mobile internet when 'whitelist mode' is enabled. OKX/Hyperliquid accessibility from RU IPs is unverifiable here.",
+    "source": "https://www.datawallet.com/crypto/bybit-restricted-countries ; https://karcrypto.com/en/blog/bybit-russian-users-2026.html"
+   },
+   {
+    "claim": "Hyperliquid 1200 weight/min/IP with per-item surcharges on candleSnapshot/fundingHistory",
+    "verdict": "confirmed",
+    "fix": "1200 aggregated weight/min/IP confirmed. Per docs referenced in ccxt issue #24100: most exchange requests weight 1; l2Book/allMids/clearinghouseState/orderStatus/spotClearinghouseState/exchangeStatus weight 2; all other info requests (incl. candleSnapshot, fundingHistory) weight 20 - i.e. only ~60 candle pulls per minute. ccxt's default weights may undercount, so add your own throttle.",
+    "source": "https://github.com/ccxt/ccxt/issues/24100 ; https://goldrush.dev/docs/goldrush-hyperliquid/info-api/limits/"
+   },
+   {
+    "claim": "Coinalyze API free, 40 requests/min per key, 429 + Retry-After; no published commercial license",
+    "verdict": "confirmed",
+    "fix": "40 calls/min per API key with Retry-After confirmed in official docs. Commercial-use terms remain unverifiable (no license text found) - keep 'personal/research' assumption.",
+    "source": "https://api.coinalyze.net/v1/doc/"
+   },
+   {
+    "claim": "Deribit public/get_volatility_index_data exists; DVOL history since April 2021; Deribit owned by Coinbase",
+    "verdict": "confirmed",
+    "fix": "Endpoint exists (candle-formatted VIX data, resolution param). DVOL available since 2021-04-01. Coinbase closed the Deribit acquisition Aug 14, 2025. Exact public rate limits unverifiable (docs.deribit.com blocked).",
+    "source": "https://docs.deribit.com/api-reference/market-data/public-get_volatility_index_data ; https://www.theblock.co/post/366957/coinbase-completes-2-9-billion-cash-and-stock-acquisition-of-deribit"
+   },
+   {
+    "claim": "Coin Metrics Community API: 32 daily asset metrics, no key, 10 req per 6 s per IP, CC non-commercial",
+    "verdict": "confirmed",
+    "fix": "32 asset metrics at daily frequency, community-api.coinmetrics.io/v4 needs no key, limit 10 requests per 6-second sliding window per IP, license CC BY-NC 4.0 (attribution + non-commercial).",
+    "source": "https://gitbook-docs.coinmetrics.io/packages/coin-metrics-community-data ; https://gitbook-docs.coinmetrics.io/access-our-data/api"
+   },
+   {
+    "claim": "mempool.space REST API free, keyless (fees/recommended, mining hashrate)",
+    "verdict": "confirmed",
+    "fix": "No change.",
+    "source": "https://mempool.space/docs/api/rest"
+   },
+   {
+    "claim": "FRED free; CFTC COT via Socrata API; Alternative.me Fear & Greed JSON with full history; 'LBMA gold price in FRED is discontinued'",
+    "verdict": "outdated",
+    "fix": "FRED/CFTC Socrata (publicreporting.cftc.gov)/api.alternative.me/fng/?limit=0 all confirmed. Gold: only the LBMA AM series GOLDAMGBD228NLBM was discontinued (removed May 2025); the PM series GOLDPMGBD228NLBM is still listed on FRED. Stooq XAUUSD remains a fine alternative.",
+    "source": "https://publicreporting.cftc.gov/stories/s/User-s-Guide/p2fg-u73y/ ; https://alternative.me/crypto/fear-and-greed-index/ ; https://fredblog.stlouisfed.org/tag/goldpmgbd229nlbm/"
+   },
+   {
+    "claim": "DuckDB 1.4 LTS (Sept 2025) as the query engine; '1.4.0 LTS, 1.x series stable'",
+    "verdict": "outdated",
+    "fix": "DuckDB 1.4 'Andium' LTS reaches end-of-life in September 2026. Current release is 1.5.6 (Sept 28, 2026); 1.5.0 shipped March 9, 2026; DuckDB 2.0 'Cyanoptera' is in alpha (branched Sept 2, 2026) and projected for late October 2026. Pin duckdb>=1.5,<2 now; do not adopt 2.0-alpha in production.",
+    "source": "https://duckdb.org/2026/09/28/announcing-duckdb-156 ; https://duckdb.org/2026/09/02/try-duckdb-20-alpha ; https://endoflife.date/duckdb"
+   },
+   {
+    "claim": "QuestDB: Apache 2.0, native Apple Silicon, exports to Parquet",
+    "verdict": "confirmed",
+    "fix": "Latest major is QuestDB 10.0 (QWP binary protocol, Arrow reads). OSS can convert partitions to Parquet via ALTER TABLE or create Parquet tables directly; native Apple Silicon libraries bundled.",
+    "source": "https://github.com/questdb/questdb"
+   },
+   {
+    "claim": "cryptofeed 3.x, XFree86 license, releases Sept 2026, 40+ exchanges, built-in Parquet/Arctic/Postgres/Kafka/Redis backends, single maintainer",
+    "verdict": "confirmed",
+    "fix": "v3.0.0 (Sept 22) and v3.0.1 (Sept 27, 2026) confirmed; XFree86 license confirmed on PyPI. Corrections: the README lists ~25 exchanges (not 40+), now requires Python 3.13+, and lists backends Redis, ZeroMQ, UDP/TCP/Unix sockets, InfluxDB v2, MongoDB, Kafka, PostgreSQL, QuestDB - no Parquet backend is listed, so write your own callback to pyarrow. Hyperliquid IS supported.",
+    "source": "https://github.com/bmoscon/cryptofeed/releases ; https://github.com/bmoscon/cryptofeed ; https://pypi.org/project/cryptofeed/"
+   },
+   {
+    "claim": "Tardis.dev Professional ~$599/mo; monthly plans include ~4 months history; free access to first day of each month",
+    "verdict": "unverifiable",
+    "fix": "$599/mo Professional confirmed by third-party sources only. The '4 months history on monthly plans' and 'first day of month free' claims could not be verified (docs.tardis.dev and tardis.dev blocked from this environment). Keep as 'verify on the billing page before budgeting'.",
+    "source": "https://www.holysheep.ai/articles/en-2026-04-30t1929-jiami-tick-shuju-api-jiageduibitar-2026-05-01-0012.html ; https://docs.tardis.dev/faq/billing-and-subscriptions"
+   },
+   {
+    "claim": "CoinGlass: Hobbyist $29 (30 rpm, personal), Startup $79 (80 rpm, personal), Standard $299 (commercial), Professional $699",
+    "verdict": "confirmed",
+    "fix": "Matches official pricing as of July 2026; commercial use starts at Standard.",
+    "source": "https://www.coinglass.com/pricing ; https://comparedge.com/tools/coinglass/pricing"
+   },
+   {
+    "claim": "CryptoQuant Basic free with 10,000 credits/mo incl. exchange reserves/flows; Advanced ~$39/mo; Pro ~$109/mo; 'best cost/benefit on-chain vendor'",
+    "verdict": "wrong",
+    "fix": "Prices and credits are right, but ON-CHAIN endpoints (exchange reserve, netflow, miner flows, stablecoin supply) require Professional (~$109/mo) or above; Basic (free) and Advanced ($39) get MARKET data only (funding/OI/liquidations), Basic at daily resolution with only 30 days of history. The integration plan 'use free credits for daily BTC exchange_reserve/netflow' will not work. Reprioritize to 'later' and use Coin Metrics Community for free on-chain basics.",
+    "source": "https://cryptoquant.com/apis ; https://cryptobriefing.com/cryptoquant-api-upgrade-rate-limits/"
+   },
+   {
+    "claim": "Glassnode Advanced $49/mo yearly = API Light (14 days, daily, 50 calls/day, personal); Professional ~$999/mo + credits",
+    "verdict": "confirmed",
+    "fix": "No change.",
+    "source": "https://glassnode.com/pricing/data ; https://docs.glassnode.com/basic-api/api"
+   },
+   {
+    "claim": "Dune free tier view-only since Sept 10, 2026; Analyst ~$65/mo annual (4,000 credits); Plus ~$349/mo (25k credits)",
+    "verdict": "confirmed",
+    "fix": "Confirmed. Nuance: accounts created after July 21, 2026 get a 14-day Plus trial with 2,500 credits, then view-only (no free monthly credits, no pay-as-you-go).",
+    "source": "https://docs.dune.com/learning/how-tos/pricing-faqs ; https://cryptobriefing.com/dune-free-plan-view-only-access/"
+   },
+   {
+    "claim": "X API pay-per-use only: $0.005/post read, $0.015/write, cap ~3M reads/month; 'pricing changed 3 times in 2026'",
+    "verdict": "confirmed",
+    "fix": "Rates and 3M-read cap confirmed; legacy Pro ($5,000/mo) deprecated with auto-migration after Sept 1, 2026. Also $0.20 per post with a link, and 'owned reads' at $0.001. The 'changed 3 times in 2026' remark is unverifiable - remove.",
+    "source": "https://docs.x.com/x-api/getting-started/pricing ; https://www.outstand.so/blog/x-api-pricing"
+   },
+   {
+    "claim": "Santiment: free 30-day lag; Pro ~$49/mo (5k calls); Max ~$249/mo real-time (80k calls, 100/min); 20% SAN discount",
+    "verdict": "unverifiable",
+    "fix": "Free/Pro 30-day lag on restricted metrics and 'Max is minimum for real-time API' confirmed; Pro ~$49/mo confirmed by secondary sources; Max ~$249 and the exact call quotas/SAN discount could not be verified (academy.santiment.net blocked). Keep prices as approximate.",
+    "source": "https://academy.santiment.net/products-and-plans/sanapi-plans/ ; https://cryptoadventure.com/santiment-review-2026-on-chain-metrics-social-signals-alerts-and-api-limits/"
+   },
+   {
+    "claim": "LunarCrush Individual $90/mo (10 req/min, 2,000/day), Builder $300, Scale $900",
+    "verdict": "confirmed",
+    "fix": "Confirmed; Builder 100 rpm/20k/day, Scale 500 rpm/100k/day.",
+    "source": "https://lunarcrush.com/pricing"
+   },
+   {
+    "claim": "CryptoPanic free developer plan discontinued early 2026; Growth $199/mo ($179 annual), weekly $50, Enterprise from $899",
+    "verdict": "confirmed",
+    "fix": "Free Developer plan removed April 1, 2026; prices match the Sept 2026 plans page.",
+    "source": "https://cryptopanic.com/developers/api/plans"
+   },
+   {
+    "claim": "CoinDesk Data (ex-CryptoCompare) retired its free API tier in May 2026",
+    "verdict": "confirmed",
+    "fix": "Free tier retired May 21, 2026; all plans now sales-quoted.",
+    "source": "https://data.coindesk.com/blogs/changes-to-coindesk-data-indices-api-free-tier-access"
+   },
+   {
+    "claim": "t.me/s/<channel> preview scraping works without login; Telethon user-account automation violates ToS",
+    "verdict": "unverifiable",
+    "fix": "The cited dev.to article could not be fetched (domain blocked). Keep as ToS-grey and untested; more importantly, see the new pitfall on Telegram being blocked in Russia.",
+    "source": "https://dev.to/rel8ble/scrape-public-telegram-channels-with-python-no-login-no-api-id-gmi"
+   },
+   {
+    "claim": "yfinance is a scraper hitting YFRateLimitError (issue #2422); Kraken OHLC returns only 720 bars; Tiingo free daily EOD",
+    "verdict": "confirmed",
+    "fix": "Issue #2422 is the YFRateLimitError report (closed). Kraken REST OHLC returns max 720 candles; full Trades history is available for rebuilding bars. Tiingo free tier: ~50 symbols/hour for EOD.",
+    "source": "https://github.com/ranaroussi/yfinance/issues/2422 ; https://docs.kraken.com/exchange/guides/general/historical-data ; https://www.tiingo.com/about/pricing"
+   },
+   {
+    "claim": "Polymarket Gamma API ~300 req/10s, keyless reads",
+    "verdict": "wrong",
+    "fix": "Third-party 2026 guides (official docs page blocked here) put Gamma at ~4,000 requests/10s, Data API ~1,000/10s, CLOB ~9,000/10s; reads are keyless. Note limits are per 10-second windows. Also note Polymarket applies geo/IP gating for trading (not relevant for read-only use).",
+    "source": "https://docs.polymarket.com/quickstart/introduction/rate-limits ; https://www.polytest.io/blog/polymarket-api-rate-limits"
+   },
+   {
+    "claim": "Telegram Stars subscriptions (subscription_period=2592000, editUserStarSubscription) 'added 2026'; 'Telegram takes its cut on Stars'; aiogram 3.31",
+    "verdict": "outdated",
+    "fix": "Star subscriptions for bots arrived in Bot API 8.0 (November 2024), not 2026; only the 30-day period is allowed, max 10,000 Stars per period. aiogram 3.31.0 (Aug 26, 2026, Bot API 10.2) confirmed. Economics: Telegram's own commission is ~0, the store cut hits the buyer's price; developers receive ~$0.013 per Star (Bot Developer Terms 6.2.4), must hold >=1,000 Stars, Stars are withdrawable 21 days after receipt, only via Fragment to TON, and Fragment may refuse payouts in certain countries. Russian users cannot pay via App Store/Google Play with Russian cards; they use @PremiumBot/SberPay, third-party resellers, or crypto.",
+    "source": "https://core.telegram.org/bots/api-changelog ; https://core.telegram.org/api/subscriptions ; https://docs.aiogram.dev/en/latest/changelog.html ; https://dev.to/starsearn/telegram-stars-economics-for-bot-developers-what-your-stars-are-actually-worth-in-2026-2742"
+   }
+  ],
+  "missing": [
+   "Telegram itself is being blocked in Russia: Roskomnadzor throttling from Feb 10, 2026, mass blocking March 14-15, ~95% connection failure by April 10; Telegram's April 11 client update disguised traffic and restored service for updated clients, but reliability for a Russian-speaking audience is now VPN/proxy-dependent. Any Telegram-bot business plan for RU users must assume degraded reach and consider a fallback channel (web app, email, MAX?). Sources: https://www.themoscowtimes.com/2026/02/10/roskomnadzor-tightens-restrictions-on-telegram-as-users-report-disruptions-a91907 ; https://amnezia.org/blog/telegram-restricted-in-russia-2026 ; https://en.wikipedia.org/wiki/Blocking_of_Telegram_in_Russia",
+   "Legal risk of Stars payments inside Russia after Durov's designation (Meduza, July 30, 2026: lawyers discuss whether buying Stars/Premium is safe) - article could not be fetched, but the headline alone is a red flag for a paid RU-facing bot; get local legal advice before choosing Stars vs CryptoBot vs a Russian PSP. https://meduza.io/en/news/2026/07/30/is-it-safe-in-russia-to-buy-telegram-stars-or-premium-after-durov-s-terrorist-designation-here-s-what-lawyers-say",
+   "Russian crypto-market law effective Sept 1, 2026 (Bank of Russia supervision, licensed venues only, ruble-to-crypto via licensed Russian intermediaries from July 1, 2027, foreign 'grey-zone' exchanges targeted) - affects which exchanges your users can legally fund and may bear on advertising paid crypto 'forecasts' in Russia. https://www.coindesk.com/policy/2026/07/21/russia-s-parliament-passes-crypto-market-law-rules-to-take-effect-sept-1",
+   "Bybit public data archive (https://public.bybit.com/): free bulk trades/klines dumps per symbol, with community downloaders (pypi bybit-history, nssanta/Bybit-Download-OrderBook-Trades-Klines with Parquet conversion) - a non-Binance bulk history source for a RU-based collector. https://github.com/nssanta/Bybit-Download-OrderBook-Trades-Klines",
+   "OKX official historical data downloads (okx.com/en-us/historical-data): tick trades since Sept 2021, OHLC since July 2023, perpetual funding since March 2022, L2 since March 2023 - free bulk funding-rate history. https://www.okx.com/en-us/historical-data",
+   "Hyperliquid S3 archive s3://hl-mainnet-node-data (node_fills, node_trades, L2 snapshots): requester-pays, needs AWS credentials, ~1 GiB/day for fills - a one-year pull is a three-figure AWS bill; bond-labs-dev/hyperliquid-data estimates egress before download. https://github.com/bond-labs-dev/hyperliquid-data ; https://hyperliquid.gitbook.io/hyperliquid-docs/historical-data",
+   "CoinGecko Demo API (free, key required): ~10,000 calls/month, 30-100 calls/min depending on source, includes historical prices and on-chain DEX data - a free cross-check for spot prices/market caps of alts not on your exchange chain. https://www.coingecko.com/en/api/pricing",
+   "CryptoBot (@CryptoBot Crypto Pay API): USDT/TON/BTC/ETH/USDC/TRX invoices, webhooks, payouts; the most practical rail for RU users if Stars payout via Fragment is unavailable in your jurisdiction. https://help.send.tg/en/articles/10279948-crypto-pay-api",
+   "cryptofeed 3.x now requires Python 3.13+ - your pipeline (aiogram 3.31 needs 3.10+; hmmlearn/streamlit wheels) must be checked against 3.13 on Apple Silicon before adopting it, or run the collector in its own venv.",
+   "Hyperliquid info-endpoint weights: candleSnapshot and fundingHistory are weight 20 each (only ~60 calls/min/IP) - a naive per-symbol OHLCV loop over 50 perps will be rate-limited within a minute."
+  ],
+  "section": {
+   "title": "Market data & alternative data: sources, ingestion and local storage for the regime-forecast pipeline (Sept 2026, fact-checked)",
+   "summary": "The pipeline (data_provider.py: ccxt OHLCV from Binance/KuCoin/Bybit + yfinance; cache_5m.py Parquet; sentiment.py VADER) covers only price. The cheapest high-value additions are perpetual positioning (funding, OI, long/short ratio, liquidations) from Binance/Bybit/OKX/Hyperliquid public endpoints via ccxt 4.5.84 (free, no key), Deribit DVOL (free, since April 2021), Coin Metrics Community on-chain basics (32 daily metrics, free, CC BY-NC), and macro (FRED, CFTC Socrata, Alternative.me Fear & Greed, all free). Bulk history should come from data.binance.vision (klines, aggTrades, metrics with OI/LSR, bookDepth), public.bybit.com and OKX's historical-data page rather than paginated REST. Paid aggregators only once revenue exists: CoinGlass needs the $299/mo Standard tier for commercial use; CryptoQuant's on-chain endpoints start at Professional (~$109/mo) - its free tier is market-data-only; Glassnode's usable API is ~$999+/mo; Dune, CryptoPanic and CoinDesk Data all dropped free API access in 2026 and X API is pay-per-use ($0.005/read). Storage on the Mac: Parquet + DuckDB 1.5.x (1.4 LTS hits EOL this month; 2.0 lands in October). The two biggest non-data risks are jurisdictional: Telegram has been actively blocked/throttled in Russia since Feb-Apr 2026 (working again only via the April 11 client update or VPN), and Russia's crypto law took effect Sept 1, 2026 - both must shape the bot's channel and payment design before any data vendor choice matters.",
+   "recommendations": [
+    {
+     "name": "ccxt 4.5.x (REST) + ccxt.pro (WebSocket, same package)",
+     "what_for": "Unified access to Binance USDⓈ-M, Bybit V5, OKX V5, Hyperliquid, Deribit, Kraken. Beyond fetch_ohlcv use fetch_funding_rate_history, fetch_open_interest_history, fetch_long_short_ratio_history (implemented for binance/bitget/bybit/okx), watch_order_book, watch_trades, watch_liquidations. Note: REST fetch_liquidations is only implemented for bitfinex/deribit/gate/htx - for Binance/Bybit/OKX liquidations use the WebSocket watch_liquidations or Coinalyze. PyPI latest 4.5.84, MIT.",
+     "cost": "Free (MIT). Public endpoints need no API key.",
+     "integration": "Extend data_provider.py with `fetch_derivatives(ticker, tf)` that walks the existing _EXCHANGE_CHAIN calling fetch_funding_rate_history / fetch_open_interest_history(symbol, '4h') / fetch_long_short_ratio_history and ASOF-merges onto the OHLCV index. Feed feature_engineering.py new columns (funding_z, oi_change_pct, oi_price_divergence, lsr_top_traders) for hmm_model.py. Keep binanceusdm -> bybit -> okx -> hyperliquid fallback so a geo-block on one venue does not kill the feature. Live streams: a separate asyncio sidecar (refresh_5m.py-style) using ccxt.pro watch_ohlcv_for_symbols / watch_liquidations_for_symbols writing Parquet every N seconds. Pin `ccxt>=4.5,<5`, enableRateLimit=True, and set explicit Hyperliquid weights (candleSnapshot/fundingHistory = 20).",
+     "url": "https://github.com/ccxt/ccxt",
+     "priority": "must",
+     "maturity": "Very mature; 100+ exchanges; near-daily releases"
+    },
+    {
+     "name": "Binance public futures endpoints (fundingRate, openInterestHist, topLongShort*Ratio, globalLongShortAccountRatio, takerlongshortRatio) + data.binance.vision bulk zips",
+     "what_for": "Canonical perp positioning. REST: /fapi/v1/fundingRate (500 req/5min/IP, full history since 2019 in 1000-row pages); /futures/data/openInterestHist and the ratio endpoints (1000 req/5min/IP) return ONLY the last 30 days. data.binance.vision: daily/monthly zips for spot and um-futures klines (1m..1mo), aggTrades, trades, plus verified um/daily/metrics (OI + LSR 5-min snapshots) and um/daily/bookDepth; .CHECKSUM files. fundingRate / premiumIndexKlines / liquidationSnapshot folders: confirm in the bucket listing before relying on them.",
+     "cost": "Free, no key. Data has no explicit commercial license; internal signal generation is normal practice, redistribution of raw data is not.",
+     "integration": "1) `backfill_binance_vision.py`: download monthly um/klines/{SYMBOL}/1m and 5m + daily metrics zips -> Parquet partitioned by symbol/month (pyarrow already present) - replaces long REST pagination and gives 1m bars for the 5m cache. 2) Daily launchd job pulling the previous day's zips. 3) Because ratio endpoints keep 30 days, start a 4h-cadence archiver NOW into Parquet. For a Russian-resident owner: api/fapi.binance.com apply geofencing and Binance stopped processing transactions with EU-sanctioned RU platforms in Aug 2026; run the REST collector on a non-RU VPS (Hetzner NL/FI) and prefer data.binance.vision for bulk. Never put a Binance account key on a RU-based machine.",
+     "url": "https://github.com/binance/binance-public-data/",
+     "priority": "must",
+     "maturity": "Stable, officially maintained"
+    },
+    {
+     "name": "Bybit V5 + OKX V5 + Hyperliquid public endpoints, plus their free bulk archives (public.bybit.com, okx.com/historical-data)",
+     "what_for": "Redundancy and RU-reachable coverage: Bybit /v5/market/open-interest, /funding/history, /account-ratio (500 rows/page); OKX /api/v5/rubik/stat/contracts/open-interest-history, long-short-ratio, taker-volume (keyless); Hyperliquid /info metaAndAssetCtxs (OI+funding+mark for all perps), fundingHistory, candleSnapshot (1200 weight/min/IP; candleSnapshot and fundingHistory cost 20 each). Bulk: public.bybit.com trades/klines dumps; OKX historical page has tick trades since 2021-09, OHLC since 2023-07, funding since 2022-03, L2 since 2023-03. Russia is not on Bybit's excluded list, but Bybit is tightening RU-specific rules (RUB P2P delisted, extra KYC) and bybit.com is off Russia's mobile-internet whitelist.",
+     "cost": "Free, no key. Hyperliquid S3 archive is requester-pays (~1 GiB/day of fills; a year is a three-figure AWS bill).",
+     "integration": "Add `bybit` and `okx` to _EXCHANGE_CHAIN for every ticker; derivatives fetcher tries binanceusdm -> bybit -> okx -> hyperliquid. Store an `exchange` column so multi_asset.py / multi_tf.py can compute a rough cross-exchange OI. For HYPE and Hyperliquid-native alts use ccxt.hyperliquid().fetch_funding_rate_history / fetch_open_interests with a hard 50 calls/min throttle. Use nssanta/Bybit-Download-OrderBook-Trades-Klines (Parquet output) for Bybit backfill.",
+     "url": "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/rate-limits-and-user-limits",
+     "priority": "must",
+     "maturity": "Stable official APIs"
+    },
+    {
+     "name": "Coinalyze API (free aggregated derivatives)",
+     "what_for": "Free REST for OI history, funding (current + predicted), liquidation history, long/short ratio, OHLCV across ~20 exchanges, 1min..daily; 40 calls/min per key, 429 + Retry-After. Practical free substitute for CoinGlass aggregate liquidations/OI, and the easiest REST source of Binance/Bybit liquidation history (ccxt has no REST liquidations for those venues).",
+     "cost": "Free with registration. No published commercial license - treat as personal/research; single-vendor risk.",
+     "integration": "`coinalyze_client.py` (or PyPI `coinalyze` wrapper) + nightly job archiving per-symbol aggregated liquidations (long_liq_usd, short_liq_usd) and OI into Parquet; liquidation spikes become a feature for regime_labeler.py (capitulation / short-squeeze regimes) and context lines in bot messages. Guard with an env var so the pipeline runs without the key.",
+     "url": "https://api.coinalyze.net/v1/doc/",
+     "priority": "should",
+     "maturity": "Small team, API stable for years"
+    },
+    {
+     "name": "Deribit public API: DVOL (public/get_volatility_index_data), get_book_summary_by_currency, get_historical_volatility, funding_rate_history",
+     "what_for": "Options-implied 30d vol index for BTC/ETH as candles (history since 2021-04-01), per-instrument mark IV / OI for 25d skew and term structure, realized vol. Public JSON-RPC, no key. Deribit is now part of Coinbase (deal closed Aug 14, 2025); API unchanged.",
+     "cost": "Free.",
+     "integration": "`options_vol.py`: pull DVOL 1h/1D candles into Parquet, compute dvol_pct_rank_1y and dvol_change; hourly 25-delta skew from book_summary at the nearest ~30d expiry. Add dvol_z and skew as HMM observation columns and as a 'vol regime' overlay in Streamlit and bot text. Exact public rate limits were not verifiable here - a 1h cadence is safely within any documented limit. Deep options history: Tardis (paid) or free Deribit CSVs on cryptodatadownload.com.",
+     "url": "https://docs.deribit.com/api-reference/market-data/public-get_volatility_index_data",
+     "priority": "should",
+     "maturity": "Stable"
+    },
+    {
+     "name": "Coin Metrics Community API v4 (free on-chain + reference rates)",
+     "what_for": "32 daily asset metrics without a key at https://community-api.coinmetrics.io/v4/timeseries/asset-metrics (PriceUSD, AdrActCnt, TxCnt, HashRate, SplyCur, CapMrktCurUSD, TxTfrValUSD, reference rates...). Limit 10 requests per 6-second sliding window per IP. License CC BY-NC 4.0 (attribution, non-commercial).",
+     "cost": "Free (CC BY-NC 4.0). Pro is enterprise-quoted.",
+     "integration": "`onchain.py` daily job into data/onchain/{asset}.parquet; derive 30d z-scores of active addresses, hashrate trend and an NVT-like ratio (CapMrktCurUSD / TxTfrValUSD) as slow covariates for the daily-TF HMM only (ffill + 1-bar lag on intraday models). Non-commercial license: use only as internal model inputs; never republish the raw series in the bot. This is now the primary free on-chain source, since CryptoQuant's free tier has no on-chain endpoints.",
+     "url": "https://gitbook-docs.coinmetrics.io/packages/coin-metrics-community-data",
+     "priority": "should",
+     "maturity": "Stable, institutional vendor"
+    },
+    {
+     "name": "mempool.space REST/WS (+ blockchain.com charts)",
+     "what_for": "Free, keyless Bitcoin network data: /api/v1/fees/recommended, /api/mempool, /api/v1/mining/hashrate/3m, difficulty, block times. 'Network stress' features and halving/difficulty context.",
+     "cost": "Free, no key; self-hostable OSS.",
+     "integration": "Extend onchain.py with an hourly pull; compute fee_pressure and hashrate_30d_change. Low priority relative to derivatives, but zero cost.",
+     "url": "https://mempool.space/docs/api/rest",
+     "priority": "later",
+     "maturity": "Stable OSS project"
+    },
+    {
+     "name": "FRED API (fredapi) + CFTC COT Socrata API + Alternative.me Fear & Greed",
+     "what_for": "Macro covariates: US 2y/10y, DFII10 real rates, M2, CPI (free FRED key); CFTC Commitments of Traders (Legacy/Disaggregated/TFF) via publicreporting.cftc.gov SODA endpoints, weekly, keyless; Fear & Greed daily 0-100 since 2018 via https://api.alternative.me/fng/?limit=0 (values arrive as strings). Gold: FRED's LBMA AM series was discontinued in 2025 but the PM series GOLDPMGBD228NLBM is still listed; Stooq XAUUSD is the simpler proxy.",
+     "cost": "Free.",
+     "integration": "`macro.py` daily job into data/macro.parquet for the daily HMM and a 'macro context' block in bot forecasts. Fear & Greed replaces/augments VADER in sentiment.py as a long-history sentiment series for backtest.py. COT: CME BTC leveraged-funds net positioning as a weekly feature for multi_asset.py.",
+     "url": "https://github.com/mortada/fredapi",
+     "priority": "should",
+     "maturity": "Stable government/community APIs"
+    },
+    {
+     "name": "DuckDB 1.5.x + Hive-partitioned Parquet as the local time-series store",
+     "what_for": "In-process query engine over the Parquet files you already write (cache_5m/, tv_ground_truth/): read_parquet with hive_partitioning, union_by_name for schema drift, ASOF JOIN for aligning slow series, native arm64 wheel, no server. Version note: 1.4 'Andium' LTS reaches EOL in September 2026; current stable is 1.5.6 (Sept 28, 2026); DuckDB 2.0 is in alpha with release projected late October 2026.",
+     "cost": "Free (MIT).",
+     "integration": "Layout data/{dataset}/symbol=BTCUSDT/tf=5m/year=2026/month=09.parquet. Replace ad-hoc pd.read_parquet in cache_5m.py / data_provider.py with duckdb.sql(\"SELECT ... FROM read_parquet('data/ohlcv/**/*.parquet', hive_partitioning=true) WHERE symbol=? AND ts BETWEEN ...\").df(). Use ASOF JOIN on publication timestamp to align funding/OI/DVOL/on-chain to bars (no look-ahead). Write with pyarrow + zstd. Keep prediction_log.py in a small DuckDB/SQLite file so calibration queries are SQL. Pin `duckdb>=1.5,<2`; evaluate 2.0 only after it ships and extensions catch up. Skip TimescaleDB/ClickHouse until >1 TB or multiple consumers.",
+     "url": "https://duckdb.org/docs/current/data/parquet/overview",
+     "priority": "must",
+     "maturity": "1.5.6 stable; 2.0 imminent"
+    },
+    {
+     "name": "QuestDB 10.x (optional, only for raw tick/order-book ingestion)",
+     "what_for": "If you later store raw trades/L2 from WebSockets: ILP/QWP ingestion, SAMPLE BY / ASOF JOIN, native Apple Silicon builds, Parquet export (ALTER TABLE ... convert partition, or native Parquet tables). ClickHouse is the alternative.",
+     "cost": "Free (Apache 2.0); Enterprise/Cloud unnecessary.",
+     "integration": "Not needed for the bar-based HMM/Elliott pipeline. Adopt only when a cryptofeed/ccxt.pro collector writes >10M rows/day; then QuestDB as hot store, daily Parquet partitions exported for DuckDB/backtests.",
+     "url": "https://github.com/questdb/questdb",
+     "priority": "later",
+     "maturity": "Mature OSS, active 2026 releases (10.0)"
+    },
+    {
+     "name": "cryptofeed 3.x (bmoscon)",
+     "what_for": "Async multi-exchange WebSocket feed handler (~25 exchanges incl. Binance spot/futures, Bybit, OKX, Hyperliquid, Deribit, Kraken; TRADES/L2_BOOK/FUNDING/OPEN_INTEREST/LIQUIDATIONS channels). v3.0.0 (Sept 22) and v3.0.1 (Sept 27, 2026). Requires Python 3.13+. Built-in backends: Redis, ZeroMQ, sockets, InfluxDB v2, MongoDB, Kafka, PostgreSQL, QuestDB - there is NO Parquet backend, so you write a small callback to pyarrow.",
+     "cost": "Free (XFree86 license).",
+     "integration": "Standalone `collector/` service in its own Python 3.13 venv (launchd on the Mac or the VPS): FeedHandler with Binance Futures, Bybit, OKX, Hyperliquid, Deribit -> LIQUIDATIONS + FUNDING + OPEN_INTEREST + TRADES callbacks -> your pyarrow writer rotating hourly into the DuckDB layout. Use ccxt for REST/backfill and cryptofeed for streaming.",
+     "url": "https://github.com/bmoscon/cryptofeed",
+     "priority": "should",
+     "maturity": "Mature, single main maintainer (bus factor), Python 3.13+ only"
+    },
+    {
+     "name": "Tardis.dev (historical tick / order book / options)",
+     "what_for": "Full-depth historical L2/L3, trades, liquidations, funding and complete Deribit options chains since 2019. Native NautilusTrader adapter.",
+     "cost": "Professional ~$599/mo per third-party sources. Claims about free 'first day of each month' samples and history depth per plan could not be verified from this environment - check the billing page before budgeting.",
+     "integration": "Only if you move to tick-level features (CVD, order-flow imbalance for the 5m model) or need multi-year options-surface history. Otherwise Binance Vision aggTrades/bookDepth + Bybit/OKX archives give most of it for free.",
+     "url": "https://docs.tardis.dev/faq/billing-and-subscriptions",
+     "priority": "later",
+     "maturity": "Mature, widely used by quant teams"
+    },
+    {
+     "name": "CoinGlass API",
+     "what_for": "Aggregated multi-exchange liquidations, heatmaps, OI/funding across 30+ exchanges, ETF flows, options OI; REST + WS.",
+     "cost": "Hobbyist $29/mo (30 rpm, personal use), Startup $79/mo (80 rpm, personal), Standard $299/mo (300 rpm, first commercial tier), Professional $699/mo (1,200 rpm). Confirmed July 2026 pricing.",
+     "integration": "A paid bot legally needs Standard ($299/mo). Defer until MRR covers it; replicate aggregated OI/liquidations with ccxt + Coinalyze meanwhile. If bought, map to the same Parquet schema as a drop-in source.",
+     "url": "https://www.coinglass.com/pricing",
+     "priority": "later",
+     "maturity": "Mature commercial vendor"
+    },
+    {
+     "name": "CryptoQuant Data API (credit-based)",
+     "what_for": "Exchange reserves/flows, miner flows, stablecoin supply, plus market data. CORRECTION: on-chain endpoints require Professional (~$109/mo) or above; Basic (free, 10,000 credits/mo) and Advanced (~$39/mo) are market-data only (Basic: daily resolution, 30 days history).",
+     "cost": "Free tier is market-data only; on-chain from ~$109/mo (Professional); Premium for hourly/per-block; enterprise for redistribution.",
+     "integration": "Not a free on-chain source. Revisit only if backtest.py shows exchange-flow features carry signal that Coin Metrics Community cannot provide; then Professional and check ToS on derived signals in a paid product.",
+     "url": "https://cryptoquant.com/apis",
+     "priority": "later",
+     "maturity": "Mature vendor; API moved to credits in 2026"
+    },
+    {
+     "name": "Glassnode API",
+     "what_for": "Gold-standard on-chain (MVRV, SOPR, entity-adjusted), but Advanced ($49/mo yearly) only gives 'API Light' (14 days, daily, 50 calls/day, personal license); full API needs Professional (~$999/mo yearly) plus credit bundles.",
+     "cost": "$49/mo (crippled API) or ~$999+/mo.",
+     "integration": "Avoid for now. Substitute: Coin Metrics Community + free public MVRV/SOPR charts (checkonchain.com, read-only). Revisit with revenue.",
+     "url": "https://glassnode.com/pricing/data",
+     "priority": "avoid",
+     "maturity": "Mature; pricing hostile to small teams"
+    },
+    {
+     "name": "Dune Analytics API",
+     "what_for": "Custom SQL over on-chain tables. Free tier is view-only since Sept 10, 2026 (older accounts); accounts created after July 21, 2026 get a 14-day Plus trial with 2,500 credits, then view-only. Analyst ~$65/mo annual (4,000 credits), Plus ~$349/mo (25k credits).",
+     "cost": "$65-$349/mo minimum for API use.",
+     "integration": "Not worth it for a BTC/ETH regime model; only for DeFi/DEX-specific alt features. Skip.",
+     "url": "https://docs.dune.com/learning/how-tos/pricing-faqs",
+     "priority": "avoid",
+     "maturity": "Mature; free execution removed 2026"
+    },
+    {
+     "name": "X (Twitter) API v2 pay-per-use",
+     "what_for": "Social sentiment for twitter_sentiment.py / influencer_*. Pay-per-use only: $0.005 per post read (~$5/1k), $0.015 per post write ($0.20 with a link), 'owned reads' $0.001; cap 3M reads/month; legacy Pro deprecated after Sept 1, 2026; Enterprise above that.",
+     "cost": "~$5 per 1,000 tweets read. 50 influencers x 20 posts/day is roughly $150/mo.",
+     "integration": "Replace twitter_scraper.py scraping (ToS violation, bans) with the official v2 user-timeline endpoint over influencer_registry.py, cached to Parquet, scored by VADER or Claude, with a hard monthly credit cap. Third-party 'scraper APIs' (Apify actors etc.) breach X ToS.",
+     "url": "https://docs.x.com/x-api/getting-started/pricing",
+     "priority": "later",
+     "maturity": "Official; pricing model changed in 2026"
+    },
+    {
+     "name": "Santiment SanAPI (sanpy)",
+     "what_for": "Social volume/dominance, dev activity, on-chain basics via GraphQL + `sanpy`. Free and Pro plans carry a 30-day lag on restricted metrics; Max is the minimum plan for real-time API. Pro is ~$49/mo; Max roughly $249/mo (Max price and exact call quotas not verifiable here).",
+     "cost": "Free (lagged) / ~$49 / ~$249 per month (verify on the pricing page).",
+     "integration": "The lagged free tier is fine for TRAINING on historical social_volume_total and sentiment for BTC/ETH via sanpy -> Parquet; live inference would need Max. Only if social features survive backtest.py.",
+     "url": "https://academy.santiment.net/products-and-plans/sanapi-plans/",
+     "priority": "later",
+     "maturity": "Mature"
+    },
+    {
+     "name": "LunarCrush API",
+     "what_for": "Aggregated social metrics (Galaxy Score, AltRank, social dominance). Individual $90/mo (10 req/min, 2,000/day, limited endpoints), Builder $300/mo (100 rpm, 20k/day), Scale $900/mo (500 rpm, 100k/day). No free API tier.",
+     "cost": "$90/mo minimum.",
+     "integration": "Only if a social feature is demonstrably predictive in prediction_log.py calibration; one call per asset per hour fits Individual. Otherwise skip.",
+     "url": "https://lunarcrush.com/pricing",
+     "priority": "later",
+     "maturity": "Mature"
+    },
+    {
+     "name": "CryptoPanic API v2",
+     "what_for": "News aggregation with bull/bear votes. Free Developer plan removed April 1, 2026; Growth $199/mo ($179 annual), Growth weekly $50, Enterprise from $899/mo.",
+     "cost": "$199/mo.",
+     "integration": "Avoid. Replace sentiment.fetch_news() with free RSS (CoinDesk, CoinTelegraph, The Block, Bitcoin Magazine; RU: РБК Крипто, ForkLog) via feedparser scored by VADER/Claude, plus Fear & Greed. CoinDesk Data (ex-CryptoCompare) retired its free API on May 21, 2026 and is now sales-quoted only - do not build on it.",
+     "url": "https://cryptopanic.com/developers/api/plans",
+     "priority": "avoid",
+     "maturity": "Mature, no free tier"
+    },
+    {
+     "name": "Telegram public-channel ingestion (t.me/s/ preview or Telethon)",
+     "what_for": "RU-language crypto sentiment from public channels. t.me/s/<channel> web preview needs no login; Telethon user-account automation violates ToS and triggers FloodWait. Unverified here (source article unreachable), and Telegram access from Russia itself is now unreliable (see pitfalls), so run any collector from outside Russia.",
+     "cost": "Free.",
+     "integration": "For influencer_track_record.py: hourly poll of 20-50 RU/EN channels, dedupe by message id, Parquet, batch-score with Claude. Keep this collector separate from the aiogram bot process and off RU IPs.",
+     "url": "https://dev.to/rel8ble/scrape-public-telegram-channels-with-python-no-login-no-api-id-gmi",
+     "priority": "later",
+     "maturity": "Works, ToS-grey, unverified"
+    },
+    {
+     "name": "US equities / gold: yfinance -> Stooq + Tiingo/Polygon free tiers; Kraken and CoinGecko as neutral fallbacks",
+     "what_for": "yfinance is an unofficial scraper (personal-use ToS, YFRateLimitError #2422 from servers). Stooq daily CSV is free; Tiingo free EOD (~50 symbols/hour); Polygon free is delayed. Kraken public OHLC returns max 720 bars but full Trades history is downloadable. CoinGecko Demo (free key, ~10k calls/month) for cross-checking spot prices/market caps.",
+     "cost": "Free tiers; Tiingo/Polygon paid from ~$30-$100/mo for intraday.",
+     "integration": "data_loader.py already falls back to Stooq. Do not serve equities/gold forecasts from yfinance in a paid product; use Tiingo (daily) or Stooq XAUUSD for gold (FRED PM fix GOLDPMGBD228NLBM as a cross-check). Add `kraken` to the crypto chain as a jurisdiction-neutral spot fallback, rebuilding long histories from Trades.",
+     "url": "https://github.com/ranaroussi/yfinance/issues/2422",
+     "priority": "should",
+     "maturity": "Mixed"
+    },
+    {
+     "name": "Polymarket Gamma/Data API (prediction-market implied probabilities)",
+     "what_for": "Keyless read access to market prices (BTC-above-X-by-date, Fed decisions). Rate limits per 10-second window: Gamma ~4,000/10s, Data API ~1,000/10s, CLOB ~9,000/10s (per 2026 third-party guides; official page unreachable here). Trading is geo-gated; reads are not.",
+     "cost": "Free.",
+     "integration": "Small daily job pulling BTC/ETH threshold markets and macro-event markets into Parquet; show 'market-implied probability' beside your model's probability in the bot and log it in prediction_log.py as a calibration reference.",
+     "url": "https://docs.polymarket.com/quickstart/introduction/rate-limits",
+     "priority": "later",
+     "maturity": "Stable, actively documented"
+    },
+    {
+     "name": "Telegram Stars (XTR) subscriptions in aiogram 3.31 - plus CryptoBot as the RU fallback rail",
+     "what_for": "Bot Payments API requires digital goods to be sold in Stars: sendInvoice/createInvoiceLink with currency='XTR', empty provider_token, one LabeledPrice; recurring subscriptions via subscription_period=2592000 (only 30 days allowed, max 10,000 Stars) and editUserStarSubscription - available since Bot API 8.0 (Nov 2024). aiogram 3.31.0 (Aug 26, 2026, Bot API 10.2). Economics: developer receives ~$0.013 per Star, payout only via Fragment to TON, minimum 1,000 Stars, 21-day hold, and Fragment may not pay out in some countries. Russian users cannot buy Stars with RU cards through app stores; they use @PremiumBot/SberPay, resellers or crypto - and after Durov's designation in Russia (July 2026) lawyers are publicly debating the legal risk of paying Telegram at all.",
+     "cost": "~19% effective haircut between what the user pays and what you receive (store cut + Fragment spread); CryptoBot charges its own fee.",
+     "integration": "aiogram: create_invoice_link(currency='XTR', prices=[LabeledPrice(label='Подписка 30 дней', amount=N)], subscription_period=2592000); handle pre_checkout_query and successful_payment; store subscription_expiration_date per user in the same DuckDB/SQLite file as prediction_log; gate forecast delivery on it. Implement a second rail via @CryptoBot Crypto Pay API (USDT/TON invoices + webhooks) from day one so the product is not dependent on Fragment payouts or Stars availability in Russia.",
+     "url": "https://core.telegram.org/bots/payments-stars",
+     "priority": "must",
+     "maturity": "Official Telegram feature since Nov 2024"
+    }
+   ],
+   "pitfalls": [
+    "Telegram reachability in Russia: Roskomnadzor throttled Telegram from Feb 10, 2026, mass-blocked it March 14-15, and ~95% of connections failed by April 10; Telegram's April 11 client update restored service for updated clients, but the audience now depends on updated apps/VPNs. Plan a fallback delivery channel and never assume 100% reach for a RU audience.",
+    "Legal exposure in Russia: Durov's designation (July 2026) has lawyers questioning whether paying for Stars/Premium is safe for Russian residents; Russia's crypto law (in force Sept 1, 2026) restricts unlicensed exchanges and, from July 1, 2027, ruble-to-crypto conversions outside licensed intermediaries. Get local legal advice on selling paid crypto forecasts to RU users and on the payment rail.",
+    "Geo/sanctions on data collectors: Binance geofences and, since Aug 2026, blocks transactions with EU-sanctioned RU platforms; Bybit is not officially restricted in Russia but is tightening RU rules and is off the mobile-internet whitelist. Run the 24/7 collector on a non-RU VPS; rely on data.binance.vision, public.bybit.com and OKX archives for bulk.",
+    "Short-history traps: Binance openInterestHist and long/short ratio endpoints keep 30 days; Kraken OHLC returns 720 bars; CryptoQuant Basic keeps 30 days. Start archiving to Parquet now; Binance Vision 'metrics' zips (5-min OI/LSR snapshots) are the historical proxy.",
+    "Look-ahead bias when merging slow series (daily on-chain, weekly COT, 8h funding) onto 4h/5m bars: DuckDB ASOF JOIN on publication timestamp, lag daily metrics by one bar, and never use the funding rate settled at t as a same-bar feature.",
+    "Licensing: Coin Metrics Community is CC BY-NC 4.0; CoinGlass Hobbyist/Startup, Glassnode Advanced, Santiment free, Yahoo/yfinance are personal-use. Use outputs only as internal model inputs, never redistribute raw vendor series, and budget for commercial tiers (CoinGlass Standard $299) once revenue exists.",
+    "2026 free-tier removals: Dune (view-only, Sept 10), CryptoPanic (April 1), CoinDesk Data/CryptoCompare (May 21), X API (pay-per-use only, Pro deprecated Sept 1), CryptoQuant (free tier has no on-chain). Re-check pricing pages the week you ship.",
+    "Rate limits: Binance 2400 weight/min/IP (futures); fundingRate 500/5min; ratio endpoints 1000/5min; Coinalyze 40/min; Coin Metrics 10 per 6 s; Hyperliquid 1200 weight/min with candleSnapshot/fundingHistory at weight 20 each; LunarCrush 10/min; Polymarket limits are per 10 s. One shared collector process; Streamlit page loads must never hit vendors directly.",
+    "Exchange data quality: OI in contracts vs USD, funding intervals 8h (Binance/Bybit/OKX) vs 1h (Hyperliquid), symbol naming (BTCUSDT vs BTC-USDT-SWAP vs BTC). Normalize units/intervals in one place before feature_engineering.py.",
+    "Tooling versions: DuckDB 1.4 LTS is EOL this month - use 1.5.x and wait on 2.0 (Oct 2026). cryptofeed 3.x requires Python 3.13+, which may conflict with hmmlearn/streamlit wheels on the Mac - isolate it in its own venv. ccxt has no REST fetch_liquidations for Binance/Bybit/OKX - use WebSockets or Coinalyze.",
+    "Storage: Parquet is the source of truth; DuckDB files are single-writer. No TimescaleDB/ClickHouse/QuestDB until there is a real tick-ingestion need.",
+    "Returns disclaimer: no data source, liquidation heatmap or social score is an edge by itself; treat every vendor claim as marketing until it survives prediction_log.py calibration and Monte Carlo/stress tests. The bot must not promise returns (legal exposure for paid signal products, especially under Russia's new regime)."
+   ],
+   "open_questions": [
+    "Where will the 24/7 collector and the bot itself run - the Apple Silicon Mac in Russia (RU IP, Telegram/exchange blocking, uptime) or an EU VPS? This decides whether Binance REST/WS is primary or fallback and whether Telegram webhooks are reliable.",
+    "Which timeframe is the product's core forecast (5m/4h/1d)? On-chain/macro only make sense for daily; derivatives/DVOL for 4h; order-flow (Tardis/cryptofeed) only for 5m.",
+    "Commercial from day one (CoinGlass Standard $299, CryptoQuant Professional $109, Santiment Max) or an MVP with <100 users on free tiers + Coinalyze for a few months?",
+    "Payment rail for RU users: Telegram Stars (Fragment payout availability in your jurisdiction? legal risk after July 2026?) vs CryptoBot USDT vs a Russian PSP (ЮKassa) - and who bears the legal risk of selling paid crypto forecasts under the Sept 1, 2026 law?",
+    "Will US equities/gold stay in scope? If yes, budget Tiingo/Polygon instead of yfinance and pick the gold proxy (Stooq XAUUSD vs FRED PM fix vs GC=F).",
+    "Do you already have archived funding/OI/LSR history on the Mac? If not, HMM training on positioning features must wait months or use Binance Vision 'metrics' zips as the proxy.",
+    "Can your Python stack move to 3.13 (needed by cryptofeed 3.x), or will the collector live in a separate venv/container?"
+   ]
+  }
+ },
+ {
+  "corrections": [
+   {
+    "claim": "LightGBM 4.7.0 (Jul 2026), MIT; CatBoost 1.2.10 (Feb 2026), Apache-2.0",
+    "verdict": "confirmed",
+    "fix": "PyPI shows lightgbm 4.7.0 released 2026-07-18 and catboost 1.2.10 released 2026-02-18. Keep.",
+    "source": "https://pypi.org/project/lightgbm/ , https://pypi.org/project/catboost/"
+   },
+   {
+    "claim": "CatBoost Metal PR #3194 is experimental",
+    "verdict": "confirmed",
+    "fix": "PR #3194 adds experimental Apple Metal backend, still OPEN/unmerged as of Sep 2026; official wheels remain CPU-only on macOS. Keep as 'do not depend on'.",
+    "source": "https://github.com/catboost/catboost/pull/3194"
+   },
+   {
+    "claim": "MacBoost (alex-rowley/macboost, MIT, 3 stars, 0.1.0, pip install macboost)",
+    "verdict": "outdated",
+    "fix": "Repo exists (MIT, 3 stars, Metal GBDT, macOS 15+). PyPI page could not be loaded, so 'pip install macboost' and version 0.1.0 are unverified. Demote to 'experimental, verify install manually'.",
+    "source": "https://github.com/alex-rowley/macboost"
+   },
+   {
+    "claim": "mlfinlab is closed/paid (Hudson & Thames)",
+    "verdict": "confirmed",
+    "fix": "GitHub repo is 'all rights reserved', library sold as Business/Enterprise licences; repo exists only for issues. Keep. Note that the old open snapshot lives on as the MIT fork 'mlfinpy' on PyPI if a reference implementation is wanted.",
+    "source": "https://github.com/hudson-and-thames/mlfinlab , https://pypi.org/project/mlfinpy/"
+   },
+   {
+    "claim": "mchiuminatto/triple_barrier exists as small community project",
+    "verdict": "confirmed",
+    "fix": "Exists, MIT, 13 stars, author warns 'not tested for real trading'. Keep as reference only.",
+    "source": "https://github.com/mchiuminatto/triple_barrier"
+   },
+   {
+    "claim": "random-docs.readthedocs.io tb_meta_labeling page",
+    "verdict": "unverifiable",
+    "fix": "Domain blocked from this environment; cannot confirm the page. Replace with the López de Prado primary reference and the mlfinpy docs.",
+    "source": "https://mlfinpy.readthedocs.io/"
+   },
+   {
+    "claim": "purgedcv (eslazarev/purged-cross-validation): MIT, ~35 stars, CombinatorialPurgedCV + DSR + PBO + PSR",
+    "verdict": "confirmed",
+    "fix": "Confirmed. Add version: purgedcv 0.1.8 released 2026-09-26, Python >=3.10. Note it is pre-1.0 and tiny.",
+    "source": "https://github.com/eslazarev/purged-cross-validation , https://pypi.org/project/purgedcv/"
+   },
+   {
+    "claim": "skfolio 1.4.9 (Sep 2026), BSD-3, has CombinatorialPurgedCV",
+    "verdict": "confirmed",
+    "fix": "skfolio 1.4.9 released 2026-09-29, BSD-3. CombinatorialPurgedCV params are n_folds=10, n_test_folds=8, purged_size=0, embargo_size=0 (NOT purge_horizon/embargo as written in the integration snippet — those names are purgedcv-style).",
+    "source": "https://pypi.org/project/skfolio/ , https://github.com/skfolio/skfolio/blob/main/src/skfolio/model_selection/_combinatorial.py"
+   },
+   {
+    "claim": "skfolio added deflated_sharpe_ratio and expected_max_sharpe_ratio in PR #255",
+    "verdict": "wrong",
+    "fix": "PR #255 exists and implements both, but it is still OPEN (unmerged) and none of the v1.4.5–1.4.9 release notes mention it. Do not rely on skfolio for DSR; use purgedcv or write the ~40-line Bailey/López de Prado formula yourself.",
+    "source": "https://github.com/skfolio/skfolio/pull/255 , https://github.com/skfolio/skfolio/releases"
+   },
+   {
+    "claim": "MAPIE 1.5.0 released Aug 2026, BSD-3; TimeSeriesRegressor(method='enbpi', cv=BlockBootstrap) with partial_fit",
+    "verdict": "outdated",
+    "fix": "Version/date/licence confirmed (1.5.0, 2026-08-05, BSD-3). But in MAPIE v1 `partial_fit` was replaced by `TimeSeriesRegressor.update()`; methods are 'enbpi' (requires cv=BlockBootstrap) or 'aci'. Fix the integration snippet.",
+    "source": "https://pypi.org/project/mapie/ , https://github.com/scikit-learn-contrib/MAPIE/blob/master/HISTORY.md"
+   },
+   {
+    "claim": "crepes 0.9",
+    "verdict": "outdated",
+    "fix": "Latest is crepes 0.9.1 (2026-06-12), BSD-3.",
+    "source": "https://pypi.org/project/crepes/"
+   },
+   {
+    "claim": "statsmodels 0.14.x MarkovAutoregression with exog_tvtp, switching_variance, filtered_marginal_probabilities, expected_durations",
+    "verdict": "outdated",
+    "fix": "API confirmed. Version is outdated: statsmodels 0.15.0 released 2026-08-27 (BSD-3, Python >=3.10).",
+    "source": "https://pypi.org/project/statsmodels/ , https://www.statsmodels.org/stable/generated/statsmodels.tsa.regime_switching.markov_autoregression.MarkovAutoregression.html"
+   },
+   {
+    "claim": "hmmlearn limited-maintenance, 0.3.3 Oct 2024",
+    "verdict": "confirmed",
+    "fix": "PyPI: 0.3.3, 2024-10-31, explicitly 'limited-maintenance mode'. Keep.",
+    "source": "https://pypi.org/project/hmmlearn/"
+   },
+   {
+    "claim": "bocd on PyPI / BayesOnBikes/bocd (MIT/BSD)",
+    "verdict": "outdated",
+    "fix": "BayesOnBikes/bocd exists, BSD-3, Python 3.13 target, only 19 commits. A PyPI 'bocd' 0.1.0 exists but page could not be loaded (unverified date/maintainer). Better-maintained alternatives: 'bocpd' (PyPI, Oct 2023) and 'fast-bocpd' (C backend). Given all are tiny, recommend implementing the ~80-line Adams & MacKay recursion in-house (Gundersen reference) and using a package only as a test oracle.",
+    "source": "https://github.com/BayesOnBikes/bocd , https://pypi.org/project/bocpd/ , https://pypi.org/project/fast-bocpd/ , https://gregorygundersen.com/blog/2020/10/20/implementing-bocd/"
+   },
+   {
+    "claim": "ruptures 1.1.9",
+    "verdict": "outdated",
+    "fix": "Latest is ruptures 1.1.10 (2025-09-10), BSD-2-Clause.",
+    "source": "https://pypi.org/project/ruptures/"
+   },
+   {
+    "claim": "MLflow 3.x, 3.12 stable as of May 2026",
+    "verdict": "outdated",
+    "fix": "MLflow 3.0 GA was June 2025 (confirmed); the latest is 3.16.1 released 2026-09-16, Apache-2.0. Replace '3.12'.",
+    "source": "https://pypi.org/project/mlflow/ , https://mlflow.org/blog/mlflow-3-0-launch"
+   },
+   {
+    "claim": "vectorbt 1.1.1 (Sep 26 2026), Apache-2.0 + Commons Clause, Python 3.11-3.14, optional Rust engine",
+    "verdict": "confirmed",
+    "fix": "All confirmed on PyPI (requires >=3.11,<3.15; `pip install 'vectorbt[rust]'`).",
+    "source": "https://pypi.org/project/vectorbt/"
+   },
+   {
+    "claim": "vectorbt PRO ~USD 20-25/month or lifetime from USD 150",
+    "verdict": "wrong",
+    "fix": "vectorbt.pro itself is blocked here; secondary sources (Ko-fi tiers, upgrade page) show ~$25/month, $20/month on annual plan, and lifetime = one-time $500. '$150' is only the minimum remainder when converting accumulated monthly payments into lifetime. Fix to '$20-25/mo, lifetime $500'.",
+    "source": "https://ko-fi.com/vectorbtpro/tiers , https://vectorbt.dev/getting-started/upgrade/"
+   },
+   {
+    "claim": "Chronos-2: chronos-forecasting 2.3.2 (Sep 2026), 120M params, Apache-2.0, released Oct 2025, covariates/multivariate zero-shot, predict_quantiles, device_map='mps'",
+    "verdict": "confirmed",
+    "fix": "PyPI 2.3.2 released 2026-09-08, Apache-2.0; GitHub confirms 120M, 2025-10-20, zero-shot univariate/multivariate/covariate; predict_quantiles and predict_df exist; device_map 'mps' is documented. Add: an MLX backend (tsfm-ai/chronos2-mlx) exists for Apple Silicon.",
+    "source": "https://pypi.org/project/chronos-forecasting/ , https://github.com/amazon-science/chronos-forecasting , https://github.com/tsfm-ai/chronos2-mlx"
+   },
+   {
+    "claim": "TimesFM-2.5 (Sep 2025), 200M, Apache-2.0",
+    "verdict": "outdated",
+    "fix": "TimesFM-2.5 (200M) weights are Apache-2.0 on HF — OK. But TimesFM 3.0 (330M) was released Aug 2026 with weights under a NON-COMMERCIAL licence (timesfm-non-commercial-license-v1.0); commercial use is only via Google Cloud/BigQuery ML. For a paid bot, pin to 2.5 or avoid TimesFM 3.0.",
+    "source": "https://github.com/google-research/timesfm , https://huggingface.co/google/timesfm-2.5-200m-pytorch"
+   },
+   {
+    "claim": "Moirai-2.0 (Salesforce blog) as a free zero-shot baseline",
+    "verdict": "wrong",
+    "fix": "Moirai 2.0 (Aug 2025) weights are CC-BY-NC-4.0 — non-commercial. Cannot be used in a paid product; drop it from the candidate list or keep strictly for offline research.",
+    "source": "https://huggingface.co/Salesforce/moirai-2.0-R-small , https://github.com/SalesforceAIResearch/uni2ts"
+   },
+   {
+    "claim": "Kronos (AAAI 2026, MIT, pre-trained on OHLCV K-lines, Kronos-base 102M)",
+    "verdict": "confirmed",
+    "fix": "Confirmed: MIT, accepted AAAI 2026 (announced 2025-11-10), Kronos-base 102.3M/512 ctx, trained on 45+ exchanges. Add evidence: an independent 497-trade test on 5-min BTC found Kronos statistically indistinguishable from Brownian motion (Brier 0.189 vs 0.188).",
+    "source": "https://github.com/shiyu-coder/Kronos , https://cornfordandcross.com/market-insights/week-three-foundation-model-vs-brownian-motion-kronos-on-five-minute-btc/"
+   },
+   {
+    "claim": "'Re(Visiting) TSFMs in Finance': Chronos-large R^2 -1.37%, directional ~51%, TimesFM-500M below 50%, CatBoost best",
+    "verdict": "confirmed",
+    "fix": "Confirmed (arXiv 2511.18578; SSRN 5770562; repo DeepIntoStreams/TSFM_Finance). Note the paper is on US equities, not crypto; CatBoost's reported Sharpe 6.79 is in-sample-tuned and should not be quoted as an achievable number.",
+    "source": "https://arxiv.org/html/2511.18578v1 , https://github.com/DeepIntoStreams/TSFM_Finance"
+   },
+   {
+    "claim": "arXiv 2606.27100 (2026 paper on 5 US equities: TSFMs only sometimes beat random walk)",
+    "verdict": "confirmed",
+    "fix": "Exists: 'Pretrained Time-Series Foundation Models for Financial Return Forecasting' (submitted 2026-06-25), evaluates TimeGPT, TimesFM-2.5, Moirai-2.0, Chronos, Chronos-2 vs NBEATS/NHITS/PatchTST/iTransformer/KAN on AAPL/AMZN/GOOG/JPM/META with random-walk benchmarks.",
+    "source": "https://arxiv.org/abs/2606.27100"
+   },
+   {
+    "claim": "NeuralForecast v3.1.9 (May 2026)",
+    "verdict": "outdated",
+    "fix": "Latest is neuralforecast v3.2.2 (2026-09-08), Apache-2.0.",
+    "source": "https://github.com/Nixtla/neuralforecast/releases"
+   },
+   {
+    "claim": "Darts/sktime comparison paper arXiv 2606.27438 (June 2026)",
+    "verdict": "confirmed",
+    "fix": "Exists: 'Unified Zero-Shot Time Series Forecasting: A Darts Foundation' (2026-06-25); it is a Darts paper with a comparison table of FM support across Darts/sktime/Nixtla/AutoGluon/skforecast, not a head-to-head benchmark. Reword.",
+    "source": "https://arxiv.org/abs/2606.27438"
+   },
+   {
+    "claim": "NautilusTrader 1.231.0 final v1 (Aug 2026), LGPL-3.0, Python 3.12+, v2.0.0 RCs in progress",
+    "verdict": "confirmed",
+    "fix": "PyPI 1.231.0 released 2026-08-02, LGPL-3.0-or-later, Python >=3.12,<3.15; releases page: v2.0.0rc5 on 2026-09-15, no stable v2 yet. Keep.",
+    "source": "https://pypi.org/project/nautilus_trader/ , https://github.com/nautechsystems/nautilus_trader/releases"
+   },
+   {
+    "claim": "Freqtrade 2026.9 (GPL-3) with FreqAI; Qlib MIT active with RD-Agent",
+    "verdict": "confirmed",
+    "fix": "freqtrade 2026.9 released 2026-09-29, GPLv3; FreqAI docs still current (LightGBM/XGBoost/CatBoost, live_retrain_hours). Qlib MIT, active commits, RD-Agent integrated; note its last tagged release is v0.9.0 (Dec 2022).",
+    "source": "https://pypi.org/project/freqtrade/ , https://www.freqtrade.io/en/stable/freqai/ , https://github.com/microsoft/qlib"
+   },
+   {
+    "claim": "backtesting.py AGPL-3.0, ~9k stars",
+    "verdict": "confirmed",
+    "fix": "Confirmed.",
+    "source": "https://github.com/kernc/backtesting.py"
+   },
+   {
+    "claim": "pypbo (esvhd) as a Python PBO implementation",
+    "verdict": "outdated",
+    "fix": "Exists (140 stars) but is AGPL-3.0 — same licence problem as backtesting.py for a paid service. Use purgedcv (MIT) instead and drop pypbo from the recommendation.",
+    "source": "https://github.com/esvhd/pypbo"
+   },
+   {
+    "claim": "Binance-level fees ~0.06% taker",
+    "verdict": "wrong",
+    "fix": "Binance VIP0: spot 0.10% maker/taker (0.075% with BNB), USDT-M futures taker 0.05% (0.045% with BNB), maker 0.02%. Use 0.05% (futures) or 0.10% (spot) in backtests, plus slippage.",
+    "source": "https://www.binance.com/en/fee/futureFee , https://www.binance.com/en/fee/trading"
+   },
+   {
+    "claim": "sktime provides 11 foundation-model wrappers",
+    "verdict": "unverifiable",
+    "fix": "sktime does wrap several TSFMs (Chronos, TimesFM, Moirai, etc.); the exact count '11' could not be confirmed. Say 'several'.",
+    "source": "https://medium.com/@benedikt_heidrich/forecasting-using-foundation-models-and-sktime-4d5a09909742"
+   },
+   {
+    "claim": "arXiv was not reachable; findings verified via GitHub/secondary summaries",
+    "verdict": "confirmed",
+    "fix": "Same limitation in this check: arxiv.org, huggingface.co, readthedocs, statsmodels.org, mlflow.org, vectorbt.pro and freqtrade.io are egress-blocked; facts for those were confirmed via PyPI, GitHub and search snippets.",
+    "source": "n/a"
+   }
+  ],
+  "missing": [
+   "Licensing trap for TSFMs: TimesFM 3.0 (Aug 2026) and Moirai 2.0 weights are non-commercial; only Chronos-2 (Apache-2.0), TimesFM-2.5 (Apache-2.0) and Kronos (MIT) are usable in a paid product.",
+   "arch 8.0.0 (NCSA licence, Oct 2025): GARCH/EGARCH/HAR realized-vol forecasts are a cheap, well-understood volatility input for barrier widths and for the MarkovAR exog_tvtp features; currently the pipeline has no explicit vol model.",
+   "river 0.26.1 (BSD-3, Aug 2026): ADWIN/Page-Hinkley drift detectors on the live prediction_log residual stream, as an automatic 'model is stale, abstain/retrain' trigger complementary to BOCD.",
+   "optuna 5.0.0 (MIT, Sep 2026): hyperparameter search for LightGBM/CatBoost inside the purged CV loop; every trial must be counted toward N for the Deflated Sharpe.",
+   "shap (MIT): per-forecast feature attribution so the Telegram message can say WHY (regime posterior, wave state, funding) — useful for the Russian-language explanation text and for auditing the Claude judge.",
+   "Independent Kronos evidence: 5-min BTC test (497 trades) shows Brier 0.189 vs 0.188 for Brownian motion — i.e., no edge; strengthens the 'baseline only' verdict.",
+   "Look-ahead bias in pretrained models: TSFMs were pretrained on data that may overlap your backtest window (see arXiv 2609.20554 'Does Training on Future Data Pay?'); any zero-shot baseline must only be evaluated on bars after the model's training cutoff.",
+   "mlfinpy (MIT fork of the last open mlfinlab snapshot) is a legitimate open reference for triple-barrier/uniqueness weights, unlike current mlfinlab.",
+   "Chronos-2 MLX backend (tsfm-ai/chronos2-mlx) for Apple Silicon if PyTorch MPS inference is slow."
+  ],
+  "section": {
+   "title": "Modeling, regime detection, forecasting & validation stack for market-regime-dashboard (fact-checked 2026-09-30)",
+   "summary": "The current core (GaussianHMM via hmmlearn + Elliott-wave heuristics + Claude-as-judge rescoring) has no supervised learner, no leak-proof cross-validation and no calibrated uncertainty, so nothing produced today can honestly be sold as a 'forecast'. Recommended path: (1) keep HMM as one regime feature but add statsmodels 0.15 MarkovAutoregression and an in-house Bayesian online change-point detector as independent regime signals; (2) make the real forecaster a LightGBM 4.7 / CatBoost 1.2.10 classifier trained on triple-barrier meta-labels over the existing wave/HMM signals, validated with purged/embargoed CombinatorialPurgedCV (purgedcv 0.1.8 or skfolio 1.4.9) and reported with Deflated Sharpe and PBO from purgedcv (skfolio's DSR PR #255 is still unmerged); (3) wrap outputs with conformal prediction (MAPIE 1.5 TimeSeriesRegressor.update / crepes 0.9.1) so the Telegram bot ships calibrated probability bands; (4) log every experiment in MLflow 3.16 and every published forecast into prediction_log.py. Time-series foundation models are baseline-only: two finance papers (arXiv 2511.18578, 2606.27100) show ~50-51% directional accuracy and negative out-of-sample R^2, an independent 5-min BTC test shows Kronos equal to Brownian motion, and TimesFM 3.0 and Moirai 2.0 weights are non-commercial, so only Chronos-2, TimesFM-2.5 and Kronos are even legally usable in a paid product. vectorbt 1.1.1 (Apache+Commons Clause) for research backtests; NautilusTrader v2 only after 2.0.0 final. Everything runs on Apple Silicon CPU. Nothing here guarantees returns; the stack exists to measure honestly so the bot does not sell noise.",
+   "recommendations": [
+    {
+     "name": "LightGBM 4.7.0 (+ CatBoost 1.2.10 as second opinion)",
+     "what_for": "The supervised forecaster. Classifier on triple-barrier labels using features from feature_engineering.compute_features(), HMM posteriors from hmm_model.forward_filter(), MarkovAR filtered regime probabilities, BOCD run-length, wave-state one-hots from wave_sequencer/forecast.py, realized/GARCH vol, funding/OI, sentiment. Output = P(upper barrier hit first) per horizon. CatBoost handles categorical wave states natively and is more overfit-resistant on small data; run both and average probabilities.",
+     "cost": "Free. LightGBM MIT, CatBoost Apache-2.0. Official macOS arm64 wheels are CPU-only (CatBoost Metal PR #3194 is open/experimental; MacBoost is a 3-star MIT Metal project whose PyPI release could not be verified). CPU training is seconds-to-minutes at this data size.",
+     "integration": "ml_forecaster.py: build_dataset(df) -> X, y (y from labels.triple_barrier); lightgbm.LGBMClassifier(objective='binary', num_leaves<=31, min_child_samples>=100, learning_rate 0.02-0.05, early stopping on a purged validation fold, sample_weight = label uniqueness). Tune with optuna 5.0 inside the purged CV loop and count every trial toward N for the Deflated Sharpe. Persist with joblib + MLflow; serve predict_proba() through the JSON schema prediction_log.log_per_tf() already writes so verify_predictions() closes the loop.",
+     "url": "https://pypi.org/project/lightgbm/",
+     "maturity": "Production-stable: LightGBM 4.7.0 (2026-07-18), CatBoost 1.2.10 (2026-02-18). Apple Metal: https://github.com/catboost/catboost/pull/3194 (open), https://github.com/alex-rowley/macboost (experimental).",
+     "priority": "must"
+    },
+    {
+     "name": "Triple-barrier labels + meta-labeling (own implementation, ~150 lines)",
+     "what_for": "Realistic labels: upper barrier +k*sigma, lower barrier -k*sigma, vertical barrier max_bars; label = first touched. Then meta-label: primary side = existing Elliott/HMM directional call (forecast.forecast_next, regime_labeler.label_regimes); the ML model only learns P(primary is right) and gates/sizes it (López de Prado, AFML ch.3).",
+     "cost": "Free. Do NOT depend on mlfinlab (Hudson & Thames, all-rights-reserved, paid). Open references: mlfinpy (MIT fork of the last open snapshot) and mchiuminatto/triple_barrier (MIT, 13 stars, untested for live trading).",
+     "integration": "labels.py: get_daily_vol(close, span=50), apply_triple_barrier(close, events, pt_sl=(1,1), max_bars), get_meta_labels(primary_side, outcomes), uniqueness weights for overlapping labels. Events = bars where wave_sequencer emits a new top candidate or HMM/BOCD flags a regime change (event-based sampling reduces autocorrelation).",
+     "url": "https://mlfinpy.readthedocs.io/",
+     "maturity": "Standard method since 2018; open packages are tiny, so implement in-house and use them only as test oracles (https://github.com/mchiuminatto/triple_barrier).",
+     "priority": "must"
+    },
+    {
+     "name": "purgedcv 0.1.8 (eslazarev/purged-cross-validation) or skfolio 1.4.9 CombinatorialPurgedCV",
+     "what_for": "Leak-proof validation: purging removes training samples whose label window overlaps the test window, embargo adds a gap; CombinatorialPurgedCV yields many out-of-sample paths -> a Sharpe distribution. purgedcv additionally ships deflated_sharpe_ratio, probabilistic_sharpe_ratio and probability_of_backtest_overfitting (CSCV) under MIT.",
+     "cost": "Free. purgedcv MIT (0.1.8, 2026-09-26, Python>=3.10); skfolio BSD-3 (1.4.9, 2026-09-29).",
+     "integration": "pip install purgedcv. purgedcv: CombinatorialPurgedCV(n_folds=10, n_test_folds=2, purge_horizon=<vertical-barrier bars>, embargo=int(0.02*len(X))). skfolio's signature differs: CombinatorialPurgedCV(n_folds=10, n_test_folds=8, purged_size=..., embargo_size=...). Use inside optuna/GridSearchCV and in validate.py to report mean/percentile Sharpe across paths plus PBO. skfolio is the more mature codebase if you also adopt its optimizers to replace portfolio.py.",
+     "url": "https://github.com/eslazarev/purged-cross-validation",
+     "maturity": "purgedcv: small (~35 stars), pre-1.0 but active; skfolio: well-maintained, scikit-learn compatible (https://pypi.org/project/skfolio/).",
+     "priority": "must"
+    },
+    {
+     "name": "MAPIE 1.5.0 (TimeSeriesRegressor: EnbPI/ACI) and crepes 0.9.1 (conformal predictive systems)",
+     "what_for": "Calibrated intervals/probabilities with finite-sample coverage. For price-target forecasts (forecast.py ForecastTarget / probability.probability_of_reaching): EnbPI or ACI intervals that adapt as residuals arrive. For classifier probabilities: crepes ConformalClassifier / ConformalPredictiveSystem or sklearn CalibratedClassifierCV(isotonic) on a purged calibration fold. The bot should publish 'P(reach target within N bars) = 0.58 [calibrated on last 400 events]' instead of forecast._categorize() buckets.",
+     "cost": "Free. MAPIE BSD-3 (1.5.0, 2026-08-05); crepes BSD-3 (0.9.1, 2026-06-12).",
+     "integration": "calibration.py: TimeSeriesRegressor(estimator, method='enbpi', cv=BlockBootstrap(...)) or method='aci'; after each realized outcome from prediction_log.verify_predictions() call .update(X_new, y_new) (MAPIE v1 renamed partial_fit -> update). Add Brier score and reliability diagram to prediction_log.compute_stats().",
+     "url": "https://pypi.org/project/mapie/",
+     "maturity": "MAPIE is the scikit-learn-contrib reference CP library, active (https://github.com/scikit-learn-contrib/MAPIE); crepes academic but stable (https://github.com/henrikbostrom/crepes).",
+     "priority": "must"
+    },
+    {
+     "name": "statsmodels 0.15.0 MarkovAutoregression / MarkovRegression",
+     "what_for": "Second regime detector next to GaussianHMM: Hamilton-style Markov-switching AR with switching variance; filtered and smoothed regime probabilities, expected durations, time-varying transition probabilities via exog_tvtp (realized vol, funding). Cross-checks hmmlearn (limited-maintenance, 0.3.3 Oct 2024) and feeds the GBM.",
+     "cost": "Free, BSD-3; statsmodels 0.15.0 (2026-08-27), Python>=3.10.",
+     "integration": "regime_msar.py: MarkovAutoregression(ret, k_regimes=2..3, order=1, switching_variance=True, exog_tvtp=vol_features).fit(); expose res.filtered_marginal_probabilities (causal, same contract as hmm_model.forward_filter) and res.expected_durations. 'Regime agreement' HMM-vs-MSAR as a confidence feature; disagreement = abstain signal for the bot.",
+     "url": "https://www.statsmodels.org/stable/generated/statsmodels.tsa.regime_switching.markov_autoregression.MarkovAutoregression.html",
+     "maturity": "Mature. Pitfall: MLE local optima — multiple starts and BIC as in hmm_model._bic.",
+     "priority": "should"
+    },
+    {
+     "name": "Bayesian online change-point detection (in-house, ~80 lines; packages bocpd / fast-bocpd / BayesOnBikes-bocd as oracles) + ruptures 1.1.10 offline",
+     "what_for": "Regime-shift alarms without fixing the number of states: run-length posterior each bar, P(change in last k bars). Use to (a) abstain/re-check when a change is likely, (b) as a GBM feature, (c) to define event timestamps. ruptures (PELT/Binseg on vol) for offline labelling of historical regimes to audit regime_labeler.label_regimes().",
+     "cost": "Free. ruptures BSD-2 (1.1.10, 2025-09-10); bocpd/fast-bocpd/BayesOnBikes-bocd are tiny, BSD/MIT; PyPI 'bocd' 0.1.0 exists but is unverified.",
+     "integration": "changepoint.py: Adams & MacKay recursion with normal-inverse-gamma (Student-t predictive) over standardized log returns; hazard 1/250 daily, 1/1000 4h; emit run_length_mode and P(change in last 5 bars) into compute_features(). Offline: ruptures.Pelt(model='rbf').fit(vol).predict(pen=...) to overlay regime boundaries on the Streamlit chart. Reference implementation: https://gregorygundersen.com/blog/2020/10/20/implementing-bocd/",
+     "url": "https://github.com/deepcharles/ruptures",
+     "maturity": "Algorithm stable; BOCD packages are small (https://github.com/BayesOnBikes/bocd, https://pypi.org/project/fast-bocpd/). Optional: river 0.26.1 ADWIN on live residuals as a second drift trigger (https://pypi.org/project/river/).",
+     "priority": "should"
+    },
+    {
+     "name": "MLflow 3.16.1",
+     "what_for": "Experiment tracking for every LightGBM/CatBoost/HMM run: params, purged-CV Sharpe distribution, PBO, DSR, calibration curves, artifacts. Model Registry decides which version the Telegram bot serves; a promoted model must carry its validation report. MLflow 3 GenAI tracing logs claude_rescore.py prompts/outputs so the judge is auditable.",
+     "cost": "Free, Apache-2.0; local sqlite backend + ./mlruns, no server.",
+     "integration": "pip install mlflow; mlflow.set_tracking_uri('sqlite:///mlflow.db'); mlflow.lightgbm.autolog(); log validate.py JSON/PNG as artifacts; bot loads mlflow.pyfunc.load_model('models:/regime_forecaster@production'). n_trials for DSR = number of runs in the experiment.",
+     "url": "https://pypi.org/project/mlflow/",
+     "maturity": "Very mature; 3.0 GA June 2025, 3.16.1 released 2026-09-16 (https://github.com/mlflow/mlflow/releases).",
+     "priority": "should"
+    },
+    {
+     "name": "vectorbt 1.1.1 (open-source, fair-code); vectorbt PRO optional",
+     "what_for": "Vectorized research backtester to sweep thousands of parameter combinations (barrier widths, probability thresholds, holding periods) with fees, slippage, funding in seconds; portfolio-of-trades evaluation across assets (multi_asset.py).",
+     "cost": "OSS free: Apache-2.0 + Commons Clause (commercial use OK; you may not resell vectorbt itself). PRO: ~$25/month, $20/month annual, lifetime $500 one-time — not needed here.",
+     "integration": "pf = vbt.Portfolio.from_signals(close, entries=prob>thr, exits=..., fees=0.0005, slippage=0.0005, freq='4h'); broadcast over thr/barrier params; pf.stats() and trade returns into validate.py for DSR/PBO. Keep backtest.py as reference and assert equality on one configuration.",
+     "url": "https://pypi.org/project/vectorbt/",
+     "maturity": "Active: 1.1.1 on 2026-09-26, Python 3.11-3.14, optional Rust engine (pip install 'vectorbt[rust]'). PRO pricing: https://ko-fi.com/vectorbtpro/tiers",
+     "priority": "should"
+    },
+    {
+     "name": "Deflated Sharpe, Probabilistic Sharpe, PBO (CSCV) — via purgedcv",
+     "what_for": "The honest signal report: expectancy per trade after costs, Sharpe with costs, PSR (skew/kurtosis/track length), DSR given number of trials N, PBO from CSCV over the CombinatorialPurgedCV paths, minimum track-record length. Publish inside the bot's track-record page.",
+     "cost": "Free (purgedcv MIT). skfolio's deflated_sharpe_ratio PR #255 is still OPEN — not in 1.4.9; pypbo is AGPL-3.0 — avoid in a paid service.",
+     "integration": "validate.py: gather per-path returns from CombinatorialPurgedCV + vectorbt; n_trials = MLflow run count (+ optuna trials); dsr = purgedcv.deflated_sharpe_ratio(...); pbo = purgedcv.probability_of_backtest_overfitting(perf_matrix). Gate: promote only if DSR > 0.95, PBO < 0.2 and after-fee expectancy > 0 on all test paths. Extend prediction_log.compute_stats() with live expectancy, Brier, rolling Sharpe.",
+     "url": "https://github.com/eslazarev/purged-cross-validation",
+     "maturity": "Bailey & López de Prado 2014 (https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2460551); skfolio PR tracking: https://github.com/skfolio/skfolio/pull/255",
+     "priority": "must"
+    },
+    {
+     "name": "Chronos-2 (chronos-forecasting 2.3.2) / TimesFM-2.5 / Kronos — zero-shot baselines only",
+     "what_for": "Cheap benchmarks to prove the in-house model adds value, and optional features (TSFM median and quantile spread as GBM inputs). Chronos-2 supports covariates/multivariate zero-shot; Kronos (AAAI 2026, MIT) is pre-trained on OHLCV K-lines from 45+ exchanges. Never ship TSFM output directly as the bot's forecast.",
+     "cost": "Free and commercially usable: Chronos-2 Apache-2.0 (120M), TimesFM-2.5 Apache-2.0 (200M), Kronos MIT (base 102M). NOT usable in a paid product: TimesFM 3.0 (Aug 2026, 330M, non-commercial licence) and Moirai 2.0 (CC-BY-NC-4.0). All run on M-series CPU/MPS.",
+     "integration": "pip install chronos-forecasting; Chronos2Pipeline.from_pretrained('amazon/chronos-2', device_map='mps'); pipe.predict_quantiles(context=..., prediction_length=H, quantile_levels=[0.1,0.5,0.9]). Add tsfm_q10/q50/q90 as features; evaluate only on bars after the model's pretraining cutoff (look-ahead bias, arXiv 2609.20554). Evidence: arXiv 2511.18578 — Chronos-large OOS R^2 -1.37%, directional ~51%, TimesFM-500M <50%, CatBoost best; arXiv 2606.27100 — TSFMs only sometimes beat random walk on 5 US equities; Kronos on 5-min BTC indistinguishable from Brownian motion (Brier 0.189 vs 0.188).",
+     "url": "https://github.com/amazon-science/chronos-forecasting",
+     "maturity": "Chronos-2 released 2025-10-20, package 2.3.2 2026-09-08; TimesFM: https://github.com/google-research/timesfm ; Kronos: https://github.com/shiyu-coder/Kronos ; Apple MLX backend: https://github.com/tsfm-ai/chronos2-mlx ; evidence: https://arxiv.org/html/2511.18578v1 , https://arxiv.org/abs/2606.27100 , https://cornfordandcross.com/market-insights/week-three-foundation-model-vs-brownian-motion-kronos-on-five-minute-btc/",
+     "priority": "later"
+    },
+    {
+     "name": "NeuralForecast 3.2.2 (Nixtla) / Darts / sktime",
+     "what_for": "Only if a deep model is wanted later: NeuralForecast gives PatchTST, NHITS, iTransformer, TFT with quantile losses; Darts (arXiv 2606.27438) and sktime wrap several foundation models behind one interface. Second-stage experiment after GBM+conformal is validated.",
+     "cost": "Free, Apache-2.0 / BSD.",
+     "integration": "NHITS/PatchTST with MQLoss on log returns, exogenous = same feature set, trained per asset on the Mac (Lightning MPS). Same purged-CV + DSR gate; adopt only if it beats LightGBM after costs on all paths.",
+     "url": "https://github.com/Nixtla/neuralforecast",
+     "maturity": "neuralforecast v3.2.2 (2026-09-08), active. Darts FM paper: https://arxiv.org/abs/2606.27438",
+     "priority": "later"
+    },
+    {
+     "name": "arch 8.0.0 (GARCH/HAR volatility)",
+     "what_for": "Explicit conditional-volatility forecasts (GARCH(1,1)/EGARCH on returns, HAR on realized vol) to set barrier widths, size positions, and drive MarkovAR exog_tvtp; the pipeline currently has no vol model.",
+     "cost": "Free, NCSA licence (permissive).",
+     "integration": "vol.py: arch_model(ret*100, vol='GARCH', p=1, q=1, dist='t').fit(); forecast(horizon=H).variance -> sigma_H; use in labels.triple_barrier and as a GBM feature.",
+     "url": "https://pypi.org/project/arch/",
+     "maturity": "Mature; 8.0.0 released 2025-10-21.",
+     "priority": "should"
+    },
+    {
+     "name": "NautilusTrader v2 (Rust core; v1.231.0 final v1, v2.0.0rc5 Sep 2026)",
+     "what_for": "Execution-grade event-driven backtesting and later live trading if the product moves from signals to auto-trade. Overkill for validating a signal bot today.",
+     "cost": "Free, LGPL-3.0-or-later. Python 3.12-3.14.",
+     "integration": "Later: port the promoted model into a Strategy consuming bars via the Binance adapter; paper-trade in parallel with published Telegram calls to measure slippage vs backtest.",
+     "url": "https://github.com/nautechsystems/nautilus_trader/releases",
+     "maturity": "Very active; v2.0.0rc5 (2026-09-15), no stable v2 yet — wait for 2.0.0 final.",
+     "priority": "later"
+    },
+    {
+     "name": "Freqtrade 2026.9 / FreqAI, Microsoft Qlib / RD-Agent",
+     "what_for": "Freqtrade (GPL-3, monthly releases) is a full crypto bot with FreqAI auto-retraining LightGBM/XGBoost/CatBoost; Qlib (MIT, last tagged release v0.9.0 Dec 2022 but active main branch) is an equities quant platform with RD-Agent LLM automation. Adopting either means rewriting around their conventions and losing the Elliott/HMM/Claude-judge differentiator.",
+     "cost": "Free (GPL-3 Freqtrade; MIT Qlib).",
+     "integration": "Borrow ideas only: FreqAI's live_retrain_hours rolling-retrain schedule; Qlib's Alpha158 factor list as feature inspiration.",
+     "url": "https://github.com/freqtrade/freqtrade/releases",
+     "maturity": "Both active in 2026 (https://github.com/microsoft/qlib, https://www.freqtrade.io/en/stable/freqai/).",
+     "priority": "avoid"
+    },
+    {
+     "name": "backtesting.py, pypbo",
+     "what_for": "backtesting.py: pleasant single-asset backtester but AGPL-3.0. pypbo: PBO implementation, also AGPL-3.0. Both viral for a commercial bot service.",
+     "cost": "Free but AGPL-3.0.",
+     "integration": "Do not use in the paid product; vectorbt (fair-code) / purgedcv (MIT) instead.",
+     "url": "https://github.com/kernc/backtesting.py",
+     "maturity": "backtesting.py maintained (~9k stars); pypbo 140 stars (https://github.com/esvhd/pypbo).",
+     "priority": "avoid"
+    }
+   ],
+   "pitfalls": [
+    "No published TSFM or GBM has shown reliable directional edge on daily crypto/equity returns: ~50-51% directional accuracy and negative OOS R^2 for zero-shot TSFMs (arXiv 2511.18578, 2606.27100); Kronos equals Brownian motion on 5-min BTC. Never market the bot as 'accurate forecasts' or promise returns; publish calibrated probabilities and the live prediction_log track record.",
+    "Licensing of foundation-model weights: TimesFM 3.0 and Moirai 2.0 are non-commercial; only Chronos-2, TimesFM-2.5 and Kronos may be used in a paid product. Pin model versions.",
+    "Pretrained-model look-ahead: TSFM training corpora may overlap your backtest period; evaluate zero-shot baselines only after the model's pretraining cutoff.",
+    "Label leakage: triple-barrier labels overlap; KFold/TimeSeriesSplit without purging/embargo inflates accuracy. Purge horizon >= vertical-barrier length. Note purgedcv and skfolio use different parameter names (purge_horizon/embargo vs purged_size/embargo_size).",
+    "Multiple testing: every vectorbt sweep, optuna trial and MLflow run is a trial; report Deflated Sharpe with the true N. A raw Sharpe of 1.5 after 500 trials is usually noise.",
+    "skfolio does NOT yet ship deflated_sharpe_ratio (PR #255 open); use purgedcv or your own implementation. pypbo is AGPL.",
+    "hmmlearn is limited-maintenance (0.3.3, Oct 2024). Keep it behind hmm_model.forward_filter so it can be swapped for statsmodels 0.15 MarkovAutoregression or a hand-written forward filter.",
+    "Ensure the bot consumes only filtered (causal) regime probabilities; smoothed probabilities and in-sample BIC model selection make backtests look better than live.",
+    "Hit rate is not expectancy: Binance VIP0 fees are 0.10% spot / 0.05% futures taker (0.045% with BNB) plus slippage; a 55% hit rate with symmetric barriers can be negative. Always report expectancy and Sharpe after costs.",
+    "MAPIE v1 API: partial_fit was replaced by TimeSeriesRegressor.update(); EnbPI requires cv=BlockBootstrap. Conformal coverage assumes exchangeability — under regime shifts use EnbPI/ACI and re-check empirical coverage monthly in prediction_log.compute_stats(); widen or abstain if coverage collapses.",
+    "Apple Silicon: official LightGBM/XGBoost/CatBoost wheels are CPU-only; fine at this data size. Do not spend time on Metal forks (CatBoost PR #3194 open, MacBoost unverified on PyPI) until training time is the bottleneck.",
+    "mlfinlab is proprietary (all rights reserved); do not copy its code. Reimplement from the public algorithm or the MIT mlfinpy fork.",
+    "Licensing for a paid service: backtesting.py and pypbo are AGPL-3.0; vectorbt OSS is Apache+Commons Clause (usable, not resellable); Freqtrade GPL-3. LightGBM/CatBoost/MAPIE/crepes/skfolio/purgedcv/statsmodels/arch/river/optuna are permissive.",
+    "Claude-as-judge (claude_rescore.py) output must pass the same purged-CV/calibration as any feature; log its traces in MLflow 3 so it is auditable.",
+    "Data alignment: crypto bars are 24/7, yfinance macro/equity series are not; do not forward-fill equity features into weekend crypto bars without a flag.",
+    "Several primary sites (arxiv.org, huggingface.co, readthedocs, statsmodels.org, mlflow.org, vectorbt.pro, freqtrade.io) were blocked from this environment; versions were verified via PyPI/GitHub, paper numbers via search snippets — re-read the two TSFM papers locally before quoting exact figures in marketing."
+   ],
+   "open_questions": [
+    "Which horizons/timeframes will the bot sell (4h, 1d)? Barrier widths, purge length, GARCH horizon and BOCD hazard all depend on this.",
+    "How many assets? A pooled model across coins (asset id as categorical) usually generalizes better on small data but needs cross-sectional purging.",
+    "Are the Mac 'наработки' already producing resolved outcomes in prediction_log? If yes, export that log to MLflow now as the first calibration dataset.",
+    "Signals only, or eventually auto-trading? That decides whether NautilusTrader v2 belongs on the roadmap.",
+    "Validation budget: honest calibration needs several hundred resolved events per horizon — roughly 3-6 months of live logging at 4h/1d across a handful of assets — before probabilities are trustworthy enough to charge for."
+   ]
+  }
+ },
+ {
+  "corrections": [
+   {
+    "claim": "Chronos-2 / TimesFM 3.0 are 'Free (Apache-2.0 models)'",
+    "verdict": "wrong",
+    "fix": "Only half true. chronos-forecasting 2.3.2 (Sep 8 2026) and the Chronos-2 weights are Apache-2.0. TimesFM 3.0 *code* is Apache-2.0 but the 3.0 *weights* ship under `timesfm-non-commercial-license-v1.0`, 'restricted to non-commercial, non-production use' (commercial only via BigQuery ML / Google Cloud). For a paid bot this is a blocker: use Chronos-2, or TimesFM 2.5 whose weights stay Apache-2.0. `pip install 'timesfm[mlx]'` (3.0.2, Sep 9 2026) does exist as an official extra.",
+    "source": "https://pypi.org/project/timesfm/ ; https://github.com/google-research/timesfm/blob/master/README.md ; https://pypi.org/project/chronos-forecasting/"
+   },
+   {
+    "claim": "Ollama MLX path 'GA in 0.40 (late Sep 2026)'; 'Ollama ≥0.34 with MLX backend (auto on Apple Silicon in 0.40)'",
+    "verdict": "outdated",
+    "fix": "v0.40.0-rc0 (Sep 25 2026) is a *pre-release* whose only headline change is 'model architectures supported by the MLX runtime will automatically run on MLX' on Apple Silicon; the notes say testing/model coverage is ongoing. Latest stable is v0.35.0 (Sep 28 2026) with v0.35.1 rc; MLX has been available (opt-in/preview) since 0.19 (Mar 31 2026). Write: 'Ollama 0.35.x stable; MLX-by-default arrives with 0.40 (rc as of 30 Sep 2026)'. Third-party posts report the MLX backend needs ≥32 GB unified memory and falls back to llama.cpp below that — ollama.com was unreachable, so verify on the Mac (`ollama ps` shows the runner).",
+    "source": "https://github.com/ollama/ollama/releases ; https://github.com/ollama/ollama/releases/tag/v0.40.0-rc0"
+   },
+   {
+    "claim": "Batches API: 'results may expire after 24 h under load'",
+    "verdict": "wrong",
+    "fix": "Requests not *processed* within 24 h are marked `expired` and must be resubmitted; *results* are retained for 29 days after batch creation. Limits 100,000 requests / 256 MB per batch, most batches finish <1 h, 50% discount stacks with caching — those parts are correct. Also: the server-side `fallbacks` parameter is rejected on Batches, so nightly batch rescoring must handle `stop_reason=='refusal'` itself.",
+    "source": "https://platform.claude.com/docs/en/build-with-claude/batch-processing ; claude-api skill python/claude-api/batches.md"
+   },
+   {
+    "claim": "Cache reads 0.05x on Opus 5.5, 0.1x elsewhere; min 512 tokens; Opus 5.5 $4/$20 (cache read $0.20, write $5), Sonnet 5.5 $2/$10 (cache read $0.20), Haiku 4.5 $1/$5",
+    "verdict": "confirmed",
+    "fix": "Correct. Add: 1h-TTL cache *write* is 2x base ($8/MTok Opus 5.5, $4 Sonnet 5.5) vs 1.25x for 5-min ($5 / $2.50); Fable 5.1 cache reads are 0.025x. Minimum cacheable prefix is 512 tokens only on Opus 5.5 / Sonnet 5.5 / Opus 5 / Fable 5.x; it is 2,048 on Opus 4.7 (the model the repo currently uses) and 4,096 on Haiku 4.5 — so a 600-token system block will silently not cache until you migrate.",
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing ; https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+   },
+   {
+    "claim": "Which Claude model is set in claude_rescore.py DEFAULT_MODEL? (open question)",
+    "verdict": "confirmed",
+    "fix": "Answered from the repo: claude_rescore.py imports DEFAULT_MODEL from wave_ai.py, where `DEFAULT_MODEL = \"claude-opus-4-7\"`, `DEFAULT_TIMEOUT_S = 120`, and requirements.txt pins `anthropic>=0.30.0` (0.x line). Migration to claude-opus-5-5/claude-sonnet-5-5 changes behaviour: thinking cannot be disabled, forced tool_choice any/tool 400s, default effort on Opus 5.5 is `medium`, and the Python SDK 1.x moved to httpx2. Same tokenizer as 4.7 so token counts are unchanged.",
+    "source": "/home/user/market-regime-dashboard/wave_ai.py:57 ; /home/user/market-regime-dashboard/requirements.txt:12 ; claude-api skill (model-migration)"
+   },
+   {
+    "claim": "Opus 5.5 / Sonnet 5.5 reject forced tool_choice and thinking:disabled; use output_config.format and effort; `fallbacks:'default'` with beta header server-side-fallback-2026-07-01",
+    "verdict": "confirmed",
+    "fix": "Correct, with one nuance: Sonnet 5.5 rejects `{type:'disabled'}` but accepts `thinking:{type:'between_tools'}` (effort ≤ high) as its thinking-off mode; on Opus 5.5 thinking is always on and effort is the only lever (default `medium`). `messages.parse()` / `output_config.format` are the replacement for regex/prefill (prefill 400s on all 4.6+ models).",
+    "source": "claude-api skill SKILL.md (Thinking & Effort, Refusal Fallbacks)"
+   },
+   {
+    "claim": "Hetzner CX23 €5.49/mo after the 15 Jun 2026 price adjustment (2 vCPU, 4 GB, 40 GB NVMe)",
+    "verdict": "confirmed",
+    "fix": "CX23 went €3.99 → €5.49 on 15 Jun 2026 for new orders and rescales; shared-vCPU lines rose 30–38% while CCX/CPX dedicated lines rose 113–175% — avoid CPX/CCX now. docs.hetzner.com itself was unreachable from this sandbox; figure confirmed via multiple secondary sources quoting it.",
+    "source": "https://docs.hetzner.com/general/infrastructure-and-availability/price-adjustment/ ; https://northflank.com/blog/hetzner-cloud-server-price-increases ; https://byteiota.com/hetzner-june-2026-price-shock/"
+   },
+   {
+    "claim": "APScheduler 3.x stable (MIT), not Prefect/Dagster",
+    "verdict": "confirmed",
+    "fix": "APScheduler 3.11.3 (28 Jun 2026) is the stable line; 4.x is still alpha (4.0.0a6) — pin `apscheduler<4`.",
+    "source": "https://pypi.org/project/APScheduler/"
+   },
+   {
+    "claim": "mlx-lm 0.31.x (Apr 2026), MIT",
+    "verdict": "confirmed",
+    "fix": "mlx-lm 0.31.3, MIT, PyPI release dated 22 Apr 2026; `mlx_lm.server` and `mlx_lm.lora` exist. The '~4,800 mlx-community models', 'Rapid-MLX', and '30–60% faster on M5' figures come from a blog that was unreachable — treat as unverified marketing numbers.",
+    "source": "https://pypi.org/project/mlx-lm/ ; https://github.com/ml-explore/mlx-lm/releases"
+   },
+   {
+    "claim": "PyTorch MPS (torch ≥2.9); `device='mps'` in chronos pipeline",
+    "verdict": "confirmed",
+    "fix": "torch 2.14.0 (2 Sep 2026) ships macOS arm64 wheels with MPS. chronos-forecasting docs only mention CUDA; MPS generally works via plain torch but is not officially tested — keep PYTORCH_ENABLE_MPS_FALLBACK=1 and benchmark vs CPU (120M-param Chronos-2 is fast enough on CPU for a few symbols).",
+    "source": "https://pypi.org/project/torch/ ; https://pypi.org/project/chronos-forecasting/"
+   },
+   {
+    "claim": "Apple `container` v1.0 Jun 2026, macOS 26 Tahoe, no compose; OrbStack $96/yr commercial; Colima free",
+    "verdict": "confirmed",
+    "fix": "apple/container 1.0.0 shipped 9 Jun 2026 ('container is one year old'); latest 1.5.0 (29 Sep 2026); README: requires macOS 26; no compose in README. OrbStack pricing could not be verified (site blocked) — check orbstack.dev/pricing before buying.",
+    "source": "https://github.com/apple/container/releases ; https://github.com/apple/container/blob/main/README.md"
+   },
+   {
+    "claim": "Uptime Kuma 2.x (2025–26) is stable",
+    "verdict": "confirmed",
+    "fix": "Latest 2.5.5 is a normal (non-beta) release; 2.x line is stable.",
+    "source": "https://github.com/louislam/uptime-kuma/releases"
+   },
+   {
+    "claim": "restic → Backblaze B2 ~$6/TB, egress $0.01/GB (first 1 GB/day free)",
+    "verdict": "outdated",
+    "fix": "restic 0.19.1 (Jul 2026) confirmed. B2 storage $6/TB/mo is consistent with the last public price, but backblaze.com was unreachable; the '1 GB/day free egress' rule is the pre-Oct-2023 policy — since then egress is free up to 3x average monthly storage, then $0.01/GB. Re-check on backblaze.com/cloud-storage/pricing.",
+    "source": "https://github.com/restic/restic/releases ; https://www.backblaze.com/cloud-storage/pricing (unreachable from sandbox)"
+   },
+   {
+    "claim": "Healthchecks.io Hobbyist $0 (20 checks, 3 members); Sentry Developer free 5,000 errors + 10,000 transactions/mo, 30-day retention",
+    "verdict": "unverifiable",
+    "fix": "healthchecks.io, sentry.io and the cited comparison sites were all blocked from this sandbox. Figures match the long-standing free tiers (Healthchecks 20 checks / 3 team members; Sentry Developer 5k errors, 1 user), but Sentry has moved from 'transactions' to 'spans' billing — re-read sentry.io/pricing before relying on the 10k-transactions number.",
+    "source": "https://healthchecks.io/pricing/ ; https://sentry.io/pricing/ (both unreachable)"
+   },
+   {
+    "claim": "T-pro-it-2.0 (Qwen3-32B base, Apache-2.0, RU-tuned) on 48–64 GB; Qwen3.5 / Gemma 4 26B-A4B on 24–32 GB",
+    "verdict": "unverifiable",
+    "fix": "huggingface.co was blocked and github.com/t-tech/T-pro-it-2.0 is 404 (the model lives on HF only). Prior knowledge: T-pro-it-2.0 was released by T-Bank's t-tech in mid-2025 on Qwen3-32B under Apache-2.0 with a Russian instruction mix — plausible but unconfirmed for Sep 2026; check the HF card and whether a newer T-pro exists. Ollama 0.40-rc notes use `qwen3.8` as the example model and 0.33.x notes mention `gemma4` on MLX, so 'Qwen3.5' is likely one generation stale — check `ollama.com/library` for Qwen3.8 sizes before choosing tiers.",
+    "source": "https://github.com/ollama/ollama/releases/tag/v0.40.0-rc0 ; https://huggingface.co/t-tech/T-pro-it-2.0 (unreachable)"
+   },
+   {
+    "claim": "Telegram Stars + recurring subscriptions: sendInvoice currency='XTR', subscription_period=2592000; users lose ~30–32% on mobile purchases; payouts via TON/Fragment",
+    "verdict": "unverifiable",
+    "fix": "core.telegram.org, aiogram docs and tgden.com were all blocked. The repo already implements this (bot/regime_bot/handlers/payments.py, access.py checks currency=='XTR', config.py enforces 'автопродление в Stars возможно только на 30 дней'), which matches the Bot API rule that subscription_period must be exactly 2592000 s. The 30% figure is the Apple/Google in-app cut on Stars bought on mobile; Stars bought on web/Fragment avoid it. Telegram's own share of Stars→TON conversion and the current withdrawal terms should be re-checked on core.telegram.org/bots/payments-stars.",
+    "source": "/home/user/market-regime-dashboard/bot/regime_bot/config.py ; /home/user/market-regime-dashboard/bot/regime_bot/access.py"
+   },
+   {
+    "claim": "Russia: Telegram throttled since Feb 2026, DPI kills MTProto proxies within ~48 h, full block announced for spring 2026; Hetzner/AWS/DO sites blocked in Russia",
+    "verdict": "unverifiable",
+    "fix": "No news or Wikipedia source was reachable from the sandbox, and the WebSearch budget was exhausted. Keep this as a *risk* but drop the specific dates/'48 h' claim and the 'full block announced' wording unless you confirm them; the architectural conclusion (host the bot outside RU; you cannot control RU users' access to Telegram) stands regardless.",
+    "source": "none reachable"
+   },
+   {
+    "claim": "Tailscale Funnel limited to ports 443/8443/10000, undisclosed bandwidth cap, ts.net hostnames; Cloudflare Tunnel terminates TLS",
+    "verdict": "unverifiable",
+    "fix": "tailscale.com and ssdnodes.com were blocked. Port list matches Tailscale's documented Funnel constraints; keep the 'avoid as primary path' recommendation since the outbound HMAC push already removes the need.",
+    "source": "https://tailscale.com/kb/1223/funnel (unreachable)"
+   },
+   {
+    "claim": "Telegram webhook source subnets 149.154.160.0/20 and 91.108.4.0/22",
+    "verdict": "unverifiable",
+    "fix": "Documented on core.telegram.org/bots/webhooks (unreachable). These ranges have been stable for years; prefer the `secret_token` check (X-Telegram-Bot-Api-Secret-Token) as the primary guard and treat the IP allowlist as defence-in-depth, because Telegram can add ranges.",
+    "source": "https://github.com/tdlib/telegram-bot-api/blob/master/README.md (no subnet info)"
+   },
+   {
+    "claim": "macOS Tahoe + Apple Silicon: `pmset autorestart` silently ignored",
+    "verdict": "unverifiable",
+    "fix": "hometechops.com was blocked. Keep as 'test with a real power-pull' advice; the mitigation (auto-login + LaunchAgents + UPS/smart plug) is sound regardless.",
+    "source": "https://hometechops.com/mac/mac-mini-home-server-setup (unreachable)"
+   },
+   {
+    "claim": "Outbound HMAC push already exists in bot/regime_bot/api.py (X-Regime-Timestamp + X-Regime-Signature, hex hmac-sha256(secret, ts+'.'+body)); verify() takes `now`",
+    "verdict": "confirmed",
+    "fix": "api.py docstring and `read_signed` confirm the scheme and a /healthz-style handler; `verify` lives in bot/regime_bot/signals.py. Confirm the replay window is actually enforced there (grep for the timestamp tolerance) before relying on it.",
+    "source": "/home/user/market-regime-dashboard/bot/regime_bot/api.py"
+   },
+   {
+    "claim": "arXiv 2511.18578 'Revisiting TSFMs in Finance' finds modest/unstable edge",
+    "verdict": "unverifiable",
+    "fix": "arxiv.org blocked from sandbox. Conclusion is consistent with the 2025 literature; verify the ID/title before citing it to users.",
+    "source": "https://arxiv.org/abs/2511.18578 (unreachable)"
+   }
+  ],
+  "missing": [
+   "TimesFM 3.0 weights are non-commercial: any 'later' plan to use them in a product needs Chronos-2 or TimesFM ≤2.5 instead — this was the biggest factual hole in the section.",
+   "The repo is on claude-opus-4-7 and anthropic 0.x (>=0.30.0). Plan an explicit `/claude-api migrate` + `upgrade python` step: SDK 1.x uses httpx2, prefill is removed, forced tool_choice 400s on 5.5 models, Opus 5.5 default effort is medium, and cache minimum drops from 2048 (4.7) to 512 tokens only after migration.",
+   "Server-side `fallbacks` is rejected inside the Batches API — the nightly batch rescoring path must handle stop_reason=='refusal' itself (retry on a second model or skip).",
+   "Ollama MLX backend reportedly requires ≥32 GB unified memory (falls back to llama.cpp otherwise) — this directly affects the 16–24 GB Mac tiers; verify on the target machine.",
+   "Qwen model generation appears stale ('Qwen3.5' vs `qwen3.8` in Ollama 0.40 notes); redo the RAM→model tier table from ollama.com/library and mlx-community at deployment time.",
+   "Telegram Stars subscriptions are fixed at 30 days (subscription_period=2592000); the bot config already enforces this — quarterly/annual plans must be one-off Stars invoices with manual expiry (existing reminder/kick scheduler handles it).",
+   "Sentry has moved to span-based performance billing; re-check the free plan before writing '10k transactions' into runbooks.",
+   "B2 egress policy: free up to 3x stored volume/month since Oct 2023 (not '1 GB/day'); restore tests will be effectively free at this data size.",
+   "Keep-alive alternative to the 1h cache TTL: on Opus 5.5 the 1h write is 2x ($8/MTok); for jobs every 5–60 min a `max_tokens:0` re-send on the 5-min TTL can be cheaper (not allowed with structured outputs or in Batches — use 1h TTL there).",
+   "Web-search budget in this sandbox was exhausted and most vendor domains (ollama.com, huggingface.co, core.telegram.org, hetzner docs, healthchecks, sentry, backblaze, tailscale, wikipedia, arxiv) were egress-blocked — the owner should re-run the 'unverifiable' checks from the Mac before finalising the plan."
+  ],
+  "section": {
+   "title": "Local Apple Silicon deployment + LLM layer for @regime_ai_bot (Sep 2026) — fact-checked",
+   "summary": "Architecture stands: the Mac runs the whole pipeline as launchd-supervised processes with an in-process APScheduler 3.11 (4.x is still alpha) engine and pushes HMAC-signed signals outbound to the aiogram bot on a Hetzner CX23 (€5.49/mo since 15 Jun 2026) — bot/regime_bot/api.py already implements that push API, so no inbound ports on the Mac. Local Russian commentary: Ollama 0.35.x stable today, MLX-by-default only in the 0.40 release candidate (Sep 25 2026) and reportedly needing ≥32 GB; mlx-lm 0.31.3 direct if you need batching/LoRA. Claude stays the judge: repo is on claude-opus-4-7 with anthropic 0.x, so budget a migration to claude-opus-5-5/claude-sonnet-5-5 (cache read $0.20/MTok on both, 512-token cache minimum, Batches −50%, results kept 29 days, `fallbacks` not allowed in batches). Big correction: TimesFM 3.0 weights are non-commercial — for a paid product use Chronos-2 (Apache-2.0) or TimesFM 2.5 only, and only as HMM features. Monitoring/backup stack (Healthchecks.io, Sentry, restic 0.19.1 → B2, Uptime Kuma 2.5) is fine but free-tier numbers and the Russia/Telegram blocking timeline could not be verified from this sandbox and must be re-checked; present forecasts as probabilities with a prediction_log.py track record, never as guaranteed returns.",
+   "recommendations": [
+    {
+     "name": "launchd LaunchAgents + pmset (process supervision on the Mac)",
+     "what_for": "Keep engine.py, tv_bridge.py and Ollama alive 24/7 with restart on crash/reboot; no Docker on the Mac side.",
+     "cost": "Free (macOS)",
+     "integration": "Generalize the repo's com.example.tv_bridge.plist into com.regime.engine / com.regime.tv_bridge in ~/Library/LaunchAgents (ProgramArguments=/path/.venv/bin/python -m engine, KeepAlive={SuccessfulExit:false,Crashed:true}, RunAtLoad, ThrottleInterval=30); secrets from a chmod-600 .env or Keychain, never in the plist. `sudo pmset -a sleep 0 disksleep 0 disablesleep 1 womp 1 powernap 0`; Remote Login + Screen Sharing; auto-login (FileVault off or accept manual unlock); HDMI dummy plug; logs to ~/Library/Logs/regime with newsyslog. Reports that `pmset autorestart` is ignored on Tahoe/Apple Silicon are unverified — do a real power-pull test and back it with a UPS/smart plug.",
+     "url": "https://hometechops.com/mac/mac-mini-home-server-setup",
+     "priority": "must",
+     "maturity": "stable, Apple-native (autorestart claim unverified)"
+    },
+    {
+     "name": "APScheduler 3.11.x (in-process) — not Prefect/Dagster, not APScheduler 4",
+     "what_for": "5m/1h/4h/daily jobs inside one engine process (refresh_5m, harvest_4h_ground_truth, nightly Claude batch, calibration, backups).",
+     "cost": "Free (MIT)",
+     "integration": "Pin `apscheduler>=3.11,<4` (3.11.3, Jun 2026; 4.0 is still 4.0.0a6). One AsyncIOScheduler with CronTrigger jobs, max_instances=1, coalesce=True, misfire_grace_time=300 so a rebooted Mac does not replay stale jobs. Decorator per job: try/except → Sentry capture → Healthchecks /start, success, /fail pings. Keep bot/regime_bot/scheduler.py (reminders) separate from model runs.",
+     "url": "https://pypi.org/project/APScheduler/",
+     "priority": "must",
+     "maturity": "stable (3.11.3, 2026-06-28)"
+    },
+    {
+     "name": "Outbound HMAC push (existing bot/regime_bot/api.py) — no tunnel",
+     "what_for": "Deliver signals/outcome closes from the home Mac to the VPS without inbound ports.",
+     "cost": "Free",
+     "integration": "Keep: POST /api/v1/signals with X-Regime-Timestamp + X-Regime-Signature = hex hmac-sha256(secret, ts+'.'+body) (verify() in signals.py). Add: on-disk sqlite outbox with retries + idempotent ext_id; enforce a ±5-min timestamp window in verify(); Caddy on the VPS for TLS, only 443 open; rotate SIGNAL_API_SECRET via env. If bot→Mac calls are ever needed, join both to a Tailscale tailnet rather than Funnel/Cloudflare Tunnel.",
+     "url": "https://github.com/regime-ai/market-regime-dashboard/blob/main/bot/regime_bot/api.py",
+     "priority": "must",
+     "maturity": "stable (already in repo)"
+    },
+    {
+     "name": "Hetzner Cloud CX23 (Falkenstein/Helsinki) for the aiogram bot",
+     "what_for": "Host @regime_ai_bot + aiohttp signal API + SQLite, reachable by api.telegram.org, outside RU.",
+     "cost": "€5.49/mo (2 vCPU, 4 GB, 40 GB) since 15 Jun 2026 (was €3.99); snapshots ~€1/mo. Avoid CPX/CCX — those rose 113–175%.",
+     "integration": "Ubuntu 24.04, systemd unit or docker compose (bot + caddy). Webhook mode with setWebhook secret_token → check X-Telegram-Bot-Api-Secret-Token as the primary guard; optionally allowlist Telegram's published subnets (149.154.160.0/20, 91.108.4.0/22 — re-check core.telegram.org/bots/webhooks) as defence-in-depth, or use long polling for zero inbound except /api/v1. Hetzner firewall: 443 only. Do not host in Russia (api.telegram.org reachability from RU DCs is unreliable). Hetzner's own site is reportedly blocked in RU — manage via VPN/Tailscale.",
+     "url": "https://docs.hetzner.com/general/infrastructure-and-availability/price-adjustment/",
+     "priority": "must",
+     "maturity": "stable"
+    },
+    {
+     "name": "Ollama 0.35.x (stable) → 0.40 when MLX-by-default leaves RC",
+     "what_for": "Local RU commentary from a structured signal; news/sentiment batch summaries; cheap first-pass sanity checks before Claude.",
+     "cost": "Free (MIT); hardware only",
+     "integration": "Ollama.app at http://127.0.0.1:11434 (OpenAI-compatible /v1). MLX has been in Ollama since 0.19 (Mar 2026); v0.40.0-rc0 (25 Sep 2026) makes MLX automatic for supported architectures but is a pre-release — stay on 0.35.x until 0.40 is stable. Third-party reports say the MLX runner needs ≥32 GB unified memory and falls back to llama.cpp below that: verify with `ollama ps`. Model tiers must be re-derived at deploy time from ollama.com/library (Ollama's own notes now reference `qwen3.8` and `gemma4`, so 'Qwen3.5' is likely stale): 64 GB → T-pro-it-2.0 (Qwen3-32B base, Apache-2.0, RU-tuned — HF card unverifiable from here) or a 32B Qwen; 24–32 GB → Gemma 4 26B-A4B MoE or a Qwen ~30B-A3B MoE; 16 GB → 8–14B. OLLAMA_KEEP_ALIVE=-1, OLLAMA_NUM_PARALLEL=1; `format: json`, temperature 0.3, fixed RU system prompt forbidding 'гарантия/точно вырастет', always include invalidation level + horizon, ≤600 chars. Benchmark candidates on 30 of your own signals.",
+     "url": "https://github.com/ollama/ollama/releases",
+     "priority": "must",
+     "maturity": "stable core; MLX-by-default still RC (0.40.0-rc0, 2026-09-25)"
+    },
+    {
+     "name": "mlx-lm 0.31.3 (direct) as fallback/advanced runtime",
+     "what_for": "Batched generation, LoRA fine-tune on your own signal→RU-commentary pairs, or an OpenAI-compatible `mlx_lm.server` when Ollama lacks a feature.",
+     "cost": "Free (MIT)",
+     "integration": "`pip install mlx-lm`; `mlx_lm.generate --model mlx-community/<model>-4bit`; `mlx_lm.server` for HTTP; later `mlx_lm.lora` on 300–1000 curated pairs from bot history. Skip LM Studio for the server role (GUI-first). Claims like '~4,800 mlx-community models' and '30–60% faster on M5' come from an unreachable blog — unverified.",
+     "url": "https://pypi.org/project/mlx-lm/",
+     "priority": "should",
+     "maturity": "stable (0.31.3, Apr 2026)"
+    },
+    {
+     "name": "Claude API judge — migrate wave_ai.DEFAULT_MODEL from claude-opus-4-7, then caching + Batches + effort",
+     "what_for": "Rescoring Elliott/HMM hypotheses, adjudicating conflicts, final RU polish of published forecasts. Not per-user chat.",
+     "cost": "Opus 5.5 $4/$20 (cache read $0.20, 5m write $5, 1h write $8); Sonnet 5.5 $2/$10 (cache read $0.20, writes $2.50/$4); Haiku 4.5 $1/$5 (cache read $0.10, 4,096-token cache minimum). Batches −50%, stacks with caching. Rough: 200 rescoring calls/day × ~6k cached input + 800 output on Sonnet 5.5 ≈ $2/day, ≈ $1/day batched.",
+     "integration": "0) Repo today: wave_ai.py DEFAULT_MODEL='claude-opus-4-7', anthropic>=0.30.0 (0.x). Run `/claude-api migrate` to claude-opus-5-5 (or claude-sonnet-5-5 for routine) and `/claude-api upgrade python` (SDK 1.x = httpx2). Breaking: prefill and forced tool_choice any/tool return 400; thinking cannot be disabled (Opus 5.5 default effort is `medium`, Sonnet 5.5 can use thinking:{type:'between_tools'}); same tokenizer as 4.7. 1) Frozen rules+schema block as `system=[{text, cache_control:{type:'ephemeral', ttl:'1h'}}]` ≥512 tokens (2,048 while still on 4.7!), no datetimes/UUIDs before the breakpoint; assert usage.cache_read_input_tokens>0 in tests. 2) Volatile per-symbol data last. 3) `client.messages.parse()` / output_config.format instead of regex; output_config.effort='medium' routine, 'high' for the daily published call. 4) Nightly rescoring via `client.messages.batches.create` (≤100k req / 256 MB; unprocessed requests expire at 24 h; results kept 29 days; key by custom_id; `fallbacks` is rejected in batches, so handle stop_reason=='refusal' yourself). 5) Extend claude_call_log.py with per-call USD accounting and a daily cap that flips to local-LLM-only. 6) Online calls: `betas:['server-side-fallback-2026-07-01']`, `fallbacks:'default'`.",
+     "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+     "priority": "must",
+     "maturity": "GA"
+    },
+    {
+     "name": "Chronos-2 (Apache-2.0) as a feature generator — NOT TimesFM 3.0 in production",
+     "what_for": "Zero-shot quantile forecasts as extra features for hmm_model.py/regime_labeler.py and a baseline in backtest.py.",
+     "cost": "Free — Chronos-2 weights Apache-2.0. TimesFM 3.0 weights are `timesfm-non-commercial-license-v1.0` (non-commercial, non-production) — not usable in a paid bot; TimesFM ≤2.5 weights remain Apache-2.0.",
+     "integration": "`pip install chronos-forecasting` (2.3.2, Sep 2026) + torch 2.14 (macOS arm64 wheels with MPS); `device='mps'` is not officially documented by Chronos — set PYTORCH_ENABLE_MPS_FALLBACK=1 and compare with CPU (120M params is cheap). If you want TimesFM for research only, `pip install 'timesfm[mlx]'` (3.0.2) is an official MLX backend. Wire into feature_engineering.py (quantile spread, direction prob at 4h/1d) and gate behind backtest.py/monte_carlo.py + prediction_log.py results; literature reports modest, unstable edge on financial returns.",
+     "url": "https://pypi.org/project/timesfm/",
+     "priority": "later",
+     "maturity": "Chronos-2 stable; TimesFM 3.0 non-commercial"
+    },
+    {
+     "name": "Healthchecks.io (dead-man's switch) + Uptime Kuma 2.5 on the VPS",
+     "what_for": "Alert when a Mac job stops running, the Mac loses internet, or the bot's /healthz is down.",
+     "cost": "Healthchecks.io free tier (historically 20 checks / 3 members — pricing page unreachable, re-check); Uptime Kuma free/self-hosted",
+     "integration": "One check per APScheduler job (refresh_5m grace 10 min; engine heartbeat 1 min; daily backup; nightly batch) pinged from the job decorator; notify a private Telegram admin chat. Uptime Kuma 2.5.x (stable, non-beta) in docker on the Hetzner box monitoring https://bot.yourdomain/healthz and the Mac's Tailscale IP.",
+     "url": "https://github.com/louislam/uptime-kuma/releases",
+     "priority": "must",
+     "maturity": "stable"
+    },
+    {
+     "name": "Sentry (Developer/free plan) in engine + bot — or self-hosted GlitchTip",
+     "what_for": "Exception tracking for ccxt/yfinance failures, Claude API errors, HMM convergence exceptions, aiogram handler/payment errors.",
+     "cost": "Free tier historically 5,000 errors/mo, 1 user; performance quota is now span-based — verify on sentry.io/pricing (unreachable from here)",
+     "integration": "`pip install sentry-sdk`; `sentry_sdk.init(dsn, environment='mac-engine'|'bot', traces_sample_rate=0.05)`; aiogram error handler → capture_exception; tag symbol/timeframe/job.",
+     "url": "https://sentry.io/pricing/",
+     "priority": "should",
+     "maturity": "stable (free-tier numbers unverified)"
+    },
+    {
+     "name": "restic 0.19.1 → Backblaze B2 (+ Time Machine locally)",
+     "what_for": "Encrypted off-site backups of prediction_log, holistic_store, wave_knowledge, parquet caches, model checkpoints, bot SQLite.",
+     "cost": "B2 ~$6/TB/mo; egress free up to 3x stored volume/month then $0.01/GB (the old '1 GB/day free' rule is outdated; backblaze.com unreachable — confirm)",
+     "integration": "Mac launchd daily `restic -r b2:bucket:mac backup ~/regime/data --exclude cache_5m`, password from Keychain; `restic forget --keep-daily 14 --keep-weekly 8 --prune`; Healthchecks ping. VPS: `sqlite3 bot.db '.backup'` then restic to a separate repo; Hetzner snapshots as second copy. Quarterly restore test.",
+     "url": "https://github.com/restic/restic/releases",
+     "priority": "should",
+     "maturity": "stable"
+    },
+    {
+     "name": "OrbStack / Apple `container` 1.5 / Colima (optional, dashboard only)",
+     "what_for": "Only for containerizing the Streamlit dashboard or DB tooling; engine/Ollama stay native for MPS/MLX GPU access.",
+     "cost": "Apple container free, Apache-2.0 (1.0.0 Jun 9 2026, 1.5.0 Sep 29 2026, requires macOS 26); Colima free; OrbStack commercial price unverified (site unreachable)",
+     "integration": "Native venv for engine/Ollama (containers on macOS cannot use the GPU). OrbStack for least-friction compose; Apple container has no compose per its README; Colima if zero cost.",
+     "url": "https://github.com/apple/container/releases",
+     "priority": "later",
+     "maturity": "stable"
+    },
+    {
+     "name": "Telegram Stars + 30-day recurring subscriptions (already in bot/regime_bot)",
+     "what_for": "Native in-bot billing for RU users without card processors.",
+     "cost": "Stars bought on iOS/Android carry the ~30% store cut; web/Fragment purchases do not. Telegram's Stars→TON payout terms unverifiable from here — re-read core.telegram.org/bots/payments-stars",
+     "integration": "Existing handlers/payments.py + access.py (currency=='XTR' check, renewal flag) + config.py (recurring only for 30 days — matches Bot API's fixed subscription_period=2592000). Longer plans = one-off invoices with manual expiry via the existing reminder/kick scheduler. Keep the risk-warning step before the invoice. Do not front the bot with Cloudflare.",
+     "url": "https://core.telegram.org/bots/payments-stars",
+     "priority": "should",
+     "maturity": "GA in Bot API; implemented in repo"
+    },
+    {
+     "name": "Tailscale Funnel / Cloudflare Tunnel as the primary signal path",
+     "what_for": "Exposing an HTTP endpoint on the home Mac.",
+     "cost": "Free tiers exist",
+     "integration": "Avoid: the push model removes the need; Funnel is limited to 443/8443/10000 on ts.net hostnames (tailscale.com unreachable to re-confirm) and Cloudflare terminates TLS and is throttled in RU. Use a plain Tailscale mesh if two-way access is ever needed.",
+     "url": "https://tailscale.com/kb/1223/funnel",
+     "priority": "avoid",
+     "maturity": "stable"
+    }
+   ],
+   "pitfalls": [
+    "TimesFM 3.0 weights are non-commercial/non-production — do not ship them in a paid product; Chronos-2 or TimesFM ≤2.5 only.",
+    "The repo is still on claude-opus-4-7 with anthropic 0.x: caching minimum is 2,048 tokens there (not 512), and after migrating to 5.5 models prefill/forced tool_choice/thinking:disabled all 400 — audit wave_ai.py, claude_rescore.py and any regex parsing before switching DEFAULT_MODEL.",
+    "Batches: `fallbacks` is rejected; unprocessed requests expire at 24 h (results themselves live 29 days) — batch only nightly rescoring/calibration and handle refusal/expired per custom_id.",
+    "Ollama 0.40 is a release candidate; MLX-by-default and the reported ≥32 GB MLX requirement affect which Macs get the speedup — pin 0.35.x for production until 0.40 is stable.",
+    "Memory contention: 32B 4-bit (~20 GB) + HMM/backtests + Chronos on MPS can exceed 32 GB; OLLAMA_NUM_PARALLEL=1, run backtests off-peak, or buy 64 GB.",
+    "Prompt caching silently fails below the model's minimum or if anything in the prefix changes — assert usage.cache_read_input_tokens > 0 in tests; 1h TTL writes cost 2x.",
+    "Local LLMs hallucinate numbers: pass prices/levels in as JSON, constrain output to commentary, validate against the input schema before sending.",
+    "Russia/Telegram: throttling and the risk of a full block are real but none of the dates/claims (Feb 2026 start, 48-h MTProto kills, spring block) could be verified here — plan a fallback channel and never promise SLAs to RU users.",
+    "Regulatory/marketing: wording implying guaranteed returns ('гарантированная доходность', 'точный прогноз') creates liability; publish prediction_log.py calibration and a disclaimer instead.",
+    "Time-series foundation models show modest, unstable edge on financial returns — features to validate in backtest.py/monte_carlo.py, never a product claim.",
+    "Home ISP/CGNAT: outbound push tolerates it, but add the on-disk outbox, Healthchecks heartbeat and time-based signal expiry so stale signals are not published after reconnect.",
+    "Stars subscriptions are 30-day only; 30% store cut applies to mobile-bought Stars — price accordingly, point desktop users to web purchase.",
+    "Secrets on the Mac: chmod-600 env file or Keychain, never inside ~/Library/LaunchAgents plists.",
+    "Several free-tier numbers (Healthchecks, Sentry, B2 egress, OrbStack price) and the Telegram/Russia timeline could not be verified from this sandbox (domains blocked, search budget exhausted) — re-check from the Mac before finalising."
+   ],
+   "open_questions": [
+    "Which Mac exactly (chip, unified memory)? Decides the local model tier and whether the Ollama MLX runner (reportedly ≥32 GB) is even used.",
+    "DEFAULT_MODEL is claude-opus-4-7 today — do you want the judge on claude-opus-5-5 (quality) or claude-sonnet-5-5 (cost), and what daily USD cap?",
+    "Stars only, or also a crypto/manual rail for desktop users to avoid the 30% mobile cut?",
+    "Is one-way Mac→VPS push sufficient, or do you need bot→Mac call-backs (on-demand charts)? One-way keeps the Mac closed.",
+    "Home internet: static IP or CGNAT, and is there a UPS? Determines Tailscale membership for admin access and power-loss recovery.",
+    "Does the plan ever need TimesFM 3.0 specifically? If so it must stay research-only or go through Google Cloud's commercial channel."
+   ]
+  }
+ },
+ {
+  "corrections": [
+   {
+    "claim": "aiogram 3.31 поддерживает Bot API 9.4+; «Bot API 9.x (2026)»",
+    "verdict": "outdated",
+    "fix": "aiogram 3.31.0 вышел 26.08.2026 и поддерживает Bot API 10.3 (24.08.2026). Хронология: 9.4 (09.02.2026), 9.5 (01.03.2026), 9.6 (03.04.2026), 10.0 (08.05.2026), 10.1 (11.06.2026), 10.2 (14.07.2026), 10.3 (24.08.2026). Писать «Bot API 10.x».",
+    "source": "https://pypi.org/project/aiogram/ ; https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/CHANGES.rst"
+   },
+   {
+    "claim": "createInvoiceLink: subscription_period только 2592000 (30 дней), цена ≤10 000 Stars, provider_token пустой, currency='XTR'",
+    "verdict": "confirmed",
+    "fix": "Подтверждено по текущему коду aiogram (сгенерирован из Bot API): «Currently, it must always be 2592000 (30 days)… Subscription price must no exceed 10000 Telegram Stars». Лимит 10 000 введён в Bot API 9.0 (апр. 2025). prices для Stars — ровно один элемент; business_connection_id доступен только для Stars.",
+    "source": "https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/aiogram/methods/create_invoice_link.py"
+   },
+   {
+    "claim": "successful_payment содержит is_recurring/is_first_recurring/subscription_expiration_date; есть editUserStarSubscription, refundStarPayment, getStarTransactions/getMyStarBalance",
+    "verdict": "confirmed",
+    "fix": "Поля и методы подтверждены в aiogram 3.31 (getMyStarBalance — с Bot API 9.1). editUserStarSubscription(user_id, telegram_payment_charge_id, is_canceled) — отмена продления/возобновление.",
+    "source": "https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/aiogram/types/successful_payment.py ; https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/aiogram/methods/edit_user_star_subscription.py ; https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/aiogram/methods/get_my_star_balance.py"
+   },
+   {
+    "claim": "PreCheckoutQuery надо подтвердить в течение 10 секунд",
+    "verdict": "confirmed",
+    "fix": "«The Bot API must receive an answer within 10 seconds after the pre-checkout query was sent».",
+    "source": "https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/aiogram/methods/answer_pre_checkout_query.py"
+   },
+   {
+    "claim": "Paid media до 25 000 Stars",
+    "verdict": "confirmed",
+    "fix": "star_count: 1–25000 (лимит поднят с 10 000 до 25 000 в Bot API 10.3, 2026).",
+    "source": "https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/aiogram/methods/send_paid_media.py"
+   },
+   {
+    "claim": "Платные рассылки: до 1000 msg/s, 0.1 Star за сообщение",
+    "verdict": "confirmed",
+    "fix": "Параметр allow_paid_broadcast: «up to 1000 messages per second… for a fee of 0.1 Telegram Stars per message. The relevant Stars will be withdrawn from the bot's balance». Это параметр метода (aiogram/Bot API 7.11+), а не только настройка BotFather.",
+    "source": "https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/aiogram/methods/send_message.py"
+   },
+   {
+    "claim": "Цифровые товары в боте — только за Stars; за фиат Telegram «блокирует ботов»",
+    "verdict": "confirmed",
+    "fix": "Формулировка правила подтверждена по цитатам из core.telegram.org/bots/payments-stars в независимых репозиториях: «Payments for digital goods and services must be carried out exclusively in Telegram Stars» и санкция — «Telegram cannot display your bot or mini-app to mobile users if you attempt to sell digital goods and services via other currencies or through third-party payment providers». Точнее говорить «бот скрывается для мобильных пользователей», а не «бан». Первоисточник из облака недоступен (core.telegram.org заблокирован прокси).",
+    "source": "https://github.com/halogenOS/xos-assistant (docs/units/telegram/24-payments-stars-and-gifts.md) ; https://github.com/DrSeedon/orchestra"
+   },
+   {
+    "claim": "Разработчик получает ~$0.013/Star (п. 6.2.4 Bot Developer ToS), холд 21 день, минимум 1000 Stars, вывод в TON через Fragment",
+    "verdict": "unverifiable",
+    "fix": "telegram.org/tos и fragment.com недоступны из облака; номер пункта 6.2.4 нигде не подтверждён — убрать ссылку на номер пункта. Цифры $0.013/Star, 21 день, 1000 Stars, вывод только в TON через Fragment совпадают в нескольких независимых вторичных источниках 2025–2026 (в т.ч. отмечено «Fragment без комиссии за вывод», при этом «5% на конвертацию» ничем не подтверждено — убрать). Оставить как «по вторичным источникам, проверить на десктопе».",
+    "source": "https://github.com/shaun8149/bingan (docs/资料-Telegram-Stars与Fragment-2026-08-08.md) ; https://github.com/POWERFULMOVES/PMOVES.AI (research/telegram_premium_research_2025_2026.md)"
+   },
+   {
+    "claim": "Пользователь платит ~$0.02/Star в iOS/Android, ~$0.014 на web/Fragment; «в РФ ~1.2–1.8 ₽/Star»",
+    "verdict": "unverifiable",
+    "fix": "$0.02 (сторы) и ~$0.014 (Fragment) подтверждены вторичными источниками; рублёвая цена 1.2–1.8 ₽ нигде не подтверждена — убрать или пометить как оценку.",
+    "source": "https://github.com/shaun8149/bingan"
+   },
+   {
+    "claim": "Tribute: комиссия 10%, выплаты на карты РФ 2 раза в месяц (10-го и 25-го), минимум подписки €1/100 ₽, 70k+ авторов, 4+ млрд ₽ выплат",
+    "verdict": "outdated",
+    "fix": "tribute.tg и wiki.tribute.tg заблокированы из облака. По независимой выписке с лендинга/ToS (июль 2026): комиссия 10%, выплаты 2 раза в месяц на карту в рублях/евро, минимальная выплата 3 000 ₽, приём Mir/Visa/Mastercard/Tether, цифровой контент от 1 € до 1 000 €, рекуррент — автосписание ежемесячно в дату первого платежа. Даты 10/25, «€1/100 ₽», «70k+ авторов» и «4+ млрд ₽» не подтверждены — убрать.",
+    "source": "https://github.com/elfuerte72/hermesMxpns (docs/architecture/hermes-deployer.md, ссылки на tribute.tg и tribute.tg/terms.html)"
+   },
+   {
+    "claim": "Tribute API: webhooks с telegram_id/trb_user_id, события new_subscription/renewed/cancelled/expired, проверка подписи",
+    "verdict": "confirmed",
+    "fix": "Подтверждено по зеркалам документации и интеграциям (проверка от 14.09.2026): заголовок trbt-signature = HMAC-SHA256 сырого тела с API-ключом; события new_subscription, renewed_subscription, cancelled_subscription (плюс new_donation, recurrent_donation, cancelled_donation, new_digital_product, physical_order_*); envelope name/created_at/sent_at; payload: telegram_user_id, user_id, subscription_name, period, price, amount, currency, expires_at, channel_id. События «expired»/refund не документированы — истечение вычислять по expires_at. Есть OpenAPI: https://tribute.tg/api/v1/openapi/en (эндпоинт /subscribers помечен x-internal).",
+    "source": "https://raw.githubusercontent.com/Kanorto/Tribute-nodejs-api/main/tribute-webhooks.md ; https://github.com/sachkov-inside/platform (docs/runbooks/tribute-access-convergence.md)"
+   },
+   {
+    "claim": "Crypto Pay API: createInvoice в USDT/TON/BTC, инвойсы в фиате, webhook invoice_paid, тестнет; подпись crypto-pay-api-signature = HMAC-SHA256 от токена",
+    "verdict": "confirmed",
+    "fix": "Подтверждено по коду aiocryptopay: заголовок Crypto-Pay-Api-Signature, ключ HMAC = sha256(token), HMAC-SHA256 по сырому телу; create_invoice поддерживает fiat/currency_type='fiat'/accepted_assets/swap_to/expires_in; тестнет testnet-pay.crypt.bot (@CryptoTestnetBot). help.send.tg из облака не резолвится.",
+    "source": "https://raw.githubusercontent.com/layerqa/aiocryptopay/main/aiocryptopay/api.py ; https://github.com/Foile/crypto-pay-api"
+   },
+   {
+    "claim": "pip install aiocryptopay (или cryptobot-python)",
+    "verdict": "confirmed",
+    "fix": "aiocryptopay 0.4.8 (04.07.2025, Python 3.8–3.12, MIT); cryptobot-python 1.1.1 (02.06.2026, httpx, sync+async, FastAPI webhook с проверкой подписи и защитой от replay). Есть также aiosend (vovchic17). Для Python 3.13+ предпочесть cryptobot-python или aiosend.",
+    "source": "https://pypi.org/pypi/aiocryptopay/json ; https://pypi.org/pypi/cryptobot-python/json ; https://github.com/vovchic17/aiosend"
+   },
+   {
+    "claim": "Merchant-комиссии Crypto Pay объявлены на странице Fees and Limits; «в 2026 CryptoBot повышал комиссии на обмен (spot до 0.75%)»",
+    "verdict": "unverifiable",
+    "fix": "Страница help.send.tg недоступна из облака; цифра 0.75% ничем не подтверждена — убрать, оставить «проверить в кабинете».",
+    "source": "https://help.send.tg/en/articles/9717243-fees-and-limits (недоступно)"
+   },
+   {
+    "claim": "282-ФЗ «О цифровых валютах и цифровых правах» действует с 1.09.2026; запрет рекламы крипты как средства платежа; обязательные предупреждения о рисках",
+    "verdict": "confirmed",
+    "fix": "Существование и даты подтверждены вторичными источниками: ФЗ от 04.08.2026 № 282-ФЗ (вместе с 283-ФЗ), основные нормы с 01.09.2026; крипта признана имуществом, регулируется инфраструктура (посредники, лимиты, отчётность), для физлиц переходный период 1 год; ЦБ в сентябре 2026 выпускает проекты указаний по ст. 40 закона. Конкретные нормы о рекламе/предупреждениях НЕ подтверждены — пометить как «уточнить у юриста по тексту закона».",
+    "source": "https://github.com/apodelenko-ctrl/charter-capital (journal/kripta-ved-legalizaciya-282fz-2026.html) ; https://github.com/Selogaz/Obsidian-vault-cpp ; https://github.com/daryagenie-sudo/regwatch"
+   },
+   {
+    "claim": "152-ФЗ: с 30.05.2025 уведомление РКН обязательно (штраф), с 1.09.2025 согласие — отдельный документ",
+    "verdict": "confirmed",
+    "fix": "Подтверждено вторичными источниками: с 30.05.2025 — повышенные штрафы, в т.ч. до 300 000 ₽ за неподачу уведомления, до 6 млн ₽ за нарушения локализации/трансграничной передачи, оборотные штрафы за повторную утечку до 3% выручки; с 01.09.2025 согласие оформляется отдельно от иных документов. Уведомление о трансграничной передаче (ст. 12) — с 2023 г. Первоисточники (rkn.gov.ru, consultant.ru) из облака недоступны.",
+    "source": "https://github.com/ev-mironov/otklicker (docs/rkn-submission-guide.md) ; https://github.com/nomercy360/gojo (docs/legal-readiness-ru.md) ; https://github.com/nullday/workbook"
+   },
+   {
+    "claim": "С 2025 — сбор 3% с доходов от интернет-рекламы",
+    "verdict": "confirmed",
+    "fix": "С 01.04.2025 обязательный сбор 3% от квартального дохода за распространение интернет-рекламы; рассчитывается РКН по актам в ЕРИР.",
+    "source": "https://github.com/ai-hub-open/vk-ads-manager (references/ord-agency.md)"
+   },
+   {
+    "claim": "Базовый стандарт НАУФОР с 18.05.2024: дисклеймер «не ИИР» больше не спасает; признаки ИИР",
+    "verdict": "unverifiable",
+    "fix": "naufor.ru, cbr.ru, consultant.ru недоступны из облака; дата 18.05.2024 и содержание не подтверждены. Общая логика (ИИР только инвестсоветники из реестра ЦБ, ст. 6.1–6.2 39-ФЗ) не оспаривается, но формулировки стандарта — проверить на десктопе на naufor.ru/cbr.ru.",
+    "source": "https://www.consultant.ru/document/cons_doc_LAW_10148/ (недоступно)"
+   },
+   {
+    "claim": "НПД (самозанятость) не распространяется на доходы от продажи криптовалюты; с 2025 крипто-доходы декларируются (НДФЛ 13–15%)",
+    "verdict": "unverifiable",
+    "fix": "vc.ru/nalog.gov.ru недоступны; независимого подтверждения не найдено. Оставить как тезис «с налоговым юристом», не как факт. Также учесть: 282-ФЗ с 01.09.2026 признаёт крипту имуществом и вводит переходный период для физлиц — налоговый режим может измениться.",
+    "source": "https://vc.ru/id1377271/2708235-samozanyatye-i-kriptovaluta-v-2026-godu (недоступно)"
+   },
+   {
+    "claim": "Штрафы ст. 14.3 КоАП 200–500 тыс. ₽ для юрлиц за каждый креатив; с 1.09.2025 запрещена реклама в Instagram/Facebook; ч. 3.2 ст. 28 38-ФЗ с 1.03.2025",
+    "verdict": "unverifiable",
+    "fix": "consultant.ru недоступен; цифры не проверены. Оставить с пометкой «проверить на десктопе».",
+    "source": "https://www.consultant.ru/document/cons_doc_LAW_58968/ (недоступно)"
+   },
+   {
+    "claim": "Refund-скам через сторы; «Telegram не отвечает за чарджбэки третьих сторон» (telegram.org/tos/stars)",
+    "verdict": "unverifiable",
+    "fix": "telegram.org недоступен; формулировку не подтвердить. Оставить как практический риск без ссылки на пункт ToS.",
+    "source": "https://telegram.org/tos/stars (недоступно)"
+   },
+   {
+    "claim": "pre_checkout_query и chat_member/chat_join_request должны быть в allowed_updates при set_webhook",
+    "verdict": "confirmed",
+    "fix": "Уточнение: по умолчанию (allowed_updates не задан) Telegram шлёт все типы, кроме chat_member, message_reaction, message_reaction_count — то есть pre_checkout_query приходит и без явного списка, а chat_member нужно включать явно. Если список задан — pre_checkout_query обязателен в нём.",
+    "source": "https://raw.githubusercontent.com/aiogram/aiogram/dev-3.x/CHANGES.rst (общеизвестное поведение Bot API; первоисточник недоступен)"
+   },
+   {
+    "claim": "Паттерн из открытых проектов (paid-sub-tg-bot)",
+    "verdict": "confirmed",
+    "fix": "Репозиторий iomyaki/paid-sub-tg-bot существует: aiogram + SQLite + AsyncIOScheduler, напоминание за <3 дня, ежедневная проверка в 9:00, удаление из канала по истечении. Это учебный образец, не production-решение.",
+    "source": "https://raw.githubusercontent.com/iomyaki/paid-sub-tg-bot/main/README.md"
+   },
+   {
+    "claim": "Платные invite-ссылки каналов (core.telegram.org/api/subscriptions), только 30 дней, 100% Stars владельцу",
+    "verdict": "unverifiable",
+    "fix": "Первоисточник недоступен; вторичные источники подтверждают «100% Stars владельцу канала» и вывод через Fragment. Ограничение «только 30 дней» согласуется с ограничением бот-подписок, но не проверено.",
+    "source": "https://github.com/shaun8149/bingan"
+   }
+  ],
+  "missing": [
+   "54-ФЗ / онлайн-касса: при приёме карт РФ вне Telegram (ЮKassa/Robokassa на сайте) с физлиц нужен чек ККТ; дешёвый старт — чеки платёжного сервиса (ЮKassa ~2.8% + ~1% за чек по вторичным данным), своя облачная касса ~20–40 тыс. ₽/год. Stars→TON и Tribute (агентская схема) вопрос ККТ снимают/переносят — уточнить у бухгалтера.",
+   "Tribute: минимальная выплата 3 000 ₽; выплаты в рублях/евро; OpenAPI (tribute.tg/api/v1/openapi/en) без публичного списка подписчиков — учёт вести у себя по webhooks; событий expired/refund нет — истечение вычислять по expires_at.",
+   "Библиотеки Crypto Pay: aiocryptopay поддерживает только Python 3.8–3.12 (последний релиз июль 2025); для Python 3.13+ — cryptobot-python 1.1.1 (июнь 2026) или aiosend.",
+   "Bot API 10.x (2026) добавил ephemeral messages (receiver_user_id) и rich messages — можно показывать персональные уведомления об истечении подписки; проверить применимость в приватном канале.",
+   "Санкция Telegram за фиат в боте — скрытие бота/мини-аппа для мобильных пользователей (не формальный «бан»), но эффект для платного продукта тот же.",
+   "282-ФЗ (04.08.2026, в силе с 01.09.2026) + сопутствующий 283-ФЗ: крипта признана имуществом, переходный период для физлиц 1 год, ЦБ в сентябре 2026 выпускает подзаконные акты (ст. 40 — хранение и предоставление информации). Налогообложение выручки Stars→TON может поменяться в 2026–2027 — закладывать пересмотр.",
+   "Трансграничная передача ПДн: Telegram сам — иностранный сервис; в политике ПДн его нужно назвать получателем и подать уведомление о трансграничной передаче (ст. 12 152-ФЗ) — это касается любого бота, не только внешнего хостинга."
+  ],
+  "section": {
+   "title": "Платный Telegram-бот @regime_ai_bot: платежи, подписки, доступ к каналу, комплаенс (РФ, 2026) — проверенная редакция",
+   "summary": "Внутри Telegram цифровые товары/подписки продаются только за Telegram Stars (currency='XTR'): правило «Payments for digital goods and services must be carried out exclusively in Telegram Stars» подтверждено цитатами из официальной страницы, санкция — бот/мини-апп перестаёт показываться мобильным пользователям. Stars-подписки: createInvoiceLink(subscription_period=2592000 — пока только 30 дней, цена ≤10 000 Stars), successful_payment с is_recurring/subscription_expiration_date, editUserStarSubscription/refundStarPayment/getMyStarBalance — всё подтверждено в aiogram 3.31.0 (26.08.2026, Bot API 10.3). Экономика вывода ($0.013/Star, холд 21 день, минимум 1000 Stars, только TON через Fragment) подтверждена лишь вторичными источниками — первоисточники telegram.org/fragment.com из облака недоступны, номер пункта ToS «6.2.4» не подтверждён. Для RU-карт — Tribute (10%, выплаты 2 раза в месяц в ₽/€, минимальная выплата 3 000 ₽, webhooks с HMAC-SHA256 в заголовке trbt-signature), для крипты — Crypto Pay (подпись Crypto-Pay-Api-Signature = HMAC-SHA256(sha256(token), body), фиатные инвойсы, тестнет). Юридически: 282-ФЗ «О цифровых валютах и цифровых правах» подписан 04.08.2026 и действует с 01.09.2026 (крипта — имущество, переходный период для физлиц год) — его нормы о рекламе и налогах по тексту не проверены; ИИР/39-ФЗ, стандарт НАУФОР, 152-ФЗ (уведомление РКН, отдельное согласие с 01.09.2025), маркировка рекламы и 3% сбор — действующие требования, часть цифр штрафов из облака не проверена. Ничего из этого не заменяет юриста; прогнозы позиционировать как обезличенную аналитику без обещаний доходности.",
+   "recommendations": [
+    {
+     "name": "Telegram Stars (XTR) — подписки в боте через Bot API 10.x",
+     "what_for": "Основной канал оплаты доступа к прогнозам внутри бота: одноразовый доступ (sendInvoice/createInvoiceLink, currency='XTR', provider_token='' , prices — ровно один элемент) и авто-продлеваемая подписка (createInvoiceLink с subscription_period=2592000 — «Currently, it must always be 2592000 (30 days)», цена ≤10 000 Stars; несколько подписок одного пользователя одновременно допустимы). successful_payment даёт is_recurring/is_first_recurring/subscription_expiration_date; editUserStarSubscription(is_canceled) отменяет/возобновляет продление; refundStarPayment — возврат; getStarTransactions/getMyStarBalance — сверка; paid media до 25 000 Stars (Bot API 10.3).",
+     "cost": "Telegram комиссию со Stars не берёт, но по вторичным источникам 2025–2026: пользователь платит ~$0.02/Star через сторы и ~$0.014 через Fragment/web; разработчик выводит ~$0.013/Star только в TON через Fragment, холд 21 день, минимум 1000 Stars — т.е. ~30–35% потерь от розничной цены в сторах плюс волатильность TON. Первоисточники (telegram.org/tos/bot-developers, fragment.com) из облака недоступны — проверить на десктопе перед расчётом цен. Обязательны /paysupport и возвраты при недоставке.",
+     "integration": "aiogram 3.31.0 (Bot API 10.3): handler PreCheckoutQuery — answer(ok=True) в течение 10 с (иначе платёж падает); handler F.successful_payment: сохранить telegram_payment_charge_id, is_recurring, subscription_expiration_date в subscriptions (Postgres); при продлении Telegram присылает новый successful_payment с is_recurring=True — продлять до subscription_expiration_date; APScheduler раз в час снимает доступ по истечении. Команда отмены → editUserStarSubscription(is_canceled=True). Если задаёте allowed_updates явно — включить pre_checkout_query (по умолчанию он приходит, а chat_member — нет). Тестировать в Test Environment. При рассылках >30 msg/s — allow_paid_broadcast=True (до 1000 msg/s, 0.1 Star за сообщение с баланса бота).",
+     "url": "https://core.telegram.org/bots/payments-stars",
+     "maturity": "Официальный API; подтверждено по исходникам aiogram 3.31.0 (Bot API 10.3, август 2026)",
+     "priority": "must"
+    },
+    {
+     "name": "Платные invite-ссылки приватного канала (Star subscriptions для каналов)",
+     "what_for": "Если прогнозы публикуются в приватный канал: владелец создаёт ссылку с ежемесячной платой в Stars, Telegram сам списывает и удаляет неплательщиков — без своего биллинга. По вторичным источникам 100% Stars идут владельцу канала; ограничение периода (30 дней) и управление только из клиента — не проверены (core.telegram.org недоступен).",
+     "cost": "Та же Stars-экономика: вывод через Fragment в TON, холд 21 день (по вторичным источникам).",
+     "integration": "Гибрид: бот продаёт подписку в Stars и после successful_payment выдаёт createChatInviteLink(member_limit=1, expire_date=+24h) либо ссылку с creates_join_request=True и approveChatJoinRequest только для is_active. Отзыв: banChatMember → unbanChatMember(only_if_banned=True). Для чисто канального продукта — нативные платные ссылки.",
+     "url": "https://core.telegram.org/api/subscriptions",
+     "maturity": "Официальная функция Telegram (с 2024); детали из облака не проверены",
+     "priority": "should"
+    },
+    {
+     "name": "Tribute (@tribute) — подписки с выплатой на карты РФ, webhooks + OpenAPI",
+     "what_for": "Рекуррентные подписки/цифровые продукты с оплатой картами Mir/Visa/Mastercard и Tether, выплаты в ₽/€; оплата идёт в интерфейсе Tribute (отдельный бот/мини-апп), поэтому не нарушает Stars-only внутри вашего бота. Webhooks: new_subscription, renewed_subscription, cancelled_subscription (а также new_donation, recurrent_donation, cancelled_donation, new_digital_product, physical_order_*); envelope name/created_at/sent_at; payload telegram_user_id, user_id, subscription_name, period, price, amount, currency, expires_at, channel_id. Событий expired/refund нет — истечение считать по expires_at. OpenAPI: https://tribute.tg/api/v1/openapi/en (список подписчиков помечен x-internal — вести свой реестр).",
+     "cost": "Комиссия 10%; выплаты 2 раза в месяц на карту в ₽/€, минимальная выплата 3 000 ₽; цифровой контент по ToS от 1 € до 1 000 €; рекуррент — автосписание ежемесячно в дату первого платежа (по независимой выписке с tribute.tg/terms.html, июль 2026; сам сайт из облака недоступен).",
+     "integration": "Кнопка «Оплатить картой» → ссылка на подписку Tribute; эндпоинт /tribute/webhook: проверить заголовок trbt-signature = HMAC-SHA256(API-key, raw body) через hmac.compare_digest (hex; при отладке проверить и base64 — формат в доке не зафиксирован); кнопка «Тест» в кабинете шлёт событие с пустым name — не падать на нём; new_subscription/renewed_subscription → is_active=True, subscription_until=expires_at; cancelled_subscription → доступ до expires_at, затем снять. Хранить telegram_user_id и user_id (trb). Проверить с юристом оферту Tribute на предмет «финансовой аналитики» и на какое лицо (ИП/самозанятый) принимать выплаты.",
+     "url": "https://wiki.tribute.tg/ru/api-dokumentaciya",
+     "maturity": "Активно используется в RU-ботах в 2026 (десятки открытых интеграций), верификация Telegram и объёмы («70k+ авторов») из облака не подтверждены",
+     "priority": "should"
+    },
+    {
+     "name": "Crypto Pay API (@CryptoBot / send.tg) — оплата в USDT/TON",
+     "what_for": "Крипто-оплата для аудитории, которой неудобны Stars/карты: createInvoice с asset (USDT/TON/BTC/ETH/USDC) или в фиате (currency_type='fiat', fiat='RUB'/'USD', accepted_assets, swap_to), expires_in, payload=user_id; webhook invoice_paid; тестнет testnet-pay.crypt.bot (@CryptoTestnetBot). Не in-app платёж Telegram — внешняя ссылка/мини-апп CryptoBot.",
+     "cost": "Merchant-комиссии на странице Fees and Limits (help.send.tg) — из облака недоступна; никаких конкретных ставок подтвердить не удалось — смотреть в кабинете перед запуском. Вывод — сетевые комиссии.",
+     "integration": "Python 3.13+: pip install cryptobot-python (1.1.1, июнь 2026; sync+async на httpx, FastAPI-вебхук с проверкой подписи и защитой от replay) или aiosend; aiocryptopay 0.4.8 (июль 2025) — только Python ≤3.12. Проверка вебхука: key = sha256(api_token).digest(); expected = HMAC-SHA256(key, raw_body).hexdigest(); сравнить с заголовком Crypto-Pay-Api-Signature. Активировать подписку на 30 дней только по webhook со статусом paid; рекуррента нет — напоминание за 3 дня с новым инвойсом. Юридически: приём USDT и его реклама после 282-ФЗ (01.09.2026) — вопрос юристу; не афишировать «оплата криптой» в рекламе.",
+     "url": "https://help.send.tg/en/articles/10279948-crypto-pay-api",
+     "maturity": "Активно поддерживается (клиентские библиотеки обновлялись в 2026)",
+     "priority": "later"
+    },
+    {
+     "name": "aiogram 3.31.0 (Bot API 10.3) + webhook + Redis FSM + Postgres",
+     "what_for": "Каркас бота: aiogram 3.31.0 (26.08.2026, Python 3.10–3.14, MIT), webhook (aiohttp SimpleRequestHandler) за nginx/Caddy с secret_token, RedisStorage для FSM/троттлинга, Postgres (SQLAlchemy async + Alembic) для users/subscriptions/payments, APScheduler для истечений и рассылок, aiogram-i18n 1.5 (март 2026, Fluent) для RU/EN.",
+     "cost": "Open source. VPS 2 vCPU/4 GB (~5–10 $/мес); бот отдельно от ML-пайплайна на Mac — Mac отдаёт прогнозы по внутреннему API/очереди.",
+     "integration": "Структура: routers (start, paywall, subscription, forecasts, support), middlewares (ThrottlingMiddleware на Redis ~1 msg/s на пользователя; SubscriptionMiddleware проверяет is_active), services/payments с единым grant_access(user_id, days) для Stars/Tribute/CryptoPay. set_webhook(url, secret_token, allowed_updates=['message','callback_query','pre_checkout_query','chat_member','chat_join_request',...]) — chat_member по умолчанию не приходит, его надо включать явно. Рассылка: очередь ≤25–30 msg/s глобально, 1 msg/s в чат, обработка TelegramRetryAfter с бэкоффом; при росте — allow_paid_broadcast (0.1 Star/сообщение). Dev на Mac — long polling; prod — webhook.",
+     "url": "https://docs.aiogram.dev/en/latest/dispatcher/webhook.html",
+     "maturity": "Активно поддерживается: релизы ежемесячно в 2026, синхронно с Bot API",
+     "priority": "must"
+    },
+    {
+     "name": "Схема управления доступом: ban/unban + одноразовые ссылки + join requests",
+     "what_for": "Надёжный отзыв доступа к приватному каналу при истечении подписки: createChatInviteLink(expire_date, member_limit, creates_join_request), approveChatJoinRequest/declineChatJoinRequest, banChatMember/unbanChatMember (бот — админ с правами invite/ban). Референс: iomyaki/paid-sub-tg-bot (aiogram + SQLite + AsyncIOScheduler: напоминание за <3 дня, ежедневная проверка, удаление из канала) — учебный образец, не production.",
+     "cost": "0",
+     "integration": "На successful_payment/webhook: link = create_chat_invite_link(chat_id, member_limit=1, expire_date=+1 день, name=f'u{user_id}'); после chat_member-события о входе — revokeChatInviteLink. При expiry: ban_chat_member → unban_chat_member(only_if_banned=True). Слушать chat_member/chat_join_request (явно в allowed_updates). Bot API не даёт список участников — вести свой реестр по chat_member событиям и сверять раз в сутки с БД. Одна подписка = один telegram user_id.",
+     "url": "https://core.telegram.org/bots/api#createchatinvitelink",
+     "maturity": "Официальный API",
+     "priority": "must"
+    },
+    {
+     "name": "Позиционирование как аналитика/образование (39-ФЗ, стандарт НАУФОР) + дисклеймеры",
+     "what_for": "Снижение риска квалификации как ИИР: по ст. 6.1–6.2 39-ФЗ индивидуальные инвестиционные рекомендации дают только инвестсоветники из реестра ЦБ. Утверждения о базовом стандарте НАУФОР (дата 18.05.2024, «дисклеймер больше не спасает») из облака не проверены — уточнить на naufor.ru/cbr.ru на десктопе. Продукт: одинаковый контент для неограниченного круга лиц, в терминах вероятностей режимов (HMM-регимы, волновые сценарии, калибровка из prediction_log.py), без «купи/продай N лотов», без учёта портфеля, без автоследования.",
+     "cost": "Юрист по финансовому праву: ориентировочно 30–100 тыс. ₽ за аудит оферты/дисклеймеров/контента (оценка). Путь инвестсоветника (ИП/ООО + СРО + реестр ЦБ) — долго и дорого; для криптоактивов 39-ФЗ формально не применяется, но с 01.09.2026 действует 282-ФЗ.",
+     "integration": "В /start и перед каждым прогнозом — краткий дисклеймер (полный — в оферте): аналитический/образовательный характер, адресовано неограниченному кругу лиц, не ИИР, не учитывает цели и риск-профиль, прошлые результаты не гарантируют будущих, риск полной потери средств. Показывать калибровку/Brier из prediction_log.py, не «точность 90%». Не использовать «сигнал», «гарантированная прибыль», «доходность X%». Оферта + политика ПДн — в описании бота и /terms.",
+     "url": "https://www.consultant.ru/document/cons_doc_LAW_10148/c7375c64b45cadae15697cffbee9601fadc60975/",
+     "maturity": "Действующее регулирование; надзор ЦБ за Telegram-каналами — из облака не проверено",
+     "priority": "must"
+    },
+    {
+     "name": "Маркировка рекламы (38-ФЗ, ОРД/erid) для промо-видео и посевов",
+     "what_for": "Платное продвижение бота (посевы, блогеры, таргет, ролики) — реклама: договор, регистрация креатива в ОРД (Яндекс ОРД, ОРД VK, МедиаСкаут и др.), erid + пометка «Реклама» и рекламодатель, отчётность в ЕРИР; с 01.04.2025 — сбор 3% от квартального дохода за распространение интернет-рекламы (подтверждено). Публикации о своём продукте в своём канале/боте — самопродвижение без erid. Для финансовой рекламы (ст. 28 38-ФЗ): нельзя обещать доходность, указывать риски — точные редакции (ч. 3.2, 01.03.2025), запрет рекламы в Instagram/Facebook с 01.09.2025 и размеры штрафов из облака не проверены.",
+     "cost": "ОРД: от 0 ₽ для малых объёмов; штрафы ст. 14.3 КоАП (цифры 200–500 тыс. ₽ для юрлиц — проверить на десктопе); 3% сбор с рекламных доходов платит распространитель/посредник.",
+     "integration": "Чек-лист на каждое промо-видео: (1) «Реклама. ИП …, ИНН…, erid: …» первым кадром/в описании; (2) дисклеймер о рисках в кадре; (3) никаких цифр доходности; (4) хранить договор и акт; (5) не упоминать оплату в USDT/крипте. Органика в своём канале — без erid, но требования ст. 28 о достоверности применимы.",
+     "url": "https://www.consultant.ru/document/cons_doc_LAW_58968/0021818db8b93ae5fbd38076074a7182e157186c/",
+     "maturity": "Действующее регулирование",
+     "priority": "must"
+    },
+    {
+     "name": "152-ФЗ: уведомление РКН, отдельное согласие, локализация, трансграничная передача",
+     "what_for": "Telegram user_id, username, история платежей — ПДн; владелец бота — оператор. Подтверждено вторичными источниками: с 30.05.2025 — повышенные штрафы (до 300 тыс. ₽ за неподачу уведомления, до 6 млн ₽ за нарушения локализации/трансграничной передачи, оборотные до 3% выручки за повторную утечку; уведомление РКН об утечке — 24/72 ч); с 01.09.2025 согласие — отдельный документ. Telegram — иностранный сервис: назвать его получателем в политике и подать уведомление о трансграничной передаче (ст. 12) до начала.",
+     "cost": "Юрист/шаблон 10–30 тыс. ₽ (оценка); хостинг в РФ ~500–2000 ₽/мес; уведомление РКН бесплатно (Госуслуги).",
+     "integration": "В /start — отдельная кнопка согласия на ПДн (сохранять user_id, timestamp, версию документа). Минимизация: не запрашивать телефон/email без нужды; БД в РФ; логи платежей — только charge_id. В политике указать Telegram, Tribute, CryptoBot как самостоятельных операторов/получателей. /delete_me. ML-пайплайн вне РФ — только анонимные события.",
+     "url": "https://www.klerk.ru/blogs/fedresurs/658225/",
+     "maturity": "Действующее регулирование, ужесточено в 2025",
+     "priority": "must"
+    },
+    {
+     "name": "Telegram Payments providers (ЮKassa, CloudPayments, Robokassa) внутри бота",
+     "what_for": "Только для физических товаров/офлайн-услуг. Для цифровых подписок внутри бота/мини-аппа — нельзя: «Payments for digital goods and services must be carried out exclusively in Telegram Stars»; при попытке продавать цифровое за фиат Telegram перестаёт показывать бота/мини-апп мобильным пользователям (цитаты официальной страницы подтверждены по независимым копиям).",
+     "cost": "ЮKassa ~2.8% + ~1% за чек (54-ФЗ, по вторичным данным) — но для цифровой подписки в боте неприменимо.",
+     "integration": "Не подключать provider_token для подписки на прогнозы. Карта РФ — только снаружи (сайт с ЮKassa + ККТ/чеки по 54-ФЗ, или Tribute), бот принимает webhook и выдаёт доступ; ссылки на внешнюю оплату внутри бота — осторожно (Telegram трактует обход как нарушение).",
+     "url": "https://yookassa.ru/telegram/",
+     "maturity": "Зрелые провайдеры, ограничены политикой Telegram",
+     "priority": "avoid"
+    },
+    {
+     "name": "Анти-фрод и защита от злоупотреблений",
+     "what_for": "Шеринг доступа, перепродажа прогнозов, флуд, споры по возвратам Stars (тезис о refund-скаме через сторы из облака не подтверждён — считать практическим риском).",
+     "cost": "0–низкая",
+     "integration": "(1) Один telegram_id = одна подписка; (2) «водяные знаки» в прогнозах (уникальные вариации формулировок/округления per user); (3) rate-limit на запросы прогнозов (Redis); (4) логировать telegram_payment_charge_id и сверять getStarTransactions/getMyStarBalance при спорах; (5) refundStarPayment только при недоставке, политика возвратов — в оферте и /paysupport; (6) Crypto Pay/Tribute — активировать только по webhook с проверенной подписью, идемпотентность по id платежа; (7) чёрный список user_id; (8) мониторинг 429 и алерты.",
+     "url": "https://telegram.org/tos/stars",
+     "maturity": "Практики",
+     "priority": "should"
+    },
+    {
+     "name": "Налоги и юрлицо для приёма выручки (ИП на УСН 6% vs самозанятый) с учётом 282-ФЗ",
+     "what_for": "Stars выводятся только в TON — это цифровая валюта; с 01.09.2026 действует 282-ФЗ (подписан 04.08.2026, вместе с 283-ФЗ): крипта признана имуществом, регулируется инфраструктура (посредники, лимиты, отчётность), переходный период для физлиц год, ЦБ выпускает подзаконные акты (сентябрь 2026). Тезисы «НПД не применяется к продаже крипты» и «НДФЛ 13–15% с 2025» из облака не подтверждены — проверять у налогового юриста. Tribute платит в рублях/евро на карту — подходит под ИП/самозанятость (с оговоркой на оферту Tribute).",
+     "cost": "ИП УСН 6% + взносы ~50 тыс. ₽/год; бухгалтер 3–5 тыс. ₽/мес; консультация налогового юриста по TON/282-ФЗ.",
+     "integration": "Регистрировать ИП (ОКВЭД 63.11/62.01/58.29), оферту и Tribute/ЮKassa на ИП; продажу TON вести через легальный обмен с документами; вести реестр Stars-транзакций (getStarTransactions) и выплат Tribute для учёта. Пересмотреть схему после выхода подзаконных актов ЦБ/Минфина к 282-ФЗ (осень 2026).",
+     "url": "https://vc.ru/id1377271/2708235-samozanyatye-i-kriptovaluta-v-2026-godu",
+     "maturity": "Регулирование меняется: 282-ФЗ вступил 01.09.2026, практики нет",
+     "priority": "should"
+    }
+   ],
+   "pitfalls": [
+    "Цифровые подписки в боте/мини-аппе только за Stars (XTR): «Payments for digital goods and services must be carried out exclusively in Telegram Stars»; за фиат/провайдеров бот скрывается для мобильных пользователей. Фиат/крипта — только внешние сервисы (Tribute, CryptoBot, сайт).",
+    "Stars-экономика (по вторичным источникам, первоисточники недоступны из облака): пользователь ~$0.02/Star в сторах, разработчик ~$0.013/Star в TON через Fragment, холд 21 день, минимум 1000 Stars; ссылка на «п. 6.2.4 ToS» и «5% комиссия Fragment» не подтверждены. Закладывать ~35% потерь; subscription_period только 30 дней; цена подписки ≤10 000 Stars.",
+    "PreCheckoutQuery — ответ в течение 10 секунд. Если allowed_updates задаётся явно, включить pre_checkout_query; chat_member/chat_join_request не приходят по умолчанию — включать явно.",
+    "Отзыв доступа к каналу: banChatMember + unbanChatMember(only_if_banned=True) и revokeChatInviteLink; Bot API не даёт список участников — свой реестр по chat_member.",
+    "Рассылка: >30 msg/s глобально или >1/s в чат → 429/retry_after; очередь + бэкофф; при масштабе allow_paid_broadcast=True (0.1 Star/сообщение, до 1000 msg/s, списывается с баланса бота).",
+    "Tribute: нет событий expired/refund и публичного списка подписчиков — истечение считать по expires_at; проверять trbt-signature (HMAC-SHA256 сырого тела с API-ключом); тестовое событие из кабинета приходит с пустым name; минимальная выплата 3 000 ₽.",
+    "Crypto Pay: aiocryptopay не поддерживает Python 3.13+ (последний релиз июль 2025) — брать cryptobot-python 1.1.1 (2026) или aiosend; активировать доступ только по webhook с проверенной подписью Crypto-Pay-Api-Signature; merchant-комиссии не подтверждены — смотреть в кабинете.",
+    "Юридический риск №1: персонализированные «покупай/продавай» = ИИР (39-ФЗ) — только инвестсоветники из реестра ЦБ; формат — обезличенная аналитика режимов для неограниченного круга лиц, без автоследования. Содержание стандарта НАУФОР и практика ЦБ по Telegram-каналам из облака не проверены — юрист.",
+    "282-ФЗ «О цифровых валютах и цифровых правах» (04.08.2026) действует с 01.09.2026: крипта — имущество, переходный период для физлиц год, подзаконные акты ЦБ выходят осенью 2026. Нормы о рекламе крипты и предупреждениях о рисках по тексту не проверены — не строить на них продуктовые решения без юриста.",
+    "Реклама: erid/ОРД/ЕРИР обязательны для платных размещений; с 01.04.2025 — 3% сбор с доходов от интернет-рекламы; запрет обещаний доходности; размеры штрафов по ст. 14.3 КоАП и запрет Instagram/Facebook с 01.09.2025 — проверить на десктопе.",
+    "152-ФЗ: уведомление РКН до начала обработки (штраф до 300 тыс. ₽ с 30.05.2025), согласие — отдельный документ с 01.09.2025, локализация в РФ, уведомление о трансграничной передаче (Telegram — иностранный сервис), оборотные штрафы за повторные утечки. Не тащить ПДн на Mac за рубежом/в зарубежное облако.",
+    "Возвраты: Telegram требует /paysupport и возврат Stars при недоставке (refundStarPayment); политику возвратов прописать в оферте. Тезис о чарджбэках через сторы не подтверждён — считать практическим риском.",
+    "Налоги: Stars→TON — цифровая валюта; применимость НПД и ставки НДФЛ из облака не подтверждены; после 282-ФЗ режим может измениться — налоговый юрист до первой продажи TON. Tribute платит рублями/евро — совместим с ИП/самозанятым.",
+    "Никаких обещаний доходности ни в боте, ни в рекламе; показывать калибровку/Brier из prediction_log.py.",
+    "Ограничения проверки: core.telegram.org, telegram.org, fragment.com, tribute.tg, wiki.tribute.tg, help.send.tg, consultant.ru, cbr.ru, naufor.ru, rkn.gov.ru, nalog.gov.ru, garant.ru, habr/vc/rbc недоступны из облака (egress-прокси), WebSearch исчерпан. Telegram-часть проверена по исходникам aiogram 3.31.0 (генерируются из официального Bot API) и PyPI; Tribute/Crypto Pay — по зеркалам документации и открытым интеграциям 2026; РФ-право — по вторичным материалам 2025–2026. Перед запуском на десктопе перепроверить: Bot API §createInvoiceLink/§refundStarPayment, telegram.org/tos/bot-developers (раздел про Stars), fragment.com (курс/холд), wiki.tribute.tg (комиссия, выплаты, webhooks), help.send.tg «Fees and limits», текст 282-ФЗ, базовый стандарт НАУФОР."
+   ],
+   "open_questions": [
+    "Актуальные merchant-комиссии Crypto Pay (help.send.tg/…/9717243-fees-and-limits) — недоступно из облака.",
+    "Точный текст раздела Bot Developer ToS о выплатах за Stars (номер пункта «6.2.4» не подтверждён), текущий курс и комиссии Fragment на дату запуска.",
+    "Оферта Tribute: разрешена ли «аналитика финансовых рынков/крипты», требования к ИП, страны выплат; формат подписи trbt-signature (hex/base64) проверить на тестовом событии.",
+    "Что именно в 282-ФЗ касается рекламы крипты, приёма USDT за услуги и налогообложения выручки Stars→TON — текст закона и подзаконные акты ЦБ/Минфина (осень 2026).",
+    "Актуальная редакция базового стандарта НАУФОР и позиция ЦБ по платной крипто-аналитике — нужен ли статус/лицензия.",
+    "Будут ли прогнозы по акциям/фьючерсам МосБиржи (tv_bridge.py, yfinance) — тогда риск ИИР/манипулирования существенно выше.",
+    "Где физически БД бота и ML-пайплайн (Mac в РФ? VPS?) — локализация ПДн и трансграничная передача.",
+    "Bot API 10.x: можно ли использовать ephemeral/rich messages для персональных уведомлений об истечении подписки в канале — проверить по core.telegram.org/bots/api#ephemeral."
+   ]
+  }
+ }
+]

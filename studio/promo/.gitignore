@@ -1,0 +1,14 @@
+promo.mp4
+promo_share.mp4
+promo_sound.mp4
+promo_sound_share.mp4
+ad_18s.mp4
+*.wav
+__pycache__/
+still_*.png
+.venv/
+node_modules/
+package-lock.json
+track*.m4a
+promo_sound_*.mp4
+ad_18s_*.mp4

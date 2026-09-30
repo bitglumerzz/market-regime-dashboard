@@ -1,0 +1,9 @@
+services:
+  bot:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    ports:
+      - "8081:8081"          # API сигналов; наружу лучше отдавать через HTTPS-прокси (Caddy) или туннель
+    volumes:
+      - ./data:/app/data     # база SQLite переживает перезапуски — делайте её бэкап

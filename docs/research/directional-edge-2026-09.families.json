@@ -1,0 +1,1622 @@
+[
+ {
+  "verdicts": [
+   {
+    "name": "Cross-sectional momentum among coins (1-4 week formation, 1-week hold)",
+    "verdict": "overstated",
+    "note": "Direction of the verdict (weak, decayed, survivorship-inflated) is right, but the supporting 'clean 2020-2026 test on 25 liquid coins' is NOT clean: I opened github.com/prams2104/crypto-momentum-backtest and the README lists the 25 coins with no selection methodology; the list includes SOL, AVAX, NEAR, APT, ICP, SHIB, which did not exist or were not listed on Binance in Jan 2020, so the universe is hand-picked from 2025 survivors (look-ahead/survivorship), single-author, unreviewed, 20-day lookback only, 20 bps one-way cost is the author's assumption. Its Sharpe path 0.42 -> -0.48 -> -2.18 and the 38% dispersion drop (3.20% -> 1.98%) are confirmed as reported, but they are anecdotal, not a replication. Liu-Tsyvinski-Wu (JF 2022, 1,827 coins, 2014-2020) does document a significant 1-4 week momentum factor in-sample; the specific '11.2%/wk top quintile' and 'Sharpe 0.48' figures could not be confirmed (Wiley/NBER blocked). Ammann et al. survivorship numbers (62.19%/yr EW, 0.93% VW) and Fieberg et al. -255% crash could not be opened (SSRN/Springer blocked); Grobys & Shahzad IJFE 2026 and CTREND 3.87%/wk likewise unverified. Keep as weak; treat every quoted number as second-hand."
+   },
+   {
+    "name": "Time-series momentum (TSMOM) on BTC/ETH/coin-market index, 1-4 week lookback",
+    "verdict": "overstated",
+    "note": "Liu & Tsyvinski (RFS 2021) do report that 1-week coin-market returns predict returns 1-4 weeks ahead (in-sample, 2011-2018, no OOS test) - qualitatively holds. But the three post-2020 sources carrying the 'moderate' rating are all unreviewed and unopened: the Zenodo pre/post-ETF study (Sharpe 0.82 -> 1.22), the Vilnius 8-coin comparison (31.96% ann.) and the summitward.com blog (Sharpe 0.74 vs 0.79). None is peer-reviewed, none could be fetched, none reports costs in a way I could check. No peer-reviewed post-2022 crypto TSMOM replication with costs is known to me either. Downgrade to weak-to-moderate: the robust content is drawdown reduction from vol targeting, not the direction call."
+   },
+   {
+    "name": "Multi-lookback Donchian breakout ensemble with volatility targeting (long-only trend)",
+    "verdict": "holds",
+    "note": "Confirmed second-hand via two independent GitHub replication notes (alfred1123/Quant_Strategies PR 61; zebadee2kk/DeFi-TraderStack-Agent issue 137): BTC CAGR 30%, vol 17%, Sharpe 1.56, MDD 19%; ETH 27%/16%/1.51/15%; BNB 17%/15%/1.06/17%, all net of 10 bps; top-20 rotational Sharpe 1.58, Sortino 2.03, alpha +14% vs BTC net of 0.10-0.50%. The replications also confirm internal inconsistencies (combination MAR reported as both 0.88 and 1.15; Sortino 2.03 vs 1.23; '34%' vs 36% CAGR) and several [UNSTATED] parameters (universe membership rules beyond $2M median volume, exact trailing-stop mechanics, leverage). SSRN itself was blocked. Single in-sample backtest, no holdout, working paper - 'moderate' is generous; moderate-minus."
+   },
+   {
+    "name": "Moving-average rules on Bitcoin (5-100 day MA, VMA crossovers)",
+    "verdict": "overstated",
+    "note": "Detzel et al. (Financial Management 2021) do report in- and out-of-sample predictability from price-to-MA ratios on BTC 2011-2018 - qualitative claim holds from memory, but the quoted '11-58x larger returns on long-signal days' and 'Sharpe +0.2-0.6' could not be verified (Wiley blocked). The Hudson & Urquhart citation is mis-specified: their large-scale study ('Technical trading and cryptocurrencies') is in Annals of Operations Research (2021) and tests ~15,000 rules on BTC/ETH/LTC/XRP, not '2,127 rules' in FRL 2019; the FRL 2019 link is more likely Corbet et al. or Grobys et al. The 'zero OOS predictability for Bitcoin' claim could not be confirmed against the actual paper. 'Weak' is the right rating; the source attributions need fixing."
+   },
+   {
+    "name": "Short-term (1-day / 1-week) cross-sectional reversal",
+    "verdict": "holds",
+    "note": "Zaremba et al. (IRFA 2021) result - reversal concentrated in small illiquid coins, largest coins show short-term continuation - matches my knowledge of the paper. Kosc-Sakowski-Slepaczuk (Physica A 2019) contrarian dominance on 2015-2017 also matches. GitHub 1-day reversal numbers confirmed from README: OOS 2025-26 gross alpha +73% (t=4.64) but net Sharpe -1.73 and '+73% gross -> -29% net' at 20 bps with 138-139% daily turnover; note the training-period reversal was NEGATIVE gross (alpha -5.5%, Sharpe -3.21), so even the sign is unstable across subperiods. Same survivorship caveat on the 25-coin universe applies. Weak is correct."
+   },
+   {
+    "name": "Longer-run reversal (>1 month) among coins",
+    "verdict": "unverifiable",
+    "note": "Dobrynskaya (SSRN 2021, 'Cryptocurrency momentum and reversal') does report momentum up to ~4 weeks then reversal, on ~2,000 coins 2014-2020 - consistent with memory, but SSRN is blocked so effect sizes and the 'loser-driven' claim are unconfirmed; the FRL 2025 behavioural-reversal paper is unknown to me. Unreviewed, pre-2021 sample, likely survivorship-contaminated. Keep weak, flag as unverified."
+   },
+   {
+    "name": "15-minute sign reversal (short-horizon mean reversion)",
+    "verdict": "unverifiable",
+    "note": "arXiv 2608.21888 is dated August 2026, after my knowledge cutoff, and arxiv.org is blocked; I cannot confirm the 183 pairs / 90% / 2-3 AUC-point figures, the OOS protocol, or even the paper's existence. Downgrade from moderate to unverifiable/weak until someone opens the PDF. Note also that 2-3 AUC points at 15 min is below round-trip costs on any venue the owner can use, so even if true it is a feature, not a signal."
+   },
+   {
+    "name": "Quarter-hour / turn-of-the-candle periodicity and order-imbalance at clock marks",
+    "verdict": "unverifiable",
+    "note": "Kim & Hansen (arXiv 2607.09426, July 2026) is after my cutoff and blocked; the order-imbalance -> 4-12h forecast claim, the funding-hour robustness check and the 'Kimbrough replication' cannot be confirmed. Hansen-Kim-Kimbrough (JFEc 2024) periodicity in volatility/volume is a real, peer-reviewed result and holds. Turn-of-the-candle (Heliyon 2023, arXiv 2109.12142) I recall as a real paper on BTC candle-boundary minute returns, but the '0.58 bps/min, t>9 on seven exchanges' figures are unconfirmed. Downgrade to weak/unverifiable; the only tradable piece (OI at quarter-hour marks) rests on one unverified preprint."
+   },
+   {
+    "name": "Hour-of-day / overnight (US-off-hours) seasonality in BTC",
+    "verdict": "holds",
+    "note": "Rated weak, which is right. Quantpedia's intraday-seasonality write-up (Gemini BTC, 21:00-23:00 UTC window) exists but is a vendor backtest with no holdout, found by scanning 24 hours; numbers (33% ann., 20.9% vol, -22.5% MDD) could not be re-checked (blocked). Hansen-Kim-Kimbrough JFEc 2024 finding periodicity in vol/volume not returns is peer-reviewed and consistent with memory."
+   },
+   {
+    "name": "Day-of-week / weekend effect",
+    "verdict": "holds",
+    "note": "'No-evidence' is correct. Sources are a Substack post, MDPI and a low-tier journal; sign flips across subperiods are exactly what one expects from a null effect plus multiple testing. Nothing to upgrade; nothing could be opened."
+   },
+   {
+    "name": "Intraday time-series momentum (first-half-hour -> last-half-hour) in BTC",
+    "verdict": "holds",
+    "note": "Wen, Bouri, Xu, Zhao (NAJEF 2022, 'Intraday return predictability in the cryptocurrency markets: momentum, reversal, or both') is a real peer-reviewed paper reporting both momentum and reversal patterns conditioned on jumps/liquidity/COVID, sample to 2020. Coefficients not verifiable (ScienceDirect blocked). 'Weak' is appropriate; the 24/7 market has no natural open/close so the effect is a US-session artefact."
+   },
+   {
+    "name": "Volatility scaling / volatility-managed trend and momentum (risk-management overlay)",
+    "verdict": "overstated",
+    "note": "The qualitative finding is robust and well replicated across asset classes (Kim-Tse-Wald JFM 2016; Moreira-Muir 2017; Barroso-Santa-Clara 2015 for momentum crashes), so 'strong' as a risk overlay is defensible. But two of the four supporting numbers are unverified: the exact 1.27% vs 0.41% alpha split could not be checked (ScienceDirect blocked; my recollection is only that unscaled TSMOM alpha is much smaller and often insignificant), and the crypto-specific 0.74 vs 0.79 Sharpe comparison comes from an unreviewed blog (summitward.com) that could not be opened. Fieberg et al. 3.47% vs 3.18%/wk unverified (Springer blocked). Keep strong for 'improves risk-adjusted returns / cuts drawdowns'; it says nothing about directional accuracy, and the summary should not imply it does."
+   },
+   {
+    "name": "Hourly ML direction forecasts from technical (momentum/MA/RSI) features",
+    "verdict": "unverifiable",
+    "note": "arXiv 2606.00060 (Bysik & Slepaczuk, June 2026) is at the edge of my cutoff and blocked; I cannot confirm the 27-fold walk-forward design, the '>65% ann. return, Sharpe >1' configuration, or the bootstrap non-dominance result. The Slepaczuk group's earlier crypto ML papers consistently find that naive hourly sign strategies die at ~10 bps, so the qualitative claim is plausible. Weak/unverifiable."
+   }
+  ],
+  "corrected": {
+   "family": "Price-based: time-series momentum, trend, reversal, cross-sectional momentum, intraday seasonality (crypto)",
+   "summary": "Referee's bottom line (verification status: only github.com was reachable in this session; publisher/arXiv/SSRN/NBER/Semantic Scholar domains are egress-blocked and the WebSearch budget was already exhausted, so most numbers below are cross-checked against my own knowledge of the papers and flagged when I could not confirm them). What survives scrutiny: (1) volatility targeting / vol-managed sizing is the one component with strong, multi-decade, multi-asset, peer-reviewed support - but it improves Sharpe and drawdowns, not directional hit rate; (2) slow multi-lookback trend/breakout on BTC/ETH/top-20 liquid coins (Zarattini et al. 2025 Donchian ensemble; Detzel et al. 2021 MA ratios; Liu-Tsyvinski 2021 1-4 week TSMOM) has consistent in-sample support and two third-party GitHub replications confirm the Zarattini headline numbers (BTC Sharpe 1.56, CAGR 30%, MDD 19% net of 10 bps) while also confirming internal inconsistencies and unstated parameters - rate moderate-minus, no formal holdout, no peer review; (3) cross-sectional short-term reversal exists but is a small-coin liquidity artefact; in large coins the sign is continuation, and net of 20 bps a 1-day reversal on liquid coins loses money (+73% gross alpha -> about -29% net, 138% daily turnover, confirmed from the repo README). What does NOT hold or cannot be verified: cross-sectional 1-4 week momentum is in-sample (2014-2020), survivorship-inflated, crash-prone and appears to have decayed post-2022 - but the widely quoted 'clean point-in-time 2020-2026 test' is not clean (its 25-coin universe includes SOL, AVAX, NEAR, APT, ICP, SHIB, which did not exist in Jan 2020, i.e. it is a 2025 survivor list), so treat the decay evidence as suggestive, not a replication. The three 2026 arXiv preprints carrying the intraday claims (15-min sign reversal, quarter-hour order imbalance, hourly ML with cost filter) are all after my knowledge cutoff and could not be opened: downgrade all three to unverifiable. Calendar/hour-of-day effects remain no-evidence-to-weak. Realistic expectation for the advisor: daily-horizon directional hit rates of 51-55% on BTC/ETH from trend features, most of the economic value from vol-scaled sizing and drawdown control, and every sub-daily edge below realistic Telegram-latency execution costs. No source promises returns; several document post-publication decay. Every number tagged '[unverified]' must be re-derived from the owner's own point-in-time data before being used as a model prior.",
+   "predictors": [
+    {
+     "name": "Cross-sectional momentum among coins (1-4 week formation, 1-week hold)",
+     "formula": "Each week rank coins by r_{t-k,t} for k in {1,2,3,4} weeks (Liu-Tsyvinski-Wu: cap > $1M, value-weighted quintiles); long top quintile, short bottom quintile, hold 1 week. CTREND variant (Fieberg et al. JFQA 2024): rolling cross-sectional regression of next-week return on a set of moving-average/price-trend indicators; fitted value = signal.",
+     "horizon": "1 week (weekly rebalance)",
+     "universe_period": "Liu-Tsyvinski-Wu JF 2022: 1,827 coins, Jan 2014-Jul 2020 (in-sample). Ammann et al. SSRN 4287573: ~3,900 coins 2014-2021 [unverified]. Fieberg et al. FMPM 2025: top-30 coins weekly 2016-2023 [unverified]. prams2104 GitHub test: 25 coins, 1 Jan 2020-5 Feb 2026, train 2020-22 / val 2023-24 / OOS 2025-26 - universe is a 2025 survivor list, NOT point-in-time.",
+     "effect": "In-sample (JF 2022): significant 1-4 week momentum factor; the '~3%/wk long-short', '11.2%/wk top quintile' and 'Sharpe 0.48' figures could not be verified this session. CTREND 3.87%/wk [unverified]. Fieberg et al. -255% single-coin crash in 2022 [unverified]. Grobys & Shahzad infinite-variance claim [unverified]. GitHub 20-day momentum at 20 bps one-way (confirmed from README): net Sharpe 0.42 / alpha 36.2% (t=2.02) train; -0.48 / 13.5% (t=1.08) val; -2.18 / -12.5% (t=-0.81) OOS; cross-sectional dispersion 3.20% pre-2023 vs 1.98% post-2023 (-38%).",
+     "oos_evidence": "Weak to negative. No peer-reviewed post-2022 replication with costs and a point-in-time universe is known to me. The GitHub decay evidence is directionally informative but survivorship-contaminated (universe chosen ex post) and single-lookback. Ammann et al. survivorship finding (momentum premium disappears after delisting control) is plausible and consistent with the equity/crypto literature but unverified here.",
+     "strength": "weak",
+     "sources": [
+      "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.13119",
+      "https://www.nber.org/papers/w25882",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4287573",
+      "https://link.springer.com/article/10.1007/s11408-025-00474-9",
+      "https://onlinelibrary.wiley.com/doi/abs/10.1002/ijfe.70036",
+      "https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/trend-factor-for-the-cross-section-of-cryptocurrency-returns/4C1509ACBA33D5DCAF0AC24379148178",
+      "https://github.com/prams2104/crypto-momentum-backtest"
+     ],
+     "costs_decay": "Weekly long-short quintile rebalance in alts implies 100-200% weekly turnover; at 10-30 bps taker+spread plus perp funding on shorts the in-sample premium shrinks materially. Post-2021 dispersion collapse is the most credible decay mechanism. Use only as a regime-conditional feature (dispersion-gated), never standalone.",
+     "data_source": "Daily OHLCV + market cap for a POINT-IN-TIME universe including delisted coins (CoinGecko/CMC historical snapshots, Binance listing/delisting dates); tradable subset via ccxt Binance/OKX perps. Rebuild the universe monthly from listing dates, not from today's top-N."
+    },
+    {
+     "name": "Time-series momentum (TSMOM) on BTC/ETH/coin-market index, 1-4 week lookback",
+     "formula": "signal_t = sign(r_{t-k,t}), k = 1..4 weeks (Liu-Tsyvinski) or 12 months (MOP 2012); position = signal * sigma_target / sigma_hat_t, sigma_hat = 20-90d realized vol, leverage cap 1x for long-only. Alternative: EWMA-difference (fast minus slow EMA) normalized by vol.",
+     "horizon": "1-4 weeks (weekly); monthly in MOP-style versions",
+     "universe_period": "Liu & Tsyvinski RFS 2021: value-weighted coin-market index 2011-2018 (in-sample predictive regressions, peer-reviewed). Post-ETF study (Zenodo, 2018-Mar 2026), Vilnius 8-coin study (2020-Oct 2025), summitward BTC/ETH/SOL (2017-mid 2025): all unreviewed and unopened.",
+     "effect": "RFS 2021: one-week market return positively and significantly predicts the next 1-4 week returns (in-sample). Post-2020 magnitudes quoted in the prior draft (Sharpe 0.82 -> 1.22 post-ETF; 31.96% ann.; vol-managed 0.74 vs trend 0.79) are ALL [unverified, unreviewed].",
+     "oos_evidence": "No peer-reviewed post-2022 OOS replication with costs known. Directionally the effect persists in trending years (2020-21, 2023-24) and whipsaws in 2022-type chop; the return contribution beyond vol scaling is small and fragile (cf. Kim-Tse-Wald 2016 decomposition on futures).",
+     "strength": "weak",
+     "sources": [
+      "https://academic.oup.com/rfs/article-abstract/34/6/2689/5912024",
+      "https://www.nber.org/system/files/working_papers/w24877/w24877.pdf",
+      "https://w4.stern.nyu.edu/facdir/lpederse/papers/TimeSeriesMomentum.pdf",
+      "https://www.sciencedirect.com/science/article/abs/pii/S1386418116301379",
+      "https://zenodo.org/records/19671502",
+      "https://www.journals.vu.lt/BATP/en/article/download/44540/42590/138419",
+      "https://summitward.com/learn/crypto-trend-following"
+     ],
+     "costs_decay": "Low turnover, 5-10 bps tolerable on BTC/ETH. Expect flat-to-negative in range-bound regimes. Always benchmark against a vol-managed long-only position, not buy-and-hold.",
+     "data_source": "Daily OHLCV BTC/ETH/large alts via ccxt (Binance/Coinbase/Kraken); realized vol from daily returns; optional VW coin-market index from CoinGecko."
+    },
+    {
+     "name": "Multi-lookback Donchian breakout ensemble with volatility targeting (long-only trend)",
+     "formula": "For L in {5,10,20,30,60,90,150,250,360} days: long when close > max(close, L); exit on trailing stop = max(prior stop, (channel max+min)/2); ensemble = equal-weighted average of sub-strategy positions; size = 0.25 / sigma_90d (25% ann. vol target), leverage cap 1x, daily rebalance with a 20% rebalance threshold. Trailing-stop mechanics and universe membership rules are partly [UNSTATED] in the paper per replicators.",
+     "horizon": "days to months (daily rebalance)",
+     "universe_period": "BTC Jan 2015-Mar 2025; ETH from Aug 2015; BNB from Jul 2017; rotational top-20 liquid coins (>=1 yr listed, median 30d volume >= $2M), monthly membership. SSRN working paper, not peer-reviewed.",
+     "effect": "Confirmed second-hand from two independent GitHub replication notes: BTC net of 10 bps CAGR 30%, vol 17%, Sharpe 1.56, MDD 19%; ETH 27% / 16% / 1.51 / 15%; BNB 17% / 15% / 1.06 / 17%; top-20 rotational Sharpe 1.58, Sortino 2.03, alpha +14%/yr vs BTC net of 0.10-0.50% per trade. Replicators note vol weights never exceed 1x on Binance spot (median raw weight 0.32-0.43).",
+     "oos_evidence": "None formal - single 2015-2025 in-sample backtest. Replications flag internal inconsistencies (combination MAR 0.88 vs 1.15; Sortino 2.03 vs 1.23; CAGR '34%' vs 36%). Ensemble of 9 lookbacks and a point-in-time universe reduce but do not remove selection risk; post-Mar-2025 performance unknown.",
+     "strength": "moderate",
+     "sources": [
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5209907",
+      "https://github.com/zebadee2kk/DeFi-TraderStack-Agent/issues/137",
+      "https://github.com/alfred1123/Quant_Strategies/pull/61"
+     ],
+     "costs_decay": "Tested net of 10-50 bps; vol-scaling churn needs rebalance bands. Long-only, so bear years are flat by construction. Post-publication decay unknown (published Apr 2025).",
+     "data_source": "Daily OHLC for BTC/ETH/top-20 liquid coins via ccxt (Kraken/Binance); historical volume for the liquidity filter; listing/delisting dates for the rotational universe."
+    },
+    {
+     "name": "Moving-average rules on Bitcoin (price-to-MA ratios, VMA crossovers)",
+     "formula": "Detzel et al.: signal_t = 1{P_t > MA_L} for L in 1-20 weeks (also multi-MA combinations); hold BTC if 1 else cash; predictive regression r_{t+1} = a + b*log(P_t/MA_L) + e with in- and out-of-sample R2. VMA: buy when short MA (1-5d) > long MA (50-200d) by a band.",
+     "horizon": "1 day to weeks",
+     "universe_period": "Detzel et al. Financial Management 2021: BTC 2011-2018. Grobys-Ahmed-Sapkota FRL 2020: 11 cryptos 2016-2018. Hudson & Urquhart: ~15,000 rules on BTC/ETH/LTC/XRP with data-snooping corrections (Annals of Operations Research 2021 - venue/rule-count in the prior draft was wrong).",
+     "effect": "Detzel: price-to-MA ratios predict BTC returns in- and out-of-sample and MA strategies raise Sharpe and cut drawdowns (peer-reviewed); the specific '11-58x' and '+0.2-0.6 Sharpe' figures are [unverified]. Hudson & Urquhart: some rules survive reality-check in-sample; the claim of zero OOS predictability for BTC is [unverified]. Retail 50/200 crossover backtests: drawdown reduction, no total-return edge.",
+     "oos_evidence": "Contradictory between studies; consistent with MA distance being a slow trend/drawdown filter rather than a directional edge. Sullivan-Timmermann-White (1999) show best-of-many rules do not repeat OOS.",
+     "strength": "weak",
+     "sources": [
+      "https://onlinelibrary.wiley.com/doi/abs/10.1111/fima.12310",
+      "https://www.sciencedirect.com/science/article/abs/pii/S1544612319303770",
+      "http://dirkgerritsen.nl/uploads/gerritsen_et_al_2020_bitcoin_trading_rules.pdf",
+      "https://www.kevinsheppard.com/files/teaching/mfe/advanced-econometrics/Sullivan_Timmermann_White.pdf"
+     ],
+     "costs_decay": "Short MAs cost-sensitive at 10+ bps; long MAs trade rarely. Use log(P/MA_L) for several L as continuous features; never select one 'best' rule.",
+     "data_source": "Daily close BTC/ETH via ccxt."
+    },
+    {
+     "name": "Short-term (1-day / 1-week) cross-sectional reversal",
+     "formula": "Rank coins by prior 1-day (or 1-week) return; long bottom decile/quintile, short top; hold 1 day (1 week).",
+     "horizon": "1 day to 1 week",
+     "universe_period": "Zaremba et al. IRFA 2021: >3,600 coins 2015-2021. Kosc-Sakowski-Slepaczuk Physica A 2019: top-100 coins 2015-2017. GitHub test: 25 (survivor-selected) liquid coins 2020-2026.",
+     "effect": "Zaremba et al.: reversal is driven by small illiquid coins; the largest coins (~90% of cap) show short-term CONTINUATION - consistent with the paper as I know it. GitHub 1-day reversal at 20 bps one-way (confirmed): train Sharpe -3.21 / gross alpha -5.5%; val -4.51 / +17.1% (t=1.37); OOS 2025-26 -1.73 / +73.0% (t=4.64), turnover 138-139%/day, i.e. +73% gross -> about -29% net. Note the training-period sign was negative, so even the gross effect is unstable.",
+     "oos_evidence": "Small-coin reversal is bid-ask bounce, not tradable. On liquid coins the sign flips across subperiods and net-of-cost results are negative.",
+     "strength": "weak",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/pii/S1057521921002349",
+      "https://ideas.repec.org/a/eee/phsmap/v523y2019icp691-701.html",
+      "https://github.com/prams2104/crypto-momentum-backtest"
+     ],
+     "costs_decay": "Dies above ~5 bps round trip at daily rebalance. For BTC/ETH the relevant (small) fact is daily continuation.",
+     "data_source": "Daily close/volume/cap for a point-in-time universe; tradable version on Binance perps via ccxt."
+    },
+    {
+     "name": "Longer-run reversal (>1 month) among coins",
+     "formula": "Sort coins on past J-week return, J >= 4-8 weeks; long losers, short winners; hold K >= 4 weeks.",
+     "horizon": "1-3 months",
+     "universe_period": "Dobrynskaya SSRN 3913263: ~2,000 largest coins 2014-2020 (unreviewed, unopened).",
+     "effect": "Momentum up to ~4 weeks, then reversal beyond ~1 month, 'economically large' [unverified].",
+     "oos_evidence": "None known post-2020; loser-driven reversal in a 2014-2020 sample is exposed to survivorship (dead losers) and to 2017-18 boom/bust episodes.",
+     "strength": "weak",
+     "sources": [
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3913263"
+     ],
+     "costs_decay": "Cheap turnover but the loser leg is illiquid with delisting risk; likely decayed post-2021.",
+     "data_source": "Weekly prices/caps for a point-in-time universe incl. delisted coins."
+    },
+    {
+     "name": "15-minute sign reversal (short-horizon mean reversion)",
+     "formula": "Predict sign(r_{t+1}) at 15-min bars as -sign(r_t); scored by AUC under an out-of-sample protocol (per the preprint's abstract as summarised in the prior draft).",
+     "horizon": "15 minutes",
+     "universe_period": "Claimed: 183 Binance pairs vs 187 US stocks/ETFs, 2021-2026. arXiv 2608.21888 (Aug 2026) - after my knowledge cutoff and unreachable; existence and numbers unconfirmed.",
+     "effect": "Claimed 90% of pairs significant, 2-3 AUC points (~52-53% sign hit rate) [unverified].",
+     "oos_evidence": "Cannot be assessed. Even if true, the edge is below round-trip costs at 15-min cadence.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://arxiv.org/abs/2608.21888"
+     ],
+     "costs_decay": "At 15-min rebalance, 2 bps maker fees roughly equal the claimed edge per bar; only usable as an entry-timing feature.",
+     "data_source": "Binance 15-min klines via ccxt."
+    },
+    {
+     "name": "Quarter-hour / turn-of-the-candle periodicity and order-imbalance at clock marks",
+     "formula": "Turn-of-candle: mean return in minutes {0,15,30,45} vs other minutes. Order-imbalance: OI = (buy - sell volume)/(total) in the opening seconds of each quarter-hour; regress subsequent 4-12h returns on OI.",
+     "horizon": "1 minute (candle turn) to 4-12 hours (OI forecast)",
+     "universe_period": "Turn-of-candle: BTC on multiple exchanges, effect from ~2020 (Heliyon 2023 / arXiv 2109.12142) [numbers unverified]. Kim & Hansen arXiv 2607.09426 (Jul 2026, BTC/ETH/XRP/SOL/DOGE/ADA Binance perps 2021-2024) - after cutoff, unreachable.",
+     "effect": "Claimed 0.58 bps/min at candle turns with t>9 [unverified]; claimed OI at quarter-hour marks forecasts 4-12h returns OOS [unverified]. Hansen-Kim-Kimbrough JFEc 2024 (peer-reviewed): strong periodicity in volatility and volume, improving GARCH forecasts OOS - this part holds.",
+     "oos_evidence": "Only the volatility/volume periodicity is peer-reviewed. Return-forecasting claims rest on unverified preprints and on an adaptive phenomenon that appeared in 2020 and can vanish.",
+     "strength": "weak",
+     "sources": [
+      "https://arxiv.org/abs/2607.09426",
+      "https://pmc.ncbi.nlm.nih.gov/articles/PMC10015199/",
+      "https://arxiv.org/abs/2109.12142",
+      "https://academic.oup.com/jfec/advance-article/doi/10.1093/jjfinec/nbac034/6759403"
+     ],
+     "costs_decay": "Per-minute edge below taker fees; the OI -> hours forecast would be the only tradable piece and is unconfirmed.",
+     "data_source": "Binance futures aggTrades and 1-min klines (ccxt fetch_trades / Binance data portal)."
+    },
+    {
+     "name": "Hour-of-day / overnight (US-off-hours) seasonality in BTC",
+     "formula": "Hold BTC only in a fixed UTC window (e.g. 21:00-23:00 UTC) or overnight vs NYSE-session split.",
+     "horizon": "intraday (2-8 h)",
+     "universe_period": "Quantpedia (Gemini BTC ~2015-2022), paperswithbacktest extension; no peer-reviewed source. Unopened.",
+     "effect": "Claimed ~33% ann., 20.9% vol, -22.5% MDD for the 21:00-23:00 window [unverified]; found by scanning 24 hourly windows.",
+     "oos_evidence": "No holdout; multiple-testing artefact risk. Hansen-Kim-Kimbrough 2024: periodicity in vol/volume, not in expected returns.",
+     "strength": "weak",
+     "sources": [
+      "https://quantpedia.com/strategies/intraday-seasonality-in-bitcoin",
+      "https://paperswithbacktest.com/blog/bitcoin-never-sleeps-exploiting-seasonality",
+      "https://academic.oup.com/jfec/advance-article/doi/10.1093/jjfinec/nbac034/6759403"
+     ],
+     "costs_decay": "Two round trips per day; use session dummies as volatility/liquidity features only.",
+     "data_source": "Hourly BTC/ETH klines via ccxt; NYSE calendar."
+    },
+    {
+     "name": "Day-of-week / weekend effect",
+     "formula": "r_t = sum_d b_d D_d + e on daily/hourly returns.",
+     "horizon": "1 day",
+     "universe_period": "BTC daily 2014-2024 and multi-coin COVID-era samples (Substack, MDPI, low-tier journals).",
+     "effect": "No stable return gap; sign flips across subperiods; lower weekend volume/volatility.",
+     "oos_evidence": "None; consistent with null plus multiple testing.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://mlquants.substack.com/p/are-day-of-the-week-effects-in-cryptocurrencies",
+      "https://www.mdpi.com/1911-8074/17/8/351"
+     ],
+     "costs_decay": "Not a signal; weekday/weekend dummies only as liquidity features for sizing.",
+     "data_source": "Daily/hourly BTC/ETH via ccxt."
+    },
+    {
+     "name": "Intraday time-series momentum (first-half-hour -> last-half-hour) in BTC",
+     "formula": "r_last30 = a + b * r_first30 + e per UTC/exchange day; timing strategy takes sign(r_first30) in the last half hour.",
+     "horizon": "intraday",
+     "universe_period": "Wen-Bouri-Xu-Zhao NAJEF 2022: BTC HF data 2013-2020 (peer-reviewed); coefficients unverified.",
+     "effect": "Both momentum and reversal, conditional on jumps, FOMC, liquidity, COVID; claimed utility gain over buy-and-hold [unverified].",
+     "oos_evidence": "Paper reports OOS economic-value comparisons; no post-2020 replication; effect is a US-session artefact overlapping hour-of-day seasonality.",
+     "strength": "weak",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/abs/pii/S1062940822000833",
+      "https://centaur.reading.ac.uk/100181/3/21Sep2021Bitcoin%20Intraday%20Time-Series%20Momentum.R2.pdf"
+     ],
+     "costs_decay": "One round trip per day affordable at ~5 bps but the effect is small and conditional.",
+     "data_source": "1-5 min BTC/ETH klines via ccxt; FOMC calendar; jump detection."
+    },
+    {
+     "name": "Volatility scaling / volatility-managed trend and momentum (risk-management overlay)",
+     "formula": "w_t = signal_t * sigma_target / sigma_hat_t, sigma_hat = 20-90d realized or EWMA vol; cap at 1x long-only. Risk-managed WML: WML * c / sigma_WML,t.",
+     "horizon": "daily-weekly sizing, any signal horizon",
+     "universe_period": "Kim-Tse-Wald JFM 2016 (58 futures 1965-2009); Moreira-Muir JF 2017; Barroso-Santa-Clara JFE 2015 (equity momentum crashes); Fieberg et al. FMPM 2025 crypto [unverified]; summitward BTC/ETH/SOL 2017-2025 [unreviewed, unverified].",
+     "effect": "Peer-reviewed, multi-asset: most of MOP's TSMOM alpha comes from vol scaling (exact 1.27% vs 0.41% split unverified); vol management sharply reduces momentum crashes. Crypto-specific Sharpe 0.74 (vol-managed, no signal) vs 0.79 (with trend) is from a blog and unverified.",
+     "oos_evidence": "Consistent across decades and asset classes; a property of vol clustering, which persists. Improves risk-adjusted return and drawdowns; does NOT raise directional accuracy.",
+     "strength": "strong",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/abs/pii/S1386418116301379",
+      "https://link.springer.com/article/10.1007/s11408-025-00474-9",
+      "https://summitward.com/learn/crypto-trend-following"
+     ],
+     "costs_decay": "Resizing churn; use rebalance bands (10-20% weight change). No evidence of decay.",
+     "data_source": "Daily returns of traded assets."
+    },
+    {
+     "name": "Hourly ML direction forecasts from technical features with cost-aware trade filter",
+     "formula": "XGBoost/LSTM/iTransformer on lagged returns + TA indicators predicting next-hour BTC-USDT return; trade only if |forecast| > cost threshold; walk-forward folds.",
+     "horizon": "1 hour",
+     "universe_period": "BTC-USDT hourly 2018-2026, arXiv 2606.00060 (Jun 2026) - at/after my cutoff, unreachable.",
+     "effect": "Claimed positive gross in selected configs, naive sign-following fails at 10 bps, best long-only XGBoost >65% ann. / Sharpe >1 with cost filter, no bootstrap dominance [unverified]. Directional accuracy ~50%.",
+     "oos_evidence": "Claimed walk-forward; 'selected configurations' implies configuration search; not replicated.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://arxiv.org/abs/2606.00060"
+     ],
+     "costs_decay": "Any hourly Telegram signal must be gated by a cost/magnitude threshold.",
+     "data_source": "Hourly BTC/ETH klines via ccxt."
+    },
+    {
+     "name": "[ADDED] 12-month time-series momentum / 52-week-high proximity on BTC/ETH",
+     "formula": "TSMOM12: sign(r_{t-12m,t-1m}) with vol scaling (MOP 2012 convention, skip last month optional). 52wk-high ratio: P_t / max(P over 252d) as a continuous feature (George & Hwang 2004 in equities).",
+     "horizon": "1-3 months",
+     "universe_period": "Equities/futures: decades of peer-reviewed evidence (MOP 2012; George-Hwang 2004). Crypto: BTC history since 2011 gives only ~4 independent cycles; crypto-specific 52-week-high studies exist (SSRN/FRL) but were not accessible.",
+     "effect": "Not measurable with confidence in crypto - too few cycles; in-sample BTC 12m momentum is dominated by the halving-cycle pattern (4 observations).",
+     "oos_evidence": "None in crypto. Include only as a slow regime feature; expect wide confidence intervals.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://w4.stern.nyu.edu/facdir/lpederse/papers/TimeSeriesMomentum.pdf"
+     ],
+     "costs_decay": "Negligible turnover.",
+     "data_source": "Daily close BTC/ETH via ccxt."
+    },
+    {
+     "name": "[ADDED] BTC -> altcoin lead-lag (cross-asset spillover at hourly-daily horizons)",
+     "formula": "r_alt,t+1 = a + b * r_BTC,t + c * (r_alt,t - beta*r_BTC,t) + e; features: BTC lagged return, BTC dominance change, alt residual vs BTC beta.",
+     "horizon": "1 hour to 1 day",
+     "universe_period": "Literature on BTC price leadership / spillovers (Kristoufek, Ji et al., Corbet et al. connectedness papers, 2018-2023) documents BTC leading altcoin returns and volatility, mostly at daily frequency, in-sample.",
+     "effect": "Return spillovers from BTC to alts are statistically documented but economically small at daily horizon and largely contemporaneous at hourly horizon; magnitude for trading not established.",
+     "oos_evidence": "No cost-aware OOS trading test known to me; connectedness results are in-sample VAR/Diebold-Yilmaz style.",
+     "strength": "weak",
+     "sources": [],
+     "costs_decay": "Lead-lag at hourly horizon is arbitraged quickly; use as a feature (alt residual momentum vs BTC beta), not a signal.",
+     "data_source": "Hourly/daily klines for BTC and alts via ccxt."
+    },
+    {
+     "name": "[ADDED] MAX / lottery effect (past extreme daily return) in the cross-section",
+     "formula": "MAX_t = max daily return over past 1-4 weeks; long low-MAX, short high-MAX, weekly rebalance.",
+     "horizon": "1 week",
+     "universe_period": "Grobys & Junttila (JBEF 2021) and related studies on top-100 coins 2014-2019 report a negative MAX premium (lottery-like coins underperform), in-sample.",
+     "effect": "Negative relation between MAX and next-week return, driven by small coins [numbers not verifiable here].",
+     "oos_evidence": "None post-2021; same survivorship and illiquidity caveats as short-term reversal.",
+     "strength": "weak",
+     "sources": [],
+     "costs_decay": "Short leg is illiquid lottery coins; not tradable on Binance perps at scale.",
+     "data_source": "Daily returns for a point-in-time universe."
+    }
+   ],
+   "red_flags": [
+    "Verification gap: this referee pass could only open github.com; Wiley, Springer, Cambridge, OUP, ScienceDirect, SSRN, NBER, arXiv, Semantic Scholar, Quantpedia, Zenodo, MDPI, Substack and Wikipedia are all egress-blocked and the session's web-search budget was already exhausted. All coefficient-level numbers except those from the three GitHub pages are second-hand or from memory and are tagged [unverified].",
+    "The 'clean point-in-time 2020-2026 test' (prams2104/crypto-momentum-backtest) is NOT survivorship-free: its 25-coin list includes SOL, AVAX, NEAR, APT, ICP and SHIB, which did not exist or trade on Binance in Jan 2020; the README gives no selection methodology. Its decay numbers are suggestive, not a replication, and it is a single-author unreviewed repo.",
+    "Three of the family's headline intraday claims (15-min sign reversal, quarter-hour order imbalance -> 4-12h returns, hourly ML with cost filter) rest on arXiv preprints dated Jun-Aug 2026 that are after my knowledge cutoff and could not be opened; their existence and numbers are unconfirmed. Do not code anything from them until the PDFs are read.",
+    "Source mis-attribution in the prior draft: the large-scale data-snooping study by Hudson & Urquhart is in Annals of Operations Research (2021) with ~15,000 rules, not FRL 2019 with 2,127 rules; the FRL 2019 links are other papers. The 'zero OOS predictability for Bitcoin' claim is unverified.",
+    "Zarattini Donchian paper: two independent replications confirm the headline numbers but also confirm internal inconsistencies (MAR 0.88 vs 1.15; Sortino 2.03 vs 1.23; CAGR 34% vs 36%) and [UNSTATED] parameters (universe rules, trailing-stop mechanics, leverage). Rebuild from rules, expect lower numbers, and treat the 2015-2025 window as in-sample.",
+    "Survivorship/delisting bias dominates crypto cross-sectional results (Ammann et al., unverified magnitude); any universe built from today's top-N is invalid. Rebuild universes monthly from listing dates including delisted coins.",
+    "Infinite-variance / single-coin-crash risk in long-short crypto momentum (Grobys & Shahzad 2026; Fieberg et al. 2025 - both unverified but consistent with known short-leg blow-ups): do not rank strategies by Sharpe alone; cap per-coin exposure.",
+    "Most trend-following 'alpha' in crypto is volatility scaling; the crypto-specific decomposition (Sharpe 0.74 no-signal vs 0.79 with trend) is from an unreviewed blog, but the peer-reviewed futures decomposition (Kim-Tse-Wald 2016) supports the same conclusion. Benchmark every directional signal against a vol-managed long-only position.",
+    "Transaction costs flip signs below daily horizon: 1-day reversal +73% gross -> about -29% net at 20 bps (confirmed); anything at 15-min to 1-h cadence is below Telegram-latency execution costs.",
+    "Calendar/hour-of-day/day-of-week effects are multiple-testing artefacts absent pre-registration; only volatility/volume periodicity is peer-reviewed (Hansen-Kim-Kimbrough JFEc 2024)."
+   ]
+  },
+  "missing": [
+   "12-month TSMOM / 52-week-high proximity on BTC/ETH (added; no crypto OOS evidence, too few cycles)",
+   "BTC -> altcoin lead-lag / residual-momentum-vs-BTC-beta features (added; weak, in-sample connectedness literature only)",
+   "MAX / lottery effect in the crypto cross-section (added; weak, small-coin driven)",
+   "Peer-reviewed post-2022 replications of crypto TSMOM and CTREND with costs and point-in-time universes - none found; this is the main evidence hole for the whole family",
+   "Direct verification of arXiv 2608.21888, 2607.09426, 2606.00060 (all after cutoff, blocked) - required before any intraday feature is built",
+   "Detzel et al. OOS R2 table, Liu-Tsyvinski TSMOM coefficients, Ammann et al. bias magnitudes, Fieberg et al. crash/risk-managed numbers, Kim-Tse-Wald alpha split - all still unverified first-hand"
+  ]
+ },
+ {
+  "verdicts": [
+   {
+    "name": "Perpetual funding rate level / extremes (time-series, single asset)",
+    "verdict": "unverifiable",
+    "note": "All three numeric sources (Fulgur Medium post: coef -0.087/p=0.008/R^2 0.003; tradingstrategies.work z-score backtest; K33 via TheBlock 83-96% win rate) are on hosts blocked by this session's egress proxy and could not be opened. SSRN 5576424 also blocked. The qualitative conclusion (tiny, sign-unstable, below fees at 8h/1d; regime version rests on a handful of episodes) is consistent with the broader literature and with the mechanism-falsification found in the verified pre-registered study below, so the 'weak' grade stands, but no coefficient in this entry should be quoted as verified. K33 win rates should be treated as vendor anecdote until the original note is read."
+   },
+   {
+    "name": "Funding-rate cross-sectional carry-fade / 'funding sentiment' factor",
+    "verdict": "overstated",
+    "note": "Verified first-hand (github.com/JosephBerachah/crypto-fundingrate-alpha README + docs/preregistration.md): gross premium +0.001525/day, turnover 1.85x/day, costs ~74% of gross, market-neutral Sharpe +0.37, DSR 0.762 (<0.95 threshold), daily alpha +0.000424 with 95% CI [-0.000732, +0.001593] all CONFIRMED. Two corrections: (1) the original text says alpha was 'indistinguishable from zero on sealed holdout' - WRONG: the holdout (2025-01-01..2026-06-30) was NEVER opened; all numbers are training-period (2021-05-15..2024-12-31). (2) More important for a DIRECTION advisor: the study's stated mechanism was FALSIFIED - the short-leg PRICE component is -0.000198/day, CI [-0.002648, +0.002206], i.e. high-funding coins do not underperform in price; the entire gross premium is funding cash-flow, not price prediction. So cross-sectional funding carries ~zero directional information even gross. SSRN 6701738 (IC/Sharpe numbers), SSRN 6818558 and arXiv 2510.14435 could not be opened - unverified."
+   },
+   {
+    "name": "Futures basis / crypto carry (dated futures and perp premium)",
+    "verdict": "unverifiable",
+    "note": "bis.org, pubsonline.informs.org, wiley and cfbenchmarks.com all blocked; ideas.repec.org mirror also blocked. From memory the BIS WP 1087 / Management Science abstract does state that crypto carry is large and time-varying, that high carry is followed by elevated crash risk, and that it is driven by retail leverage demand vs limited arbitrage capital - consistent with the entry - but the '60% p.a.' figure, the Chi et al. daily-vs-monthly significance pattern and the CFB 0.50/0.54 correlations are unconfirmed. Evidence for DIRECTION is in-sample only (cross-sectional daily sorts without costs; crash regressions without trading OOS), and the family's own verified funding result shows the perp-premium/price channel is empty at daily horizon. Downgraded from moderate to weak for direction; keep as a crash-risk/leverage gauge."
+   },
+   {
+    "name": "Open interest change (OI x price quadrant, leverage build-up)",
+    "verdict": "unverifiable",
+    "note": "emerald.com blocked; coindesk and phemex blocked. OR 1.48 / OOS AUC 0.677 / ETH 79.8% connectedness cannot be confirmed. Even taken at face value, a 2023-2024 window contains very few independent crash events, the crash threshold is a researcher degree of freedom, and there is no replication. The entry itself concedes no evidence that OI predicts sign. Downgraded from moderate to weak; use only as a tail-risk gate, and re-verify the paper before citing the numbers."
+   },
+   {
+    "name": "CFTC Commitments of Traders positioning",
+    "verdict": "unverifiable",
+    "note": "All four sources (Wiley JFM, two ScienceDirect, UNC-FSU repository) blocked, as is cftc.gov itself. Baur & Smales (JFM 2022) and Dunbar & Owusu-Amoako (JBEF/FRL 2023) do exist and match my recollection of their qualitative claims (leveraged funds net short with timing ability; retail net-short changes and hedging pressure predict returns, FRL with OOS R^2), but no coefficients were confirmed and the entry already admits they were paywalled. Sample is ~200 weekly obs ending before the Jan-2024 ETF regime change, which mechanically altered the Leveraged Funds short book (cash-and-carry hedges). Downgraded from moderate to weak pending post-2024 replication; the data itself is free and low-turnover so it is cheap to test in-house."
+   },
+   {
+    "name": "Exchange long/short account ratio and top-trader position ratio",
+    "verdict": "holds",
+    "note": "Binance docs and Kaggle blocked, but the claim is a null ('no peer-reviewed evidence found'), which is consistent with everything I know. 'no-evidence' stands. Note additionally that Binance ratio endpoints serve only ~30 days, so any long history is stitched from third parties (look-ahead/gap risk)."
+   },
+   {
+    "name": "Liquidation volume / cascades",
+    "verdict": "unverifiable",
+    "note": "arXiv 2607.27070, SSRN 6579278, arXiv 2102.04591, amberdata and cryptoslate all blocked (also export.arxiv.org, alphaxiv, semanticscholar, HF papers mirrors). The cited results are negative/heterogeneous (no invariant early-warning signal), so the risk of the entry being too optimistic is low; the Cheng et al. BitMEX liquidation statistics (3.51%/1.89% of OI, 60x average leverage) are plausible but unconfirmed. 'weak' stands; for direction it is effectively no-evidence."
+   },
+   {
+    "name": "Options implied volatility level and variance risk premium (DVOL, VRP)",
+    "verdict": "unverifiable",
+    "note": "SSRN 3383734, arXiv 2410.15195, ScienceDirect ORL 2024, insights.deribit.com and docs.deribit.com blocked. Alexander & Imeraj's finding that BTC VRP is negative on average and spikes before large moves of either sign matches my recollection; the W-shaped pricing kernel paper (Almeida et al.) also exists. None of these tests direction OOS. 'weak' stands as a volatility feature; treat as no-evidence for sign."
+   },
+   {
+    "name": "Options skew: 25-delta risk reversal, put/call ratio, option order imbalance",
+    "verdict": "holds",
+    "note": "CONFIRMED first-hand from github.com/JERONIMODIFRANCO/deribit-rr README: T-30 accuracy 58.9% (33/56), SE 6.7%, p~0.18; corr 0.076, R^2~0.006; |RR|>5% gives 58.6%; no costs, no P&L. One omission: the same README reports T-90 accuracy 77.4% (24/31). This is NOT evidence of edge: 90-day windows sampled at monthly expiries overlap 3x (effective n~10), no cost model, and the sign rule is confounded with BTC's positive drift and the fact that RR is usually positive in bull markets (a 'always long' rule would score similarly). The Alexander-Deng-Feng-Wan JFM 2023 null on option order imbalance and Kim et al. could not be opened. 'no-evidence' stands."
+   },
+   {
+    "name": "Futures order imbalance around quarter-hour boundaries",
+    "verdict": "unverifiable",
+    "note": "arXiv 2607.09426 blocked on every mirror tried. Claimed t-stats of 1.6-2.6 are marginal by the paper's own numbers, OOS metrics apply only to the 10-second horizon, and no after-cost result is reported. 'weak' stands; practically untradeable for a Telegram advisor and likely to decay once public."
+   },
+   {
+    "name": "CME weekend gap fill",
+    "verdict": "holds",
+    "note": "Yahoo/phemex blocked, but the entry is already a null: vendor 'fill rates' have no benchmark against unconditional revisit probability, no holding-period bound and no costs. The claim that CME moved to gap-free sessions in 2026 is unverified. 'no-evidence' stands."
+   }
+  ],
+  "corrected": {
+   "family": "Derivatives positioning: funding, basis, open interest, liquidations, options",
+   "summary": "Referee verdict after re-check (with a hard caveat: this session's egress proxy blocked every academic and vendor host - arXiv and all its mirrors, SSRN, BIS, Wiley, ScienceDirect, INFORMS, Emerald, Medium, TheBlock, CoinDesk, Deribit, Binance, CFTC - and the web-search budget was exhausted; only the two GitHub-hosted studies could be opened first-hand). What was verified: (a) the pre-registered Binance funding carry-fade study confirms a gross funding premium of +0.1525%/day, but its holdout was NEVER opened (the prior text wrongly said alpha was null 'on the sealed holdout'), and - decisive for a direction advisor - its stated PRICE mechanism was falsified: the short leg's price component is -0.0198%/day with a CI spanning zero, so high funding does not predict lower prices cross-sectionally even gross; the premium is funding cash-flow, 74% of which is eaten by 1.85x daily turnover (DSR 0.76). (b) The Deribit 25-delta risk-reversal backtest is confirmed at 58.9% on n=56 (p~0.18, R^2 0.006); its T-90 77.4% (n=31) is overlapping-window, drift-confounded and cost-free, not evidence. Everything else in the family - Fulgur 8h regression, K33 negative-funding regime win rates, BIS crypto-carry crash result, Chi et al. basis sorts, Emerald OI crash logit (OR 1.48, AUC 0.677), COT papers, liquidation-cascade replication, VRP/IV papers, quarter-hour order imbalance - is UNVERIFIED in this session; the qualitative direction of those claims matches my recollection of the literature where I know the papers, but no coefficient should be quoted from this document without reading the PDF. Net assessment: derivatives positioning carries real information about LEVERAGE, CRASH RISK and VOLATILITY, and essentially none about the SIGN of the next move at horizons under a week once costs and overlapping-sample effects are accounted for. Strengths are downgraded accordingly: basis, OI change and COT drop from moderate to weak (in-sample or pre-ETF-regime only, unreplicated, unverified here); cross-sectional funding is weak for carry and no-evidence for direction. Practical implication for the GBM/triple-barrier forecaster is unchanged in spirit but sharper: use funding-regime (30d average sign/duration), OI change, basis and DVOL/VRP as inputs to BARRIER WIDTH, sizing and crash gating, and as HMM/MS-AR TVTP covariates; do not expect standalone directional edge; treat the multi-week negative-funding regime and COT positioning as hypotheses to test in-house on point-in-time data (both are free, low-turnover, and cheap to validate with purged CPCV), not as established predictors. Never promise returns from any of these.",
+   "predictors": [
+    {
+     "name": "Perpetual funding rate level / extremes (time-series, single asset)",
+     "formula": "F_t = 8h funding rate (Binance/Bybit/OKX; exchange average). Variants: (a) raw F_t; (b) z_t = (F_t - mean_30d)/std_30d, contrarian entry when |z|>2; (c) regime: 30-day rolling mean of F_t < 0 and consecutive-day count of negative 30d average. Contrarian hypothesis sign(E[r_{t+h}]) = -sign(F_t).",
+     "horizon": "8h (next funding period) to 30-360 days (regime version)",
+     "effect": "UNVERIFIED (hosts blocked): 8h OLS coef -0.087, p=0.008, R^2=0.003 (Fulgur 2021); daily z-score contrarian BTC 2019-2026 'slightly positive gross, ~zero/negative after fees'; K33 negative-30d-funding regime 30-360d win rate 83-96% vs 55-70% unconditional on <10 independent episodes. Consistent with verified cross-sectional finding that funding's price channel is empty at daily horizon.",
+     "universe_period": "BTC (BitMEX 2019-2021; Binance/OKX 2019-2026; K33 2018-2025)",
+     "oos_evidence": "None formal. 8h regression in-sample; z-score study is a single full-sample null; K33 stats descriptive with overlapping forward windows and BTC's strong unconditional drift over 2018-2025; no post-publication test. All three sources unreadable in this session.",
+     "costs_decay": "Taker fees (~5-10 bp round trip) exceed implied 8h/daily edge by an order of magnitude. Regime version low-turnover but statistically underpowered. Funding compressed since 2024 (fewer extremes).",
+     "data_source": "Binance fapi /fapi/v1/fundingRate (full history since 2019), Bybit/OKX public APIs, ccxt fetchFundingRateHistory, data.binance.vision bulk (all blocked from this session; collect from owner's machine/VPS).",
+     "sources": [
+      "https://medium.com/@fulgur.ventures/bitcoin-funding-rates-and-price-predictability-27ce95535af1",
+      "https://tradingstrategies.work/blog/funding-rate-signal-btc-backtest",
+      "https://www.theblock.co/post/400182/bitcoin-longest-negative-funding-streak-this-decade-k33-flags-short-squeeze-risk",
+      "https://www.theblock.co/post/397531/bitcoin-breakout-odds-rise-negative-funding-streak-mirrors-bottoming-regimes-k33",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5576424"
+     ],
+     "strength": "weak"
+    },
+    {
+     "name": "Funding-rate cross-sectional carry-fade / 'funding sentiment' factor",
+     "formula": "Each day rank Binance USDT perps (liquidity floor: >=30d listed, trailing-30d median $ volume >= $1M, point-in-time incl. delisted) by trailing funding; short top decile (crowded longs, pay funding), long bottom decile (crowded shorts, receive funding); dollar-neutral, daily rebalance. Return decomposed into funding component + price component.",
+     "horizon": "1 day rebalance",
+     "effect": "VERIFIED (GitHub README + pre-registration, training period 2021-05-15..2024-12-31, 1,322 days): gross funding premium +0.001525/day; market-neutral Sharpe +0.37 ann.; daily alpha +0.000424, 95% CI [-0.000732, +0.001593]; DSR 0.762 (fails >0.95 bar); short-leg PRICE component -0.000198/day, CI [-0.002648, +0.002206] -> price-convergence mechanism FALSIFIED; turnover 1.85x/day; measured costs (half-spreads from aggTrades) consume ~74% of gross; breakeven at ~1.34x measured cost. Holdout 2025-01..2026-06 sealed and never opened. UNVERIFIED: SSRN 6701738 (10 perps 2022-07..2026-04, purged walk-forward, linear rank-IC -0.0097 t=-1.54, GBM IC +0.0243 t=3.55, net Sharpe -3.2/-2.9); SSRN 6818558 funding-sentiment factor significant at 1% (in-sample, gross); arXiv 2510.14435 carry Sharpe collapsing to negative in 2025.",
+     "universe_period": "Binance USDT-M perps above $1M/day liquidity floor (113 coins in 2021 to 682 in 2026), 2021-05..2024-12 (training); other studies 10-90 perps 2020-2026",
+     "oos_evidence": "Pre-registered, survivorship-free, cost-measured study: hypothesis rejected in-sample on the price component, so no OOS test was run. The gross premium is funding carry, not return prediction. Other positive results are in-sample/gross and could not be read.",
+     "costs_decay": "Killed by turnover at daily rebalance; needs all-in cost roughly 25% below measured half-spreads to break even. Even at zero cost there is no price-direction content to exploit. Carry itself reportedly decayed post-2024 (unverified).",
+     "data_source": "data.binance.vision klines + fundingRate + aggTrades (incl. delisted symbols); ccxt fetchFundingRateHistory; Bybit/OKX archives",
+     "sources": [
+      "https://github.com/JosephBerachah/crypto-fundingrate-alpha",
+      "https://raw.githubusercontent.com/JosephBerachah/crypto-fundingrate-alpha/main/docs/preregistration.md",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6701738",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6818558",
+      "https://arxiv.org/pdf/2510.14435"
+     ],
+     "strength": "no-evidence"
+    },
+    {
+     "name": "Futures basis / crypto carry (dated futures and perp premium)",
+     "formula": "Annualized basis b_t = (F_t^T/S_t - 1)*365/(T-t) for dated futures (CME, Deribit, Binance quarterly); for perps, premium index or 3*365*avg 8h funding. Cross-section: sort by basis. Time-series: high carry -> elevated crash probability over following weeks.",
+     "horizon": "Daily (cross-section); weeks-months (crash risk)",
+     "effect": "UNVERIFIED (BIS/INFORMS/Wiley/CFB blocked): Schmeling-Schrimpf-Todorov report large, time-varying carry and that high carry precedes crashes, attributed to retail leverage demand vs scarce arbitrage capital (consistent with my recollection of the abstract); Chi et al. report basis as strongest daily cross-sectional sort, insignificant monthly; CF Benchmarks basis-momentum correlations 0.50/0.54. No verified coefficient. The verified funding study shows the perp-premium price channel is empty at daily horizon, which argues against a daily-basis directional signal for perps.",
+     "universe_period": "BTC/ETH + majors, 2018-2022 (BIS), 2017-2021 (Chi), CME 2018-2025 (CFB)",
+     "oos_evidence": "Crash prediction is in-sample regression; cross-sectional sorts have no cost or OOS test; no post-2022 replication found; post-ETF basis compression reported (unverified).",
+     "costs_decay": "Daily sorts: high turnover, same fate as funding fade. Crash gating: low turnover. CME basis arbitraged by ETF basis funds since 2024.",
+     "data_source": "CME via CF Benchmarks basis indices, Coin Metrics, CryptoQuant CME basis, Deribit/Binance quarterly futures via ccxt, Kaiko",
+     "sources": [
+      "https://www.bis.org/publ/work1087.pdf",
+      "https://pubsonline.informs.org/doi/10.1287/mnsc.2024.05069",
+      "https://onlinelibrary.wiley.com/doi/full/10.1002/fut.22425",
+      "https://www.cfbenchmarks.com/blog/revisiting-the-bitcoin-basis-how-momentum-sentiment-impact-the-structural-drivers-of-basis-activity"
+     ],
+     "strength": "weak"
+    },
+    {
+     "name": "Open interest change (OI x price quadrant, leverage build-up)",
+     "formula": "dOI_t = ln(OI_t/OI_{t-k}), k = 1h/1d/7d, USD or coin terms; leverage ratio = OI/exchange reserves or OI/market cap; quadrant = sign(dOI) x sign(dP). Crash logit P(crash_{t+1}) = f(dOI_BTC, funding, liquidations).",
+     "horizon": "1 day (crash logit); intraday for cascades",
+     "effect": "UNVERIFIED (Emerald blocked): BTC OI change odds ratio 1.48, OOS AUC 0.677, cascade propagation to 6/10 assets within 2h, ETH 79.8% connectedness. No evidence anywhere that OI predicts sign; quadrant heuristics are unbacktested vendor content.",
+     "universe_period": "10 Binance USDT-M perps, 2023-2024",
+     "oos_evidence": "Claimed OOS AUC on a 2-year window with few independent crash events, researcher-chosen crash definition, no replication, paper unread.",
+     "costs_decay": "As a gate: negligible. As a directional signal: none.",
+     "data_source": "Binance /futures/data/openInterestHist (30-day window only - archive continuously), data.binance.vision um/daily/metrics (5-min OI snapshots), Bybit/OKX OI history, Coinalyze, Coinglass",
+     "sources": [
+      "https://www.emerald.com/sef/article/doi/10.1108/SEF-04-2026-0367/1388748/Systemic-risk-from-financial-leverage-in-digital",
+      "https://phemex.com/academy/open-interest-bitcoin-trading-2026",
+      "https://www.coindesk.com/markets/2026/08/25/a-bitcoin-short-squeeze-for-the-ages-as-futures-open-interest-collapses"
+     ],
+     "strength": "weak"
+    },
+    {
+     "name": "CFTC Commitments of Traders positioning (CME BTC futures)",
+     "formula": "NetPos_{i,t} = (Long_i - Short_i)/OI for trader class i (Leveraged Funds, Asset Managers, Non-reportables, Dealers) from weekly TFF report (Tuesday positions, released Friday 15:30 ET). Predictors: dNS_t (change in retail net short); commercial hedging-pressure factor. Regress r_{t+1w} on dNS_t with controls.",
+     "horizon": "1 week to multi-week",
+     "effect": "UNVERIFIED (all sources blocked): Baur & Smales JFM 2022 - leveraged funds net short with timing ability, follow-the-smart-money strategy profitable gross; Dunbar & Owusu-Amoako JBEF 2023 - retail net-short changes economically strong predictor with controls; FRL 2023 - hedging factor shows OOS predictability, larger in stress. No coefficients confirmed.",
+     "universe_period": "CME BTC futures COT 2018-2022 (~200 weekly obs)",
+     "oos_evidence": "One paper claims OOS gains (unread). Sample ends before Jan-2024 spot ETFs, after which Leveraged Funds shorts are dominated by cash-and-carry hedges, changing the meaning of the signal. No post-2024 replication.",
+     "costs_decay": "Weekly, low turnover; costs immaterial. Look-ahead trap: Tuesday data published Friday. Likely semantic decay post-ETF.",
+     "data_source": "CFTC TFF reports (free, cftc.gov / publicreporting.cftc.gov Socrata, no key), Nasdaq Data Link",
+     "sources": [
+      "https://onlinelibrary.wiley.com/doi/full/10.1002/fut.22332",
+      "https://www.sciencedirect.com/science/article/abs/pii/S2214635023000266",
+      "https://www.sciencedirect.com/science/article/abs/pii/S1544612323003811",
+      "https://digitalcommons.uncfsu.edu/college_business_economics/314/"
+     ],
+     "strength": "weak"
+    },
+    {
+     "name": "Exchange long/short account ratio and top-trader position ratio",
+     "formula": "LSR_t = #accounts net long / #accounts net short (5m-1d buckets); TopTraderPosRatio = long position % / short position % of top-20% margin accounts. Contrarian use of retail LSR; top-trader ratio as smart-money proxy.",
+     "horizon": "intraday to daily",
+     "effect": "No peer-reviewed or pre-registered evidence found. Vendor dashboards only.",
+     "universe_period": "BTC/ETH perps; Binance API history 30 days",
+     "oos_evidence": "None.",
+     "costs_decay": "Unknown; raw level structurally >1, needs detrending; history must be self-archived.",
+     "data_source": "Binance globalLongShortAccountRatio / topLongShortPositionRatio / topLongShortAccountRatio (30-day window), data.binance.vision metrics, Bybit account-ratio, OKX rubik, Coinglass",
+     "sources": [
+      "https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Top-Trader-Long-Short-Ratio",
+      "https://www.coinglass.com/LongShortRatio",
+      "https://www.kaggle.com/datasets/jesusgraterol/bitcoin-longshort-ratio-binance-futures"
+     ],
+     "strength": "no-evidence"
+    },
+    {
+     "name": "Liquidation volume / cascades",
+     "formula": "Liq_t = USD forced liquidations per bucket, long/short separately (Binance stream throttled to 1 order/sec -> vendor totals are lower bounds). Signals: liquidation imbalance (LongLiq-ShortLiq)/(total); critical-slowing-down EWS on price/OI/taker flow; post-|r|-spike mean reversion.",
+     "horizon": "minutes-hours (cascade); 1-3 days (reversal)",
+     "effect": "UNVERIFIED (arXiv/SSRN/vendor blocked): 7-cascade study finds no event-invariant early-warning variable (CSD in 5/7, silent for exogenous news shocks); Oct-2025 crash led by futures with 22x volume 7 min before trough; BitMEX daily liquidations 3.51%/1.89% of OI. No statistic on post-liquidation next-day returns found.",
+     "universe_period": "BTC (+10 alts), Binance/BitMEX, 2019-2025",
+     "oos_evidence": "Replication-style negative result across events; no OOS trading test of reversal.",
+     "costs_decay": "Cascade trading needs sub-minute execution and suffers extreme spreads - infeasible for Telegram signals. As a feature: volatility/tail state only.",
+     "data_source": "Binance forceOrder WS (self-collect), Coinalyze liquidation history (only simple REST source), cryptofeed LIQUIDATIONS, Coinglass, Amberdata",
+     "sources": [
+      "https://arxiv.org/abs/2607.27070",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6579278",
+      "https://arxiv.org/abs/2102.04591",
+      "https://blog.amberdata.io/how-3.21b-vanished-in-60-seconds-october-2025-crypto-crash-explained-through-7-charts",
+      "https://cryptoslate.com/new-bitcoin-study-shows-the-strongest-recurring-liquidation-warning-signs-cannot-warn-of-an-individual-crash/"
+     ],
+     "strength": "weak"
+    },
+    {
+     "name": "Options implied volatility level and variance risk premium (DVOL, IV-RV)",
+     "formula": "DVOL_t = Deribit 30d model-free IV index; VRP_t = IV_t^2 - RV_t^2 (annualized, matched windows). Tested vs r_{t+h} and |r_{t+h}|.",
+     "horizon": "1 week - 1 month",
+     "effect": "UNVERIFIED: BTC VRP negative on average and spikes before large moves of either sign (Alexander & Imeraj); W-shaped pricing kernel, premium dominated by upside states (Almeida et al.); IV slopes forecast realized vol, not returns (ORL 2024). Magnitude, not sign.",
+     "universe_period": "BTC Deribit 2019-2024",
+     "oos_evidence": "Descriptive/in-sample; no OOS directional test.",
+     "costs_decay": "No directional edge to decay; cheap robust vol-regime feature.",
+     "data_source": "Deribit public API get_volatility_index_data (DVOL since 2021-04), option chains, Laevitas, Amberdata, Tardis",
+     "sources": [
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3383734",
+      "https://arxiv.org/abs/2410.15195",
+      "https://www.sciencedirect.com/science/article/abs/pii/S0167637724000713",
+      "https://insights.deribit.com/industry/bitcoin-options-finding-edge-in-four-years-of-volatility-regimes/"
+     ],
+     "strength": "weak"
+    },
+    {
+     "name": "Options skew: 25-delta risk reversal, put/call ratio, option order imbalance",
+     "formula": "RR25_t = IV(25d call) - IV(25d put) at fixed tenor (European BS, r=0, 25-delta strike interpolation); PCR_t = put/call volume or OI; net buying pressure = sum(buyer- minus seller-initiated option volume). Rule tested: sign(RR at analysis date) = sign(BTC return to expiry).",
+     "horizon": "30-90 days (RR); 1h-5d (order imbalance)",
+     "effect": "VERIFIED (GitHub README): T-30: 33/56 = 58.9%, SE 6.7%, ~1.3 SD from coin flip, p~0.18; corr(RR magnitude, return) 0.076, R^2 ~0.006; |RR|>5% -> 58.6% (no gain). Also in README but omitted before: T-90: 24/31 = 77.4% - overlapping 90d windows (effective n ~10), no cost model, confounded with BTC drift and RR being positive in bull phases. UNVERIFIED: JFM 2023 null for option order imbalance on returns (predicts vol only); Kim et al. skew-sentiment co-movement.",
+     "universe_period": "BTC Deribit, ~4.5 years (dates not stated in README)",
+     "oos_evidence": "No train/test split, no benchmark against always-long, no multiple-testing control; academic order-flow result is a null.",
+     "costs_decay": "No directional edge to decay; skew is a cheap sentiment/regime feature.",
+     "data_source": "Deribit API (book summary, ticker greeks), Laevitas, Amberdata",
+     "sources": [
+      "https://github.com/JERONIMODIFRANCO/deribit-rr/tree/main",
+      "https://www.sciencedirect.com/science/article/pii/S1386418122000544",
+      "https://arxiv.org/pdf/2109.02776",
+      "https://onlinelibrary.wiley.com/doi/full/10.1002/fut.70004"
+     ],
+     "strength": "no-evidence"
+    },
+    {
+     "name": "Futures order imbalance around quarter-hour boundaries",
+     "formula": "OI_t = (buyer-initiated - seller-initiated volume)/total in first seconds after :00/:15/:30/:45 on crypto futures; regress r_{t+h} (10s to 12h) on OI_t, 12 lags, technical controls.",
+     "horizon": "10 s to 4-12 h",
+     "effect": "UNVERIFIED (arXiv and all mirrors blocked): 4-12h predictability significant at 95% for 4/6 contracts, block-bootstrap t 1.6-2.6; 10-second OOS R^2 3.37%, AUC 0.601; no after-cost result.",
+     "universe_period": "6 crypto futures, ~2023-2026",
+     "oos_evidence": "OOS only for 10 s horizon; 4-12h in-sample with bootstrap; no post-publication test.",
+     "costs_decay": "Marginal t-stats; 10 s untradeable; 4-12h effect small vs fees; likely to be arbitraged.",
+     "data_source": "Binance/Bybit aggTrades with taker side, data.binance.vision, Tardis",
+     "sources": [
+      "https://arxiv.org/abs/2607.09426",
+      "https://arxiv.org/html/2607.09426"
+     ],
+     "strength": "weak"
+    },
+    {
+     "name": "CME weekend gap fill",
+     "formula": "Gap_t = CME Friday settlement - Sunday open; fade toward gap.",
+     "horizon": "days to months (unbounded)",
+     "effect": "Vendor fill-rate statistics (77%/92%) without benchmark against unconditional revisit probability; unverified and uninterpretable.",
+     "universe_period": "BTC CME 2018-2026",
+     "oos_evidence": "None; claim that CME went gap-free in 2026 also unverified.",
+     "costs_decay": "Unbounded holding period; no stop; mechanism may have ended.",
+     "data_source": "CME settlements (Barchart), spot via ccxt",
+     "sources": [
+      "https://finance.yahoo.com/markets/crypto/articles/bitcoin-first-cme-gap-free-174649486.html",
+      "https://phemex.com/academy/cme-futures-gap"
+     ],
+     "strength": "no-evidence"
+    },
+    {
+     "name": "[ADDED] Taker buy/sell volume ratio and signed order-flow imbalance on perps",
+     "formula": "TBR_t = taker buy volume / taker sell volume per 5m-1h bucket (Binance takerlongshortRatio, OKX taker-volume); OFI_t = sum of signed aggressive volume (aggTrades isBuyerMaker) normalized by total volume; z-scored over 24h. Hypothesis: positive imbalance -> continuation over next minutes; contrarian at extremes.",
+     "horizon": "seconds-minutes (strong contemporaneous), 1h-1d (weak)",
+     "effect": "Not in the original list. Equity/microstructure literature (Chordia-Roll-Subrahmanyam; Cont-Kukanov-Stoikov OFI) shows order-flow imbalance explains contemporaneous returns strongly and next-interval returns weakly; crypto studies (e.g., Silantyev 2019 'Order flow analysis of cryptocurrency markets', Digital Finance) report similar contemporaneous R^2 at minute horizons with predictive content decaying within minutes. No cost-adjusted evidence at the hourly/daily horizons the advisor would use. Could not be verified in this session.",
+     "universe_period": "BTC/ETH perps, 2018-2023",
+     "oos_evidence": "Microstructure results are largely in-sample regressions; no post-publication trading test at >5-minute horizons found.",
+     "costs_decay": "Edge lives inside the bid-ask spread at sub-minute horizons; at 1h+ it is inside fees. Useful as a feature (flow regime, absorption vs. exhaustion), not as a signal.",
+     "data_source": "Binance /futures/data/takerlongshortRatio (30-day window - archive), data.binance.vision aggTrades (full history), OKX rubik taker-volume, cryptofeed TRADES",
+     "sources": [
+      "https://github.com/binance/binance-public-data/",
+      "https://link.springer.com/article/10.1007/s42521-019-00007-w"
+     ],
+     "strength": "weak"
+    },
+    {
+     "name": "[ADDED] Dealer gamma exposure / max-pain / option OI walls",
+     "formula": "GEX_t = sum over strikes of OI * gamma * S^2 * 0.01 (sign by assumed dealer side); max pain = strike minimizing total option payout at expiry; 'pin' hypothesis: spot gravitates to max pain into large expiries; positive GEX dampens, negative GEX amplifies moves.",
+     "horizon": "days into monthly/quarterly Deribit expiries",
+     "effect": "Widely published by vendors (Deribit Insights, Greeks.live, Amberdata) but no peer-reviewed or pre-registered test for BTC found; equity evidence for expiration pinning exists (Ni-Pearson-Poteshman 2005) but is small and about clustering at strikes, not direction. Dealer-side sign is unobservable on Deribit (no OCC-style classification), so GEX sign is an assumption.",
+     "universe_period": "BTC/ETH Deribit 2020-2026 (vendor)",
+     "oos_evidence": "None.",
+     "costs_decay": "Unknown. At best a volatility-regime feature around expiries.",
+     "data_source": "Deribit get_book_summary_by_currency, get_instruments (OI by strike), Laevitas, Amberdata",
+     "sources": [
+      "https://insights.deribit.com/",
+      "https://www.jstor.org/stable/3694735"
+     ],
+     "strength": "no-evidence"
+    },
+    {
+     "name": "[ADDED] Spot BTC/ETH ETF net flows as positioning proxy",
+     "formula": "Flow_t = sum of daily net creations/redemptions in USD across US spot ETFs (Farside/SoSoValue aggregation; T+1 publication); z-scored 5d/20d flow; hypothesis: flows lead returns.",
+     "horizon": "1-5 days",
+     "effect": "Only since Jan 2024 (~450 daily obs). Vendor analyses and my reading of 2024-2025 working papers suggest flows are mostly CONTEMPORANEOUS or lag returns (return-chasing), with little incremental next-day predictability; not verifiable here. Structural relevance is high because ETF/basis-trade demand now drives CME basis and Leveraged Fund COT shorts.",
+     "universe_period": "US spot BTC ETFs 2024-01..; ETH ETFs 2024-07..",
+     "oos_evidence": "None found; sample too short for regime-robust conclusions.",
+     "costs_decay": "Daily, low turnover; publication lag (next morning) must be respected to avoid look-ahead.",
+     "data_source": "Farside Investors, SoSoValue, issuer daily holdings; CF Benchmarks basis for the hedge leg",
+     "sources": [
+      "https://farside.co.uk/btc/"
+     ],
+     "strength": "no-evidence"
+    },
+    {
+     "name": "[ADDED] On-chain perp positioning (Hyperliquid whale positions, HLP vault exposure)",
+     "formula": "Public per-address positions and liquidation prices on Hyperliquid (info API clearinghouseState, userFills); features: aggregate top-N whale net exposure, distance of large positions to liquidation, HLP vault net delta.",
+     "horizon": "hours-days",
+     "effect": "Uniquely transparent positioning data (all positions visible on-chain), heavily used by 2025-2026 trackers, but no academic or pre-registered evidence of return predictability; anecdotally, 'whale' positions have been both squeezed and right. Included so the owner does not mistake visibility for edge.",
+     "universe_period": "Hyperliquid 2024-2026",
+     "oos_evidence": "None.",
+     "costs_decay": "Cheap to collect (rate limit 1200 weight/min; candleSnapshot/fundingHistory weight 20); S3 history requester-pays.",
+     "data_source": "Hyperliquid info API, HL S3 archive, hyperliquid-data GitHub tooling",
+     "sources": [
+      "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/rate-limits-and-user-limits",
+      "https://github.com/bond-labs-dev/hyperliquid-data"
+     ],
+     "strength": "no-evidence"
+    }
+   ],
+   "red_flags": [
+    "VERIFICATION FAILURE (this session): the egress proxy denied every non-GitHub host tried (arxiv.org, export.arxiv.org, alphaxiv, semanticscholar API, huggingface papers, core.ac.uk, scholar.archive.org, SSRN, BIS, RePEc, INFORMS, Wiley, ScienceDirect, Emerald, Medium, TheBlock, CoinDesk, CryptoSlate, CF Benchmarks, Deribit, Binance, CFTC, Kaggle, Phemex) and the WebSearch budget was already exhausted (200/200). Only two GitHub studies were read first-hand. Every other number in this family remains a second-hand excerpt and must be re-verified from the PDFs on the owner's machine before it enters the design doc.",
+    "CORRECTION: the funding carry-fade study's holdout (2025-01..2026-06) was never opened; the earlier text that alpha was 'indistinguishable from zero on sealed holdout' is wrong. All its numbers are training-period. Its more important finding is that the PRICE mechanism was falsified (short-leg price component ~0 with wide CI): cross-sectional funding has no directional content, only carry.",
+    "CORRECTION/OMISSION: the deribit-rr repo also reports T-90 accuracy 77.4% (24/31). Do not treat this as evidence: 3x overlapping windows, no cost model, no always-long benchmark during a period of strong BTC drift, and RR sign is regime-correlated with the trend itself.",
+    "Strength downgrades applied: basis/carry, OI-change crash logit, and COT positioning moved from moderate to weak because their evidence is in-sample, pre-2024 (before the ETF/basis-fund structural break), unreplicated, and unreadable here; cross-sectional funding moved to no-evidence for direction.",
+    "Small-N regime claims (K33 negative-funding streaks: <10 independent episodes; Emerald crash logit: 2 years of data) cannot support win-rate or AUC claims at the precision quoted; treat as hypotheses for in-house purged-CPCV tests, not priors.",
+    "Sign instability: short-horizon funding regressions imply contrarian predictability while daily backtests find funding accompanies persistent trends; any single rule will be regime-conditional. Feed funding into the model only as a state variable (regime/TVTP), never as a fixed-sign signal.",
+    "Cost dominance: the one cross-sectional funding effect that is statistically real gross is 74% consumed by measured half-spreads at 1.85x daily turnover, and its DSR is 0.76; vendor backtests that omit taker fees, funding on the hedge leg and slippage are not evidence.",
+    "Crash-risk vs direction conflation: OI change, high carry and VRP are about tail probability and volatility magnitude. Using them as sign features in a directional classifier will inflate in-sample accuracy via volatility-clustering leakage unless triple-barrier labels are volatility-scaled and barrier width is modeled separately.",
+    "Structural breaks: spot ETFs (Jan 2024) and institutional basis funds compressed CME basis and funding and changed what CFTC 'Leveraged Funds' shorts mean (now largely cash-and-carry hedges); pre-2024 positioning results may not transfer, and post-2024 samples are too short to re-establish them.",
+    "Data-quality traps: Binance OI/LSR/taker-ratio endpoints serve only 30 days (start an archiver immediately, 4h cadence as the repo's research doc already prescribes); vendor liquidation totals are lower bounds since Binance throttled forceOrder to 1/sec; DVOL history is back-filled with current methodology; COT is Tuesday data released Friday; funding is known ~1 minute before settlement (use realized, not predicted, funding as the feature at time t).",
+    "Publication bias: the positive claims in this family (Baur & Smales strategy, Babayev & Aliyev factor, quarter-hour effect, K33 regimes, RR backtest) are in-sample or gross-of-cost; the methodologically strongest work (pre-registered study with measured costs, purged walk-forward, 7-cascade replication, JFM option order-flow test) reports nulls for direction."
+   ]
+  },
+  "missing": [
+   "Taker buy/sell ratio and signed order-flow imbalance on perps (Binance takerlongshortRatio, aggTrades OFI) - weak, sub-hour horizon, feature only",
+   "Dealer gamma exposure / max-pain / option OI walls around Deribit expiries - no peer-reviewed BTC evidence; dealer side unobservable",
+   "Spot BTC/ETH ETF net flows as positioning proxy (2024+) - short sample, largely contemporaneous/return-chasing, publication lag",
+   "On-chain perp positioning on Hyperliquid (whale net exposure, liquidation distance, HLP vault delta) - fully transparent data, zero evidence of edge",
+   "Cross-exchange funding dispersion / perp-vs-perp premium spreads (arbitrage-pressure gauge, not direction) - not evaluated",
+   "Predicted-vs-realized funding gap within the 8h window (look-ahead-safe formulation) - not evaluated; SSRN 5576424 addresses funding predictability itself, which is a carry input rather than a direction input"
+  ]
+ },
+ {
+  "verdicts": [
+   {
+    "name": "Order Flow Imbalance (OFI, Cont–Kukanov–Stoikov) и multi-level OFI",
+    "verdict": "overstated",
+    "note": "Механизм (линейная связь OFI→ΔP, Cont et al. JFEc 2014; горизонт ≈2 изменения mid, Kolm–Turiel–Westray Math. Finance 2023) — устоявшийся, рецензированный результат, здесь сомнений нет. Но крипто-цифры (R² 0.094/0.019 для BTC из нерецензированного draft 2308.14235; «10–37% дисперсии 500-мс доходностей» у Albers et al.) в этом раунде проверить не удалось (arXiv/T&F заблокированы, поисковый бюджет исчерпан). Главное: «strong» относится к предсказуемости на 0.1–10 с; для сервиса с доставкой в минуты доказательств предсказательной силы нет вообще. Strength для целевого горизонта понижен до no-evidence."
+   },
+   {
+    "name": "Order book / queue imbalance (top-of-book и глубина L2)",
+    "verdict": "overstated",
+    "note": "Gould–Bonart (2016) — рецензировано, эффект на следующий тик реальный. Все крипто-источники — препринты 2026 (2602.00776, 2506.05764, 2607.09426), полные тексты недоступны; Sharpe/доходности бэктестов Bieganowski–Ślepaczuk в исходном отчёте прямо признаны неизвестными. Единственное, что сам отчёт цитирует про минутные окна (Kim–Hansen: «little predictive association» на 1/5-мин границах) — это свидетельство ПРОТИВ применимости. Strength для целевого горизонта → no-evidence; «strong» корректно только для суб-секундного маркет-мейкинга."
+   },
+   {
+    "name": "Taker buy/sell (trade-sign) imbalance на минутных–часовых окнах, включая quarter-hour boundary imbalance",
+    "verdict": "unverifiable",
+    "note": "Обе ключевые работы — препринты июля/августа 2026 (2607.09426, 2608.21888), выборка Kim–Hansen заканчивается 10.2024, post-publication периода нет, OOS R²/AUC не раскрыты даже в исходном отчёте; независимой репликации на GitHub не найдено (поиск по «Kimbrough/quarter-hour/order flow imbalance binance» — 0 репозиториев). Единственный проверяемый по памяти источник — Wen–Bouri–Xu–Zhao (NAJEF 2022, BTC 2013–2020): интрадей momentum/reversal без строгого учёта издержек. Величина 5–17 б.п. vs round-trip 5–11 б.п. — edge на грани даже по заявленным цифрам. Strength → weak (гипотеза для собственной проверки, не установленный факт)."
+   },
+   {
+    "name": "Агрегированный 'world' order flow (daily/weekly) — Anastasopoulos, Gradojevic, Liu, Maynard, Tsiakas",
+    "verdict": "unverifiable",
+    "note": "Статья рецензирована (JFM 2026 / SSRN 5020002 11.2024), но ни одна из четырёх ссылок не открылась; размер универсума, число монет и период неизвестны; цифры (Sharpe 3.5 daily LS, break-even 0.48%/день) взяты из сниппетов и не подтверждены. Sharpe 3.5 на дневных LS-портфелях альтов — типичный признак концентрации прибыли в неликвидных монетах; репликации нет. Strength → weak."
+   },
+   {
+    "name": "VPIN (Volume-Synchronized Probability of Informed Trading) / order-flow toxicity",
+    "verdict": "holds",
+    "note": "Вывод «не даёт направления, годится только как режимный/риск-признак» подтверждается и структурой метрики (модуль дисбаланса), и единственным доступным крипто-репозиторием (MobiHussain/vpin-jump-detector: VPIN как детектор скачков/ликвидных шоков, без количественной валидации). Критика Andersen–Bondarenko (JFM 2014) известна и не опровергнута. Крипто-цифры Kitvanitphasu et al. / Easley et al. не проверены (ScienceDirect/SSRN заблокированы). Strength weak — согласен."
+   },
+   {
+    "name": "Deep learning на limit order book (DeepLOB, CNN-LSTM, TransLOB, CatBoost на LOB-признаках) в крипте",
+    "verdict": "overstated",
+    "note": "Подтверждено через GitHub (jjakimoto/research-issues #1883, zcakhaa/DeepLOB): F1 83.40/72.82/80.35% при k=10/20/50 на FI-2010, LSE 70.17%→68.62% на unseen stocks, и прямое признание авторов: симуляция — «merely a metric of testing predictability», без комиссий/спреда/латентности. LOBCAST (Prata et al., AI Review 2024): «all models exhibit a significant performance drop when exposed to new data». Ошибка в исходном отчёте: Globe-Research/deep-orderbook (Jha et al., Coinbase BTC, 2 с) заявляет 76%, а не 71% walk-forward accuracy; период и разметка в README не указаны. Repo toma-x «86% accuracy» — баланс классов и издержки не раскрыты (подтверждено). Strength для целевого горизонта → no-evidence."
+   },
+   {
+    "name": "Cross-exchange lead-lag и cross-impact (perps vs spot, Binance vs остальные)",
+    "verdict": "overstated",
+    "note": "Существование субсекундного lead-lag (Albers et al. AMF 2022; perps ведут price discovery — Alexander et al.) правдоподобно и известно, но конкретные цифры (10–37% OOS R²) не подтверждены, данные включают FTX/Huobi (структура устарела), репликаций после 2022 нет. Для целевого горизонта в минуты предсказательной силы нет; полезен только вывод «строить признаки на Binance perps». Strength → no-evidence (для минут), strong только для HFT."
+   },
+   {
+    "name": "L2 liquidity state (spread / top-20 depth / imbalance режим) как условие для order-flow сигналов",
+    "verdict": "unverifiable",
+    "note": "Один препринт 2026 (2607.09230), недоступен, численных AUC нет даже в исходном отчёте, репликаций нет. Ненаправленный признак. Strength → no-evidence (как предиктор направления); допустимо тестировать как режимный признак."
+   },
+   {
+    "name": "Идентифицированный informed flow (public trader identity, Hyperliquid) и 'meta-order' tracking",
+    "verdict": "wrong",
+    "note": "Фактическая нестыковка: цитируемый репозиторий daojingzhai/public-trader-identity сопровождает статью «Public Trader Identity: Adverse Selection and Return Predictability» (Daojing Zhai, 2026, SSRN 7234658) на публичных данных Hyperliquid за ДЕКАБРЬ 2025 (Zenodo 10.5281/zenodo.18184441, Albers et al.), а не «июль 2026»; README прямо говорит, что код оценки и репликационный пакет будут добавлены после публикации, и не содержит ни OOS R² 12.31%, ни ранговой корреляции 0.52, ни t=9.2. Эти числа невозможно привязать ни к репозиторию, ни к arXiv 2608.04373 (заблокирован). Горизонт 1 с в любом случае бесполезен для Telegram. Strength → no-evidence."
+   },
+   {
+    "name": "Cost-aware направленные ML-прогнозы на часовых барах BTC (контекст издержек для всей семьи)",
+    "verdict": "unverifiable",
+    "note": "Препринт 2026 (2606.00060 / SSRN 6795938), недоступен. Качественный вывод («наивные sign-стратегии убыточны при 10 б.п.; порог по величине прогноза восстанавливает прибыль лишь в части конфигураций; bootstrap не подтверждает превосходства») согласуется с известной литературой и с собственным CLAUDE-док проекта (комиссии Binance futures taker 0.05%/maker 0.02%), но «>65% годовых, Sharpe >1 net» для «лучшей» конфигурации — post-hoc селекция. Strength weak — согласен, как ограничение, а не как предиктор."
+   }
+  ],
+  "corrected": {
+   "family": "Order flow and microstructure (minutes to hours): OFI, order book / queue imbalance, taker buy–sell imbalance, VPIN, deep learning on LOB, cross-exchange lead-lag; применимость к retail-сигналам через Telegram с задержкой в минуты",
+   "summary": "Проверка рефери (30.09.2026). Условия проверки: все академические домены (arXiv + зеркала export/alphaxiv/HF/Semantic Scholar, SSRN, ScienceDirect, Taylor&Francis, OpenAlex, Crossref, Zenodo, EFMA, Guelph, Kellogg, Kaggle, Tardis, Binance) заблокированы egress-прокси, бюджет WebSearch исчерпан (200/200). Подтвердить удалось только то, что лежит на GitHub. Поэтому по умолчанию всё, что опирается на препринты 2026 г., переведено в «unverifiable», а strength всех предикторов пересчитан относительно единственного релевантного вопроса — есть ли доказательства предсказания НАПРАВЛЕНИЯ на горизонте, доступном сервису с задержкой доставки в минуты. Итог: (1) Суб-секундная микроструктурная предсказуемость (OFI, queue imbalance, DeepLOB, cross-exchange lead-lag) — реальна и рецензирована на акциях (Cont et al. 2014; Gould–Bonart 2016; Zhang et al. 2019; Kolm et al. 2023), но горизонт 0.1–30 с; сами авторы DeepLOB пишут, что симуляция — «merely a metric of testing predictability» без комиссий, спреда и латентности (подтверждено по GitHub), а бенчмарк LOBCAST фиксирует «significant performance drop when exposed to new data». Для Telegram-бота это no-evidence, а не «strong». (2) Единственные кандидаты с горизонтом часы–день — агрегированный taker-imbalance (quarter-hour boundary effect, 15-мин реверсал) и дневной «world order flow» — опираются на препринты 2026 и одну JFM-статью, чьи цифры (5–17 б.п. на 4–12 ч; Sharpe 1.9–3.5 daily LS) не подтверждены первоисточниками, не имеют независимых репликаций (поиск GitHub — 0 репозиториев) и post-publication выборки. Заявленный edge сопоставим с round-trip издержками 5–11 б.п. Это гипотезы для собственной проверки через CPCV/DSR/PBO на taker_buy_base_asset_volume из data.binance.vision (поле подтверждено), не установленные факты. (3) VPIN и L2 liquidity state — ненаправленные; допустимы только как режимные признаки. (4) Обнаружены две фактические ошибки предыдущего раунда: Hyperliquid-предиктор опирается на данные декабря 2025 (Zhai 2026, SSRN 7234658), а не июля 2026, и цитируемый репозиторий не содержит ни одной из приведённых цифр; Jha et al. (Coinbase BTC, 2 с) заявляют 76%, а не 71% walk-forward accuracy. (5) Практический вывод не меняется, но ужесточается: из этой семьи в GBM-модель имеет смысл включать только медленные агрегаты (taker-imbalance 15 м/1 ч/4 ч, Roll/VPIN/spread как режим), с cost-aware порогом и обязательным placebo-тестом; ожидать доходности от них нельзя, пока собственный OOS-тест не покажет edge выше издержек.",
+   "predictors": [
+    {
+     "name": "Order Flow Imbalance (OFI, Cont–Kukanov–Stoikov) и multi-level OFI",
+     "formula": "e_n = 1{P^b_n ≥ P^b_{n-1}}·q^b_n − 1{P^b_n ≤ P^b_{n-1}}·q^b_{n-1} − 1{P^a_n ≤ P^a_{n-1}}·q^a_n + 1{P^a_n ≥ P^a_{n-1}}·q^a_{n-1}; OFI_k = Σ_{n∈k} e_n; ΔP_k = β·OFI_k + ε. Multi-level: тот же e_n по каждому из M уровней.",
+     "horizon": "Contemporaneous и 100 мс – 10 с; ≈2 средних изменения mid (Kolm et al.). На минутах — данных о предсказательной силе нет.",
+     "universe_period": "Акции: 50 NYSE TAQ, апрель 2010 (Cont et al.); 115 Nasdaq (Kolm et al.). Крипта: BTC/USD (draft 2308.14235, период неясен); BTC на нескольких биржах ~2021 (Albers et al.).",
+     "effect": "Акции: contemporaneous R² ≈65% на 10-с окнах (Cont et al., рецензировано). Крипта: R² 0.094 (1 с) / 0.019 (10 с) и «10–37% дисперсии 500-мс доходностей» — НЕ подтверждены в этом раунде (источники недоступны).",
+     "oos_evidence": "Рецензировано (JFEc 2014; Math. Finance 2023), эффект живёт как компонент HFT-сигналов. Для горизонта минут OOS-свидетельств нет.",
+     "strength": "no-evidence",
+     "costs_decay": "Ниже спреда на секундах; при задержке в минуты ценность ≈0 и риск adverse selection. Только для исполнения/маркет-мейкинга.",
+     "data_source": "Binance WS depth@100ms + bookTicker (ccxt watch_order_book); data.binance.vision bookTicker; Tardis.dev L2",
+     "sources": [
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1712822",
+      "https://arxiv.org/pdf/1011.6402",
+      "https://onlinelibrary.wiley.com/doi/10.1111/mafi.12413",
+      "https://arxiv.org/pdf/2308.14235",
+      "https://www.tandfonline.com/doi/full/10.1080/1350486X.2022.2080083"
+     ]
+    },
+    {
+     "name": "Order book / queue imbalance (top-of-book и глубина L2)",
+     "formula": "I_t = (Q^b_t − Q^a_t)/(Q^b_t + Q^a_t); взвешенный вариант Σ_k w_k(Q^b_k − Q^a_k)/Σ_k w_k(Q^b_k + Q^a_k), k=1..20.",
+     "horizon": "Следующий тик mid (Gould–Bonart); 1–30 с в крипте; на 1/5-мин границах — «little predictive association» (Kim–Hansen, по сниппету).",
+     "universe_period": "Gould–Bonart: 10 акций Nasdaq (LOBSTER). Крипта: Binance Futures BTC/LTC/ETC/ENJ/ROSE 1-с 2022–2025 (препринт 2602.00776, не открыт); Bybit BTCUSDT (2506.05764, не открыт).",
+     "effect": "Gould–Bonart: значимая логистическая связь, улучшение классификации над нулевой моделью для large-tick акций. Крипта: Sharpe/доходности не раскрыты ни в первоисточниках (недоступны), ни в предыдущем отчёте.",
+     "oos_evidence": "Рецензировано на акциях (2016). Крипто-препринты 2026 — unverifiable; для минутного горизонта единственное цитируемое свидетельство — отрицательное.",
+     "strength": "no-evidence",
+     "costs_decay": "Полураспад секунды; taker-комиссия 5 б.п. > ожидаемого движения; во флэш-крэшах глубина исчезает нелинейно. Не использовать как сигнал при задержке >10 с.",
+     "data_source": "Binance/Bybit WS depth, Tardis.dev, ccxt watch_order_book",
+     "sources": [
+      "https://arxiv.org/abs/1512.03492",
+      "https://arxiv.org/abs/2602.00776",
+      "https://arxiv.org/abs/2506.05764",
+      "https://arxiv.org/abs/2607.09426"
+     ]
+    },
+    {
+     "name": "Taker buy/sell (trade-sign) imbalance на 15-мин–4-ч окнах, включая quarter-hour boundary imbalance",
+     "formula": "TI_w = (V^takerbuy_w − V^takersell_w)/(V^takerbuy_w + V^takersell_w), знак из klines.taker_buy_base_asset_volume или aggTrades.isBuyerMaker (оба поля подтверждены в binance-public-data); boundary-вариант: TI за первые 10 с после hh:00/:15/:30/:45, регрессия r_{t→t+h}, h=0.5…12 ч.",
+     "horizon": "Заявлено 4–12 ч (boundary), 15 мин (реверсал); первые 30 мин — реверсал. Не подтверждено.",
+     "universe_period": "Заявлено: BTC/ETH/XRP/SOL/DOGE/ADA USDT-perps Binance, 10-с бары, 01.2021–10.2024 (Kim–Hansen); 183 пары Binance spot 2025–02.2026 (2608.21888). Первоисточники недоступны.",
+     "effect": "Заявлено (не подтверждено): 5–6 б.п. устойчиво + до 9.8/16.9 б.п. на 8/12 ч; 90% из 183 пар — значимый 15-мин реверсал, lag-1 автокорреляция на мажорах ≈0 (эффект в знаке, не в величине). Wen et al. (NAJEF 2022, BTC 2013–2020): интрадей momentum и reversal сосуществуют, издержки не учтены строго.",
+     "oos_evidence": "Препринты 07–08.2026; walk-forward LASSO заявлен, OOS R²/AUC не раскрыты; независимых репликаций нет (GitHub — 0 репозиториев); post-publication периода нет; выборка заканчивается 10.2024.",
+     "strength": "weak",
+     "costs_decay": "Единственный кандидат семьи, переживающий задержку в минуты. Заявленный edge 5–17 б.п. vs round-trip ≈10–11 б.п. taker / ≈4–5 б.п. maker — на грани; высокий риск decay (эффект привязан к периодическим алгоритмам). Обязателен собственный OOS-тест с издержками до какого-либо использования.",
+     "data_source": "data.binance.vision klines (taker_buy_base_asset_volume) и aggTrades (isBuyerMaker) — spot и USD-M futures, бесплатно; ccxt fetch_trades",
+     "sources": [
+      "https://arxiv.org/abs/2607.09426",
+      "https://arxiv.org/abs/2608.21888",
+      "https://www.sciencedirect.com/science/article/abs/pii/S1062940822000833",
+      "https://github.com/binance/binance-public-data/"
+     ]
+    },
+    {
+     "name": "Агрегированный 'world' order flow (daily/weekly) — Anastasopoulos, Gradojevic, Liu, Maynard, Tsiakas",
+     "formula": "OF_{i,t} = Σ(buyer-initiated − seller-initiated volume) за день/неделю по парам в 11 фиатных валютах; r_{i,t+1} = a + b·OF_{i,t} + ε; ML-модели; портфельные сорты.",
+     "horizon": "1 день / 1 неделя",
+     "universe_period": "Кросс-сектор криптовалют, число монет и период не установлены (все четыре источника заблокированы).",
+     "effect": "Заявлено (не подтверждено): предиктивный R² 1.2% (день) / 3.4% (неделя); weekly LS Sharpe 1.93; ML daily LS Sharpe 3.5, alpha 0.76%/день, break-even 0.48%/день.",
+     "oos_evidence": "Рецензировано (JFM 2026); OOS ML-сравнение заявлено; независимых репликаций и post-publication данных нет.",
+     "strength": "weak",
+     "costs_decay": "Ежедневный оборот по широкому набору альтов; Sharpe 3.5 подозрительно высок и, вероятно, концентрируется в неликвидных монетах с высокими реальными издержками и шорт-ограничениями. Для Telegram горизонт удобен, но требует своего сбора signed trades по многим парам.",
+     "data_source": "aggTrades (isBuyerMaker) по многим парам: data.binance.vision, Tardis; tick rule для бирж без флага",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/pii/S1386418126000029",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5020002",
+      "https://www.efmaefm.org/0EFMAMEETINGS/EFMA%20ANNUAL%20MEETINGS/2025-Greece/papers/OrderFlowpaper.pdf"
+     ]
+    },
+    {
+     "name": "VPIN / order-flow toxicity (режимный признак, не направление)",
+     "formula": "Объёмные бакеты размера V; VPIN_t = Σ_{τ=t−n+1}^{t} |V^B_τ − V^S_τ|/(n·V), n≈50; классификация BVC или tick rule. Без знака.",
+     "horizon": "Следующие бакеты/часы для скачков и волатильности; для направления — не применимо.",
+     "universe_period": "Оригинал: E-mini S&P (2012). Крипта: Bitcoin HF (Kitvanitphasu et al., RIBAF 2025); Binance BTC/ETH/XRP/SOL/ADA (Easley–O'Hara–Yang–Zhang, SSRN 2024/JFM 2026) — не открыты.",
+     "effect": "Заявлено: VPIN предсказывает скачки; 2-й по важности признак после Roll в RF для волатильности. Единственный доступный крипто-репозиторий (MobiHussain/vpin-jump-detector) позиционирует VPIN как детектор скачков без количественной валидации.",
+     "oos_evidence": "Критика Andersen–Bondarenko (JFM 2014): нет инкрементальной силы при контроле объёма/волатильности; спор не закрыт. Крипто-цифры не подтверждены.",
+     "strength": "weak",
+     "costs_decay": "Не даёт направления. Только фильтр риска (снижать размер/отключать сигналы при высоком VPIN). Задержка в минуты допустима.",
+     "data_source": "aggTrades (isBuyerMaker) или BVC по минутным барам",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/pii/S0275531925004192",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4814346",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1881731",
+      "https://github.com/MobiHussain/vpin-jump-detector"
+     ]
+    },
+    {
+     "name": "Deep learning на LOB (DeepLOB, CNN-LSTM, TransLOB, CatBoost на LOB-признаках) в крипте",
+     "formula": "Вход: T=100 снапшотов 10 уровней (40 признаков); выход {up, flat, down} по (m⁺_{t,k} − m_t)/m_t с порогом α; conv → Inception → LSTM → softmax.",
+     "horizon": "k=10–100 событий (доли секунды–секунды); 2 с (Jha et al., Coinbase BTC).",
+     "universe_period": "FI-2010 (5 финских акций, 10 дней); LSE 1 год; LOBSTER; Coinbase BTC-USD (период в README не указан).",
+     "effect": "Подтверждено (GitHub): F1 83.40% (k=10), 72.82% (k=20), 80.35% (k=50) на FI-2010; LSE 70.17% → 68.62% на unseen stocks (k=20). Jha et al.: 76% walk-forward accuracy на 2 с (в предыдущем отчёте ошибочно 71%). toma-x CNN «86%» — баланс классов не раскрыт.",
+     "oos_evidence": "Авторы DeepLOB: симуляция «merely a metric of testing predictability», без комиссий, спреда, очереди, латентности (подтверждено). LOBCAST/Prata et al.: «significant performance drop when exposed to new data» (подтверждено). Ни одного независимого отчёта о чистой прибыли в крипте.",
+     "strength": "no-evidence",
+     "costs_decay": "Секундный горизонт, порог α ≈ спред, латентность OMS съедает сигнал. Для Telegram неприменимо.",
+     "data_source": "Tardis.dev L2, Binance/Bybit WS depth, Globe-Research/deep-orderbook",
+     "sources": [
+      "https://arxiv.org/abs/1808.03668",
+      "https://github.com/jjakimoto/research-issues/issues/1883",
+      "https://github.com/matteoprata/LOBCAST",
+      "https://github.com/FinancialComputingUCL/LOBFrame",
+      "https://github.com/Globe-Research/deep-orderbook",
+      "https://github.com/toma-x/exploring-order-book-predictability"
+     ]
+    },
+    {
+     "name": "Cross-exchange lead-lag и cross-impact (perps vs spot, Binance vs остальные)",
+     "formula": "r_{j,t→t+500ms} = Σ_i β_{ij}·OFI_{i,t−Δ} + Σ_i γ_{ij}·TradeFlow_{i,t−Δ} + ε; Hasbrouck IS / Gonzalo–Granger на VECM для price discovery.",
+     "horizon": "500 мс; минуты только для агрегированного information share.",
+     "universe_period": "Binance, Huobi, Bybit, FTX, Bitmex spot и perps, ~2021 (Albers et al., не открыт). FTX не существует, Huobi переименован.",
+     "effect": "Заявлено: 10–37% OOS R² на 500 мс; Binance/Huobi — лидеры. Не подтверждено.",
+     "oos_evidence": "OOS заявлен; репликаций после 2022 нет; структура рынка изменилась.",
+     "strength": "no-evidence",
+     "costs_decay": "Арбитражируется HFT; при задержке >1 с исчезает. Полезен только выбор Binance perps как источника признаков.",
+     "data_source": "Tardis.dev multi-exchange; ccxt (REST-задержки исключают live-использование)",
+     "sources": [
+      "https://www.tandfonline.com/doi/full/10.1080/1350486X.2022.2080083",
+      "https://arxiv.org/abs/2108.09750"
+     ]
+    },
+    {
+     "name": "L2 liquidity state (spread / depth / imbalance режим) как условие для сигналов",
+     "formula": "s_t ∈ {calm, mixed, stressed} по кластеризации (spread, Σ_{k≤20} depth, imbalance); P(s_{t+h}|s_t) vs logit vs shallow nonlinear; order flow как overlay.",
+     "horizon": "Минуты–часы вокруг макро-событий.",
+     "universe_period": "Binance BTCUSDT/ETHUSDT futures 2023–2026 (препринт 2607.09230, не открыт).",
+     "effect": "Численные AUC/accuracy неизвестны.",
+     "oos_evidence": "Один препринт 2026, репликаций нет.",
+     "strength": "no-evidence",
+     "costs_decay": "Ненаправленный; допустим как режимный признак в GBM после собственной проверки.",
+     "data_source": "Binance futures WS depth20@100ms, aggTrades, календарь макро-событий",
+     "sources": [
+      "https://arxiv.org/abs/2607.09230"
+     ]
+    },
+    {
+     "name": "Идентифицированный informed flow (public trader identity, Hyperliquid)",
+     "formula": "Ранжировать кошельки по средней доходности после их агрессивных ордеров; признак — signed taker-объём топ-кошельков; r_{t+1s} = α + β·X_anon + γ·TopWalletFlow_t + ε.",
+     "horizon": "1 с (заявлено); более длинные горизонты не исследованы.",
+     "universe_period": "Публичные данные Hyperliquid за декабрь 2025 (Zenodo 10.5281/zenodo.18184441, Albers et al.) — Zhai, «Public Trader Identity: Adverse Selection and Return Predictability», SSRN 7234658 (2026). Предыдущий отчёт ошибочно указал «июль 2026».",
+     "effect": "Цифры предыдущего отчёта (rank corr 0.52; OOS R² 12.31%, t=9.2; 200 placebo-когорт) отсутствуют в цитируемом репозитории (README: код оценки и репликационный пакет «will be added after publication») и не могут быть привязаны к источнику.",
+     "oos_evidence": "Unverifiable; один месяц данных; препринт.",
+     "strength": "no-evidence",
+     "costs_decay": "На 1 с недоступно retail. Агрегированный flow «умных» кошельков на минутных–часовых окнах — чистая гипотеза.",
+     "data_source": "Hyperliquid API / node data (L4 с адресами); Zenodo-дамп",
+     "sources": [
+      "https://github.com/daojingzhai/public-trader-identity",
+      "https://arxiv.org/abs/2608.04373"
+     ]
+    },
+    {
+     "name": "Cost-aware направленные ML-прогнозы на часовых барах BTC (ограничение для всей семьи)",
+     "formula": "ŷ_{t+1h} = f(признаки часовых баров); сделка только если |ŷ| > τ·c, c = 10 б.п. per side; 27-fold walk-forward; circular block bootstrap.",
+     "horizon": "1 час",
+     "universe_period": "BTC/USDT ~70 000 часовых наблюдений 2018–2026 (препринт 2606.00060 / SSRN 6795938, не открыт).",
+     "effect": "Заявлено: наивные sign-стратегии убыточны при 10 б.п.; cost-aware фильтр восстанавливает прибыль в части конфигураций; bootstrap не подтверждает превосходства архитектур. «>65% годовых, Sharpe >1 net» — post-hoc селекция конфигурации.",
+     "oos_evidence": "Walk-forward заявлен; unverifiable.",
+     "strength": "weak",
+     "costs_decay": "Согласуется с комиссиями Binance USDT-M taker 0.05% / maker 0.02% (docs проекта). Прямое напоминание: без порога и низкого оборота часовые сигналы убыточны.",
+     "data_source": "Binance klines 1h, ccxt",
+     "sources": [
+      "https://arxiv.org/abs/2606.00060",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6795938"
+     ]
+    },
+    {
+     "name": "[ДОБАВЛЕНО] Ликвидационный поток (forced order flow) и последующий реверсал",
+     "formula": "L_w = Σ notional ликвидаций long − Σ notional ликвидаций short за окно w (5–60 мин) из Binance futures forceOrder stream / allForceOrders; гипотеза: после кластера ликвидаций одного знака — краткосрочный реверсал (минуты–часы), обусловленный истощением forced-потока.",
+     "horizon": "15 мин – 4 ч (гипотеза)",
+     "universe_period": "Не исследовано в доступных источниках; известно из практики после 10.10.2025 (≈$19 млрд ликвидаций) и из литературы по каскадам, но количественных OOS-оценок в этом раунде найти не удалось.",
+     "effect": "Неизвестен; событийная выборка мала, эффект несимметричен по режимам.",
+     "oos_evidence": "Нет. Включён как важный пропуск семьи: это единственный вид order flow, который по конструкции медленный (ликвидации распределены по минутам) и наблюдаем retail-участником в реальном времени бесплатно.",
+     "strength": "no-evidence",
+     "costs_decay": "Сигнал возникает именно в стрессе, когда спред/проскальзывание максимальны; taker-издержки могут многократно превышать обычные 5 б.п.",
+     "data_source": "Binance WS !forceOrder@arr (с 2020), Bybit liquidation stream, Coinglass (платно), data.binance.vision (ликвидаций нет — только live-сбор)",
+     "sources": [
+      "https://github.com/binance/binance-public-data/"
+     ]
+    },
+    {
+     "name": "[ДОБАВЛЕНО] Внутридневная сезонность потока (US equity open / funding-settlement 00:00, 08:00, 16:00 UTC) как conditioning для taker-imbalance",
+     "formula": "Дамми часов дня и минут до/после фандинг-расчёта и открытия US-сессии; interaction TI_w × dummy; цель r_{t→t+h}, h=1–4 ч.",
+     "horizon": "1–4 ч",
+     "universe_period": "Wen–Bouri–Xu–Zhao (NAJEF 2022): BTC 2013–2020 — интрадей momentum/reversal, без строгих издержек; фандинг-эффекты на перпах — известны практикам, рецензированных OOS-оценок в этом раунде подтвердить не удалось.",
+     "effect": "Неизвестен количественно.",
+     "oos_evidence": "Частично (Wen et al. — рецензировано, in-sample timing-стратегия).",
+     "strength": "weak",
+     "costs_decay": "Дешёвый признак для GBM; сам по себе не торгуется.",
+     "data_source": "Binance klines, fundingRate history (ccxt fetch_funding_rate_history)",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/abs/pii/S1062940822000833"
+     ]
+    }
+   ],
+   "red_flags": [
+    "Верификация ограничена: все академические источники (arXiv и зеркала, SSRN, ScienceDirect, T&F, Semantic Scholar, OpenAlex, Crossref, Zenodo, EFMA, Guelph, Kellogg, Kaggle, Tardis, Binance) заблокированы; поисковый бюджет исчерпан. Подтверждено только содержимое GitHub. Все цифры из препринтов 2026 г. остаются непроверенными и должны быть прочитаны в первоисточнике до использования.",
+    "Фактическая ошибка предыдущего раунда: Hyperliquid-предиктор — данные декабря 2025, статья Zhai (SSRN 7234658), а не «июль 2026»; ни одна из приведённых цифр (0.52, 12.31%, t=9.2) не присутствует в цитируемом репозитории.",
+    "Фактическая ошибка предыдущего раунда: Globe-Research/deep-orderbook (Jha et al.) заявляет 76%, а не 71% walk-forward accuracy; период и разметка не раскрыты.",
+    "Strength «strong» в предыдущем раунде относилось к суб-секундной предсказуемости; для целевого продукта (задержка в минуты) корректная оценка всех LOB-предикторов — no-evidence. Существующие сильные микроструктурные эффекты при медленном исполнении дают adverse selection, т.е. ожидаемо отрицательный результат.",
+    "Единственные кандидаты с рабочим горизонтом (taker-imbalance 15 м–12 ч, daily world order flow) — препринты 2026 / одна JFM-статья без репликаций и без post-publication выборки; заявленный edge 5–17 б.п. на грани издержек 5–11 б.п.; Sharpe 3.5 daily LS — признак концентрации в неликвидных альтах.",
+    "DeepLOB-семейство: авторы сами исключают комиссии/спред/латентность (подтверждено), бенчмарк LOBCAST показывает падение при переносе (подтверждено); repo с «86%» не раскрывает баланс классов (подтверждено).",
+    "VPIN: без знака; критика Andersen–Bondarenko не опровергнута; единственный крипто-репозиторий — без валидации.",
+    "Общая опасность (Nikolopoulos 2026, Spurious Predictability, не проверено): адаптивный подбор спецификаций даёт значимые walk-forward бэктесты под martingale-null; любой эффект из списка требует placebo/CPCV/DSR/PBO в собственном пайплайне.",
+    "Данные: taker_buy_base_asset_volume и isBuyerMaker подтверждены в binance-public-data; риск двойного счёта фрагментов свипов в aggTrades (заявление предыдущего раунда о R² 0.28→0.65 источником не подтверждено — репозиторий не найден).",
+    "Структурные сдвиги: работы на FTX/Huobi устарели; после 10.10.2025 глубина в стрессе исчезает нелинейно — imbalance-сигналы в такие периоды ненадёжны."
+   ]
+  },
+  "missing": [
+   "Полные тексты и таблицы: Kim–Hansen (2607.09426) OOS R²/AUC и cost-анализ; 2608.21888 — величина 15-мин реверсала в б.п. и издержки; Anastasopoulos et al. — число монет, период, оборот и нетто-результат после реалистичных спредов альтов; Bieganowski–Ślepaczuk — Sharpe/доходности maker- и taker-бэктестов; Albers et al. — точные OOS R² по биржам.",
+   "Независимая репликация quarter-hour boundary effect на данных после 10.2024 (post-publication decay) и на выборке после 10.10.2025.",
+   "Проверка utверждения о репликации Kim–Hansen «W. Kimbrough» — источник не найден.",
+   "Zhai (SSRN 7234658) / arXiv 2608.04373: подтверждение чисел 0.52 / 12.31% / t=9.2 и период данных; исследование более длинных горизонтов для smart-wallet flow.",
+   "Количественная OOS-оценка ликвидационного потока (forceOrder) как предиктора реверсала на 15 мин–4 ч — в литературе этого раунда отсутствует.",
+   "Roll measure и Kyle's lambda как режимные признаки (Easley et al. ставят Roll на 1-е место) — не были в списке, требуют отдельной проверки.",
+   "Актуальные комиссии Binance USDT-M (страница заблокирована; в docs проекта: taker 0.05%, maker 0.02%, VIP0) и реальные спреды/проскальзывание на альтах для cost-aware порога.",
+   "Утверждение о двойном счёте фрагментов свипов в aggTrades (R² 0.28→0.65) — репозиторий не найден, нужен первоисточник."
+  ]
+ },
+ {
+  "verdicts": [
+   {
+    "name": "Exchange reserve change / BTC exchange net flow",
+    "verdict": "unverifiable",
+    "note": "Hoang & Baur (JBF 2022) exists and its headline claim (daily reserve increases negatively related to returns and volatility, CryptoQuant data, in-sample regressions) is consistent with the published abstract as I know it, but the SSRN/ScienceDirect/Quantpedia pages could not be opened in this session, so coefficients, sample end-date and the 'panic loading next day' claim are unconfirmed. arXiv 2411.06327 also unreachable. Downgrade to weak until the PDFs are read: no OOS/trading test is known to exist, and exchange labels are not point-in-time."
+   },
+   {
+    "name": "USDT net inflow to exchanges (stablecoin exchange flows)",
+    "verdict": "unverifiable",
+    "note": "Single preprint (arXiv 2411.06327 / SSRN 4630115); neither host reachable, so the sign pattern (USDT inflows positive for BTC/ETH, ETH inflows negative) and the existence of an OOS test cannot be confirmed. One unreplicated paper with intraday turnover does not justify 'moderate'; downgraded to weak."
+   },
+   {
+    "name": "Stablecoin issuance / Tether mints",
+    "verdict": "holds",
+    "note": "Griffin & Shams (JF 2020) vs. Lyons & Viswanath-Natraj (JIMF 2023) and Wei (Econ Letters 2018) is a well-documented disagreement and the 'no replicable daily predictive effect' conclusion matches the literature as I know it; the pages themselves were blocked, so exact statistics remain unconfirmed. 'no-evidence' stands."
+   },
+   {
+    "name": "MVRV Z-score / NUPL / CVDD",
+    "verdict": "unverifiable",
+    "note": "Grobys (RIBAF 2026), Molnar (arXiv 2607.26188) and Li-Liu-Yan (SSRN 4719874) all unreachable; Sharpe 1.28 vs 0.45, the MVRV peak sequence 5.88/4.72/3.96/2.74 and 'no indicator fired at Oct-2025 top' are unconfirmed. Structural critique (3 cycles, in-sample thresholds) is sound regardless; 'weak' stands."
+   },
+   {
+    "name": "SOPR / realized profit-loss ratio",
+    "verdict": "holds",
+    "note": "Claim is an absence claim (no peer-reviewed OOS study isolating SOPR); nothing in this session contradicts it. Baquero synthesis (arXiv 2606.00071) unreachable so its quoted conclusion is unconfirmed. 'no-evidence' stands."
+   },
+   {
+    "name": "Miner reserves / miner-to-exchange flows / hash rate",
+    "verdict": "unverifiable",
+    "note": "Li-Liu-Yan SHAP ranking and the RIBAF Granger paper could not be opened. Direction of Granger causality (price -> hash rate) is consistent with the broader literature; the post-halving 'shrinking share of volume' argument is arithmetic and sound. 'weak' stands."
+   },
+   {
+    "name": "US spot Bitcoin/Ethereum ETF net flows",
+    "verdict": "overstated",
+    "note": "Lim (SSRN 6592830) unreachable; '+53 bp per $100M', R2 ~21% and next-day predictability unconfirmed. Even if accurate, the tradable component is next-day only, the sample is ~15 months in a launch regime, causality is bidirectional and no cost-adjusted OOS test is claimed. 'moderate' is too generous for that evidence base; downgraded to weak (usable as feature, not standalone signal)."
+   },
+   {
+    "name": "Google Trends attention (positive and negative attention)",
+    "verdict": "overstated",
+    "note": "Liu & Tsyvinski (RFS 2021 / NBER w24877) is well known: Google-search deviation and 'bitcoin hack' ratio predict 1-2 week BTC returns in-sample 2011-2018; the draft's 1.84%/2.30% ordering by horizon should be checked against Table 9 (NBER blocked). Draft correctly rates it weak given the Physica A 2022 OOS rejection (itself unverifiable here) and decay; verdict 'overstated' applies to the raw effect sizes, not to the 'weak' rating."
+   },
+   {
+    "name": "Twitter/X and social sentiment",
+    "verdict": "unverifiable",
+    "note": "Gurgul et al. (IJF 2025) abstract unreachable; the 'consistent Sharpe improvement across rolling folds' claim is unconfirmed and numbers are paywalled anyway. Other cited studies are short-sample. 'weak' stands."
+   },
+   {
+    "name": "Reddit sentiment",
+    "verdict": "holds",
+    "note": "Null/weak results are consistent across the cited theses/preprints and with the broader literature; no source contradicts. Pages unreachable, so treat as consistent-but-unread. 'no-evidence' stands."
+   },
+   {
+    "name": "News NLP / LLM headline sentiment",
+    "verdict": "holds",
+    "note": "Lopez-Lira & Tang (2023) equities result (GPT-4 headline scores predict next-day returns, larger for small caps/negative news, decays with adoption) matches the paper as known; the '~90% portfolio-day hit rate' figure is a non-tradable initial-reaction statistic and should not be quoted as an OOS trading hit rate. Crypto evidence remains preprint-only. 'weak' stands."
+   },
+   {
+    "name": "Crypto Fear & Greed Index",
+    "verdict": "unverifiable",
+    "note": "Formula weights (25/25/15/15/10/10) match alternative.me's documented methodology. The 2026 VAR/Granger study (ScienceDirect S305070062600006X) could not be opened; the 'returns cause FGI, not vice versa' result is unconfirmed but mechanically expected since FGI is built from price/volume/volatility. 'no-evidence' stands."
+   },
+   {
+    "name": "DXY daily change",
+    "verdict": "unverifiable",
+    "note": "Arain & Snudden (J. Forecasting 2026) unreachable; 'seven indices improve DA, only USD index and Shanghai yield significant excess profits' unconfirmed, and the cost assumption is unknown. Benigno & Rosa (NY Fed SR1052, 2023) 'BTC orthogonal to macro/MP surprises' matches the known paper. With one unreplicated 28-month OOS window and no cost figure, 'moderate' is not supported; downgraded to weak."
+   },
+   {
+    "name": "Change in stochastic correlation with equities",
+    "verdict": "unverifiable",
+    "note": "Physica A 2022 paper unreachable (ScienceDirect and RePEc both blocked); OOS R2 2.69%/1.71%/2.12% unconfirmed and sample ends ~2021 before the ETF era. Single paper, no replication; downgraded to weak pending in-house retest."
+   },
+   {
+    "name": "Global M2 / liquidity index",
+    "verdict": "holds",
+    "note": "Alden/Callahan numbers (0.94 level correlation, 83% 12-month directional agreement, May-2013 to Jul-2024) match the Sept-2024 article as known; the first-difference/Granger critique is standard spurious-regression logic. 'no-evidence' as a direction signal stands."
+   },
+   {
+    "name": "Real yields / FOMC and macro surprises",
+    "verdict": "unverifiable",
+    "note": "Benigno & Rosa finding holds as known. The 2026 FRL intraday FOMC study (0.66% -> 1.25% mean |return|) could not be opened; it is a volatility, not direction, effect either way. 'weak' for direction stands; useful as a volatility/no-trade feature."
+   },
+   {
+    "name": "Exchange order-flow imbalance (signed trade volume)",
+    "verdict": "unverifiable",
+    "note": "Anastasopoulos (JFM 2026 / EFMA 2025) unreachable; alpha 0.79%/day, Sharpe 3.63 and break-even 0.48%/day unconfirmed. Also belongs to the microstructure family, not on-chain/sentiment/macro. Single 2020-2022 OOS window; keep 'moderate' only provisionally and re-test in-house with Binance aggTrades (data.binance.vision is also egress-blocked in this environment)."
+   }
+  ],
+  "corrected": {
+   "family": "On-chain, flows, sentiment, macro (exchange flows, stablecoins, MVRV/SOPR/realized-cap, miners, spot ETF flows, Google Trends, social/news/LLM sentiment, Fear & Greed, DXY/real yields/M2/equity beta)",
+   "summary": "Referee outcome: none of the 17 predictors' primary sources could be opened in this session (WebSearch budget exhausted; arXiv, SSRN, ScienceDirect, Wiley, NBER, NY Fed, RePEc, Semantic Scholar, doi.org, Quantpedia and vendor blogs are all egress-blocked), so every quoted coefficient, R2, Sharpe and OOS window remains unconfirmed and is graded 'unverifiable' unless it matches a widely known result. Applying the brief's default, nothing in this family currently earns better than 'weak'. Ranking after downgrades: (a) exchange-flow variables (BTC/ETH reserve changes, USDT-to-exchange net inflows) and spot-ETF net flows have the most plausible short-horizon directional information but rest on one in-sample JBF paper, one unreplicated preprint and one 15-month ETF study with bidirectional causality; (b) rolling change in BTC-equity correlation and DXY change each rest on a single OOS paper ending 2021/Feb-2024 with no replication; (c) attention (Google Trends) is real in-sample pre-2018 but fails an independent OOS test and has decayed; (d) MVRV-Z/NUPL/SOPR/miner/Puell are multi-month regime context with ~3 independent cycle observations and visible amplitude decay; (e) Fear & Greed, Reddit, Tether issuance and Global M2 have no credible directional evidence and should be used only as regime context or not at all; (f) LLM headline scoring is proven for equities, not crypto, and any backtest before the model's knowledge cutoff is contaminated. Practical instruction for the forecaster: ingest the cheap free series (Coin Metrics Community realized cap/MVRV, FRED DXY/DFII10, alternative.me FGI, Farside ETF flows, S&P/Nasdaq closes) as lagged, point-in-time-snapshotted features; treat every published effect size as an upper bound to be halved (McLean-Pontiff); and let the existing purged-CPCV + DSR + PBO pipeline decide what survives. Do not hard-code any number from this report until the PDFs have been read.",
+   "predictors": [
+    {
+     "name": "Exchange reserve change / BTC exchange net flow",
+     "formula": "dReserve_t = Reserve_t - Reserve_{t-1} over labeled exchange addresses; NetFlow_t = Inflow_t - Outflow_t; feature = z-score of dReserve over 30-90d, lagged one bar.",
+     "horizon": "1 day (short-term negative); multi-week for large reserve declines",
+     "effect": "Hoang & Baur (JBF 2022, CryptoQuant): reserve increases negatively related to current/next-day BTC returns and to volatility (in-sample). Coefficients unconfirmed (paywalled/blocked). arXiv 2411.06327 reportedly finds BTC exchange inflows do not predict BTC returns at most intraday horizons.",
+     "oos_evidence": "None known; in-sample panel regressions. Exchange labels are re-clustered retroactively so historical reserves are not point-in-time.",
+     "strength": "weak",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/abs/pii/S0378426622002023",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3902504",
+      "https://arxiv.org/abs/2411.06327"
+     ],
+     "universe_period": "BTC; ~2017/18-2021 daily; BTC/ETH 2017-2023 intraday",
+     "costs_decay": "Daily turnover; paid data (CryptoQuant Professional ~$109/mo, Glassnode API). Decay unknown; snapshot live data and backtest only on vintages.",
+     "data_source": "CryptoQuant exchange reserve/netflow; Glassnode exchange net position change; store daily snapshots."
+    },
+    {
+     "name": "USDT net inflow to exchanges",
+     "formula": "USDT_NetIn_t = USDT moved from non-exchange to exchange-labeled addresses minus outflows per 1-6h bar; lagged regressor on next-bar BTC/ETH log return.",
+     "horizon": "1-6 hours",
+     "effect": "Reported (arXiv 2411.06327 / SSRN 4630115): USDT net inflows positively predict BTC and ETH returns and negatively predict ETH volatility; ETH inflows negatively predict ETH returns. Magnitudes and OOS test unconfirmed.",
+     "oos_evidence": "Unverified; single unreplicated preprint.",
+     "strength": "weak",
+     "sources": [
+      "https://arxiv.org/abs/2411.06327",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4630115"
+     ],
+     "universe_period": "BTC, ETH, USDT (ERC-20/TRC-20); 2017-2023 intraday",
+     "costs_decay": "Intraday turnover: effect must exceed 10-20 bp round-trip; unknown post-2023 decay; label revisions.",
+     "data_source": "CryptoQuant stablecoin exchange netflow (hourly, paid); Glassnode stablecoin exchange net position; Arkham/Nansen labels."
+    },
+    {
+     "name": "Stablecoin issuance / Tether mints",
+     "formula": "dSupply_t = USDT (+USDC) circulating supply change; or treasury-to-market mint events; regress lagged on BTC return.",
+     "horizon": "Hours to weeks",
+     "effect": "Griffin & Shams (JF 2020) found Tether-timed BTC gains in 2017-18; Lyons & Viswanath-Natraj (JIMF 2023) and Wei (Econ Letters 2018) find no systematic causal effect of issuance on BTC/ETH prices.",
+     "oos_evidence": "Did not replicate in independent daily-data studies.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3508006",
+      "https://www.sciencedirect.com/science/article/abs/pii/S0165176518302556",
+      "https://cepr.org/voxeu/columns/stable-coins-dont-inflate-crypto-markets"
+     ],
+     "universe_period": "BTC/ETH 2017-2019",
+     "costs_decay": "Not a signal; total stablecoin supply growth usable only as slow liquidity context.",
+     "data_source": "DefiLlama stablecoins API (free), Coin Metrics Community SplyCur for USDT/USDC."
+    },
+    {
+     "name": "MVRV Z-score / NUPL / CVDD",
+     "formula": "MVRV = MarketCap/RealizedCap; MVRV-Z = (MarketCap - RealizedCap)/stdev(MarketCap); NUPL = (MarketCap - RealizedCap)/MarketCap; CVDD = cum(CDD x price)/(age_days x 6e6). Use as rolling percentile rank, never fixed thresholds.",
+     "horizon": "Weeks to years (cycle regime)",
+     "effect": "Reported: Grobys (RIBAF 2026) MVRV-Z rule Sharpe 1.28 vs 0.45 B&H, Dec-2013 to Apr-2025, thresholds in-sample; Molnar (2026) MVRV cycle peaks declining 5.88 -> 4.72 -> 3.96 -> 2.74 and no classic top indicator fired at the Oct-2025 high. All unconfirmed in this session.",
+     "oos_evidence": "None; ~3 independent cycles; documented threshold decay.",
+     "strength": "weak",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/pii/S0275531926002138",
+      "https://arxiv.org/abs/2607.26188",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4719874"
+     ],
+     "universe_period": "BTC 2011-2026",
+     "costs_decay": "Negligible costs (few trades per cycle) but near-zero statistical power; amplitude decay visible.",
+     "data_source": "Coin Metrics Community API (CapMVRVCur, CapRealUSD; free daily), Glassnode Studio charts, checkonchain.com."
+    },
+    {
+     "name": "SOPR / realized profit-loss ratio",
+     "formula": "SOPR_t = sum(USD value of spent outputs at spend price)/sum(USD value at creation price); aSOPR excludes outputs < 1h; flags: cross above 1 in uptrend, sustained < 1 (capitulation).",
+     "horizon": "Days to weeks",
+     "effect": "No peer-reviewed OOS study isolating SOPR; vendor commentary only.",
+     "oos_evidence": "None.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://arxiv.org/abs/2606.00071",
+      "https://docs.glassnode.com/introduction/metric-catalog"
+     ],
+     "universe_period": "BTC, ETH (vendor series from 2011)",
+     "costs_decay": "Unknown; low turnover if used as regime flag.",
+     "data_source": "Glassnode (paid), CryptoQuant (paid); not in Coin Metrics Community."
+    },
+    {
+     "name": "Miner reserves / miner outflows / hash rate / Puell",
+     "formula": "MinerReserve_t; MinerOutflow_t to exchanges; Puell = daily issuance USD / 365d MA; hash ribbon = 30d MA(hashrate) - 60d MA(hashrate).",
+     "horizon": "Days (flows) to months (Puell, ribbons)",
+     "effect": "Li-Liu-Yan (SSRN 2024) reportedly rank miner reserves high by SHAP (unconfirmed); Granger literature: price -> hash rate, not reverse; Puell decayed with other cycle oscillators.",
+     "oos_evidence": "Only inside one multi-model ML study with selection risk.",
+     "strength": "weak",
+     "sources": [
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4719874",
+      "https://www.sciencedirect.com/science/article/pii/S0275531925005197",
+      "https://arxiv.org/abs/2607.26188"
+     ],
+     "universe_period": "BTC 2017-2025",
+     "costs_decay": "Miner selling ~450 BTC/day post-2024 halving is a shrinking share of volume.",
+     "data_source": "Coin Metrics Community (HashRate, IssContUSD) free; mempool.space hashrate free; CryptoQuant miner flows paid."
+    },
+    {
+     "name": "US spot Bitcoin/Ethereum ETF net flows",
+     "formula": "ETFNetFlow_t = sum over funds of creations - redemptions (USD) on day t; use NetFlow_t (published after US close) to predict r_{t+1}; scale by AUM or 30d z-score.",
+     "horizon": "1 day ahead (same-day is not tradable)",
+     "effect": "Reported by Lim (SSRN 6592830, Jan-2024 to Apr-2025, 313 days): $100M net inflow ~ +53 bp same-day return, R2 ~21%, some next-day predictability, bidirectional Granger causality. Unconfirmed; next-day coefficient unknown.",
+     "oos_evidence": "None; ~15-month in-sample launch regime; feedback from returns to flows.",
+     "strength": "weak",
+     "sources": [
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6592830",
+      "https://ledger.pitt.edu/ojs/ledger/article/view/393"
+     ],
+     "universe_period": "BTC from Jan-2024, ETH from Jul-2024",
+     "costs_decay": "Daily turnover; look-ahead if aligned to same-day close (Farside T+0 evening/T+1); expect strong decay.",
+     "data_source": "Farside Investors daily table (free, scrape; blocked in this sandbox), CoinGlass ETF flows (paid), issuer sites."
+    },
+    {
+     "name": "Google Trends attention (positive and negative)",
+     "formula": "Attention_t = log(SVI_t) - mean(log SVI, prior 4 weeks) for 'Bitcoin'; NegAttention_t = SVI('bitcoin hack')/SVI('bitcoin').",
+     "horizon": "1-2 weeks",
+     "effect": "Liu & Tsyvinski (RFS 2021, weekly 2011-2018): one s.d. of attention deviation ~ +1.8 to +2.3% BTC return at 1-2 weeks; one s.d. of hack-ratio ~ -2.75% next week (in-sample; exact horizon ordering to be checked). Physica A 2022 reportedly finds attention fails OOS.",
+     "oos_evidence": "Independent OOS rejection reported; no post-publication replication.",
+     "strength": "weak",
+     "sources": [
+      "https://academic.oup.com/rfs/article-abstract/34/6/2689/5912024",
+      "https://www.nber.org/system/files/working_papers/w24877/w24877.pdf",
+      "https://www.sciencedirect.com/science/article/abs/pii/S0378437122002928"
+     ],
+     "universe_period": "BTC, ETH, XRP; 2011-2018 (original), 2013-2021 (OOS test)",
+     "costs_decay": "Weekly rebalancing, low cost; effect decayed post-2018; Google Trends index is resampled and not point-in-time.",
+     "data_source": "pytrends (free, rate-limited); Santiment social volume (30d lag on free tier)."
+    },
+    {
+     "name": "Twitter/X and social sentiment",
+     "formula": "S_t = (bullish - bearish)/total posts per day for '$BTC'/'#bitcoin', or mean zero-shot classifier score (BART-MNLI) aggregated daily; lagged as ML feature.",
+     "horizon": "Daily",
+     "effect": "Gurgul et al. (IJF 2025) reportedly show Sharpe improvement across rolling folds (numbers unavailable); other studies are few-month, price-level MAPE, single split.",
+     "oos_evidence": "Rolling-window CV in one paper (unconfirmed); mostly none.",
+     "strength": "weak",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/pii/S0169207025000147",
+      "https://arxiv.org/pdf/2311.14759",
+      "https://arxiv.org/abs/2606.00071"
+     ],
+     "universe_period": "BTC, ETH; 2011-2023",
+     "costs_decay": "Daily turnover; X API pay-per-use ~$5/1,000 reads; historical archive non-reproducible; bot share rising.",
+     "data_source": "X API v2 user timelines of curated list; Santiment; Kaggle dumps (training only)."
+    },
+    {
+     "name": "Reddit sentiment",
+     "formula": "Daily mean VADER/transformer score or bullish share over r/Bitcoin, r/CryptoCurrency; lagged regressor.",
+     "horizon": "Daily",
+     "effect": "Weak/null return predictability; marginal volatility-forecast gains not distinguishable from HAR-RV.",
+     "oos_evidence": "Null in available tests.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://www.etd.ceu.edu/2023/zhumagaziyev_sh.pdf",
+      "https://arxiv.org/pdf/2204.05781"
+     ],
+     "universe_period": "BTC, ETH 2017-2023",
+     "costs_decay": "Reddit API pricing (2023) limits history; Pushshift ends 2023.",
+     "data_source": "Pushshift/Arctic Shift dumps; Reddit API."
+    },
+    {
+     "name": "News NLP / LLM headline sentiment",
+     "formula": "Score_t in {-1,0,1} per headline via LLM prompt 'good/bad for BTC price'; daily mean; sign for r_{t+1}.",
+     "horizon": "Next day; multi-day drift",
+     "effect": "Lopez-Lira & Tang (2023): GPT-4 headline scores predict next-day US equity returns (strongest small caps/negative news), decaying with adoption; crypto-specific evidence limited to short agent backtests without DSR/cost control.",
+     "oos_evidence": "Strong for equities post-cutoff; none for crypto.",
+     "strength": "weak",
+     "sources": [
+      "https://arxiv.org/abs/2304.07619",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4412788",
+      "https://arxiv.org/pdf/2407.09546"
+     ],
+     "universe_period": "US equities 2021-2023; BTC/ETH 2023-2024 preprints",
+     "costs_decay": "Daily turnover; adoption decay; any backtest before the model's knowledge cutoff leaks.",
+     "data_source": "Free RSS (CoinDesk, CoinTelegraph, The Block) + Claude scoring; GDELT; CryptoPanic (paid)."
+    },
+    {
+     "name": "Crypto Fear & Greed Index",
+     "formula": "FGI_t in [0,100] = 25% volatility + 25% momentum/volume + 15% social + 15% surveys (paused) + 10% dominance + 10% Google Trends; tested as dFGI_t in VAR; contrarian rule FGI<20 long / >80 flat.",
+     "horizon": "Daily/weekly",
+     "effect": "Reported 2026 VAR study (2018-2025): dFGI does not Granger-cause returns, no OOS gain; returns Granger-cause FGI. Unconfirmed but mechanically expected since FGI is built from price/volume.",
+     "oos_evidence": "Reported none; consistent with construction.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/pii/S305070062600006X",
+      "https://alternative.me/crypto/fear-and-greed-index/"
+     ],
+     "universe_period": "BTC daily Feb-2018 to 2025",
+     "costs_decay": "Not a signal; free long series usable as regime feature.",
+     "data_source": "alternative.me API (?limit=0), CoinMarketCap F&G."
+    },
+    {
+     "name": "DXY daily change",
+     "formula": "x_t = 100*(ln DXY_t - ln DXY_{t-1}); bivariate VAR(p) forecast of BTC return; trade only when |forecast| > threshold.",
+     "horizon": "1 day",
+     "effect": "Reported (Arain & Snudden, J. Forecasting 2026, Oct-2021 to Feb-2024): several indices improve directional accuracy, USD index and Shanghai Composite yield significant excess profits, only during large swings. Unconfirmed; cost assumption unknown.",
+     "oos_evidence": "Reported real-time OOS over ~28 months, one regime, no replication.",
+     "strength": "weak",
+     "sources": [
+      "https://onlinelibrary.wiley.com/doi/full/10.1002/for.70077",
+      "https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr1052.pdf"
+     ],
+     "universe_period": "BTC daily Oct-2021 to Feb-2024",
+     "costs_decay": "Threshold filter lowers turnover; macro-BTC link regime dependent (near zero pre-2020).",
+     "data_source": "FRED DTWEXBGS (free), Stooq/Yahoo DXY; carry Friday value over weekends."
+    },
+    {
+     "name": "Change in stochastic correlation with equities",
+     "formula": "rho_t from DCC-GARCH (or 60d rolling) BTC vs S&P 500/Nasdaq; predictor d_rho_t = rho_t - rho_{t-1}; r_{t+1} = a + b*d_rho_t.",
+     "horizon": "1 day / 1 week",
+     "effect": "Reported (Physica A 2022): only predictor with OOS R2 > 0: ~2.7% BTC, 1.7% ETH, 2.1% XRP. Unconfirmed; sample ends ~2021.",
+     "oos_evidence": "Reported explicit OOS R2 vs historical mean; no replication in ETF era.",
+     "strength": "weak",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/abs/pii/S0378437122002928",
+      "https://econpapers.repec.org/RePEc:eee:phsmap:v:598:y:2022:i:c:s0378437122002928"
+     ],
+     "universe_period": "BTC, ETH, XRP ~2014-2021",
+     "costs_decay": "Daily OOS R2 of ~2% implies hit rate only slightly above 50%; marginal after 10 bp costs; prefer weekly.",
+     "data_source": "Free: Yahoo/Stooq index closes, ccxt BTC closes; 'arch' package DCC."
+    },
+    {
+     "name": "Global M2 / liquidity index",
+     "formula": "GlobalM2_t = sum of major M2 in USD; predictor = YoY% shifted 70-110 days.",
+     "horizon": "3-6 months (claimed)",
+     "effect": "Alden/Callahan: 0.94 level correlation, 83% 12-month directional agreement (2013-2024); in first differences the link disappears and Granger tests are insignificant.",
+     "oos_evidence": "None; spurious levels regression.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://www.lynalden.com/bitcoin-a-global-liquidity-barometer/",
+      "https://blog.traderspost.io/article/m2-money-supply-bitcoin-correlation-explained"
+     ],
+     "universe_period": "BTC 2013-2025",
+     "costs_decay": "Not a signal; 3-6 week publication lag and revisions.",
+     "data_source": "FRED M2SL/WM2NS, ALFRED vintages, ECB/BoJ/PBoC series."
+    },
+    {
+     "name": "Real yields / FOMC and macro surprises",
+     "formula": "dRealYield_t = DFII10_t - DFII10_{t-1}; MP surprise = fed funds futures change in 30-min FOMC window; BTC 1h/1d response.",
+     "horizon": "Event window to daily",
+     "effect": "Benigno & Rosa (NY Fed 2023): BTC unresponsive to MP surprises and macro news; 2026 FRL study reportedly finds post-FOMC mean |return| roughly doubles (volatility, not direction).",
+     "oos_evidence": "None for direction.",
+     "strength": "weak",
+     "sources": [
+      "https://www.newyorkfed.org/medialibrary/media/research/staff_reports/sr1052.pdf",
+      "https://www.sciencedirect.com/science/article/abs/pii/S1544612326006021"
+     ],
+     "universe_period": "BTC/ETH 2017-2025",
+     "costs_decay": "No directional edge; use FOMC/CPI calendar to widen barriers / cut size.",
+     "data_source": "FRED DFII10, DGS2/DGS10; Fed and BLS calendars."
+    },
+    {
+     "name": "Exchange order-flow imbalance (signed trade volume)",
+     "formula": "OF_t = buyer-initiated - seller-initiated volume over day t (aggressor flag); ML forecast of r_{t+1}; long-short deciles.",
+     "horizon": "1 day",
+     "effect": "Reported (Anastasopoulos, JFM 2026): OOS Feb-2020 to Jun-2022 alpha up to 0.79%/day, Sharpe 3.63 LS / 1.88 long-only, break-even cost 0.48%/day LS. Unconfirmed; microstructure family rather than on-chain.",
+     "oos_evidence": "Reported explicit OOS window; one cycle; no replication.",
+     "strength": "moderate",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/pii/S1386418126000029",
+      "https://www.efmaefm.org/0EFMAMEETINGS/EFMA%20ANNUAL%20MEETINGS/2025-Greece/papers/OrderFlowpaper.pdf"
+     ],
+     "universe_period": "Major coins on Binance/Coinbase 2018-2022",
+     "costs_decay": "Daily rebalancing; gross of alt slippage; expect post-2022 decay.",
+     "data_source": "data.binance.vision aggTrades archives (isBuyerMaker); ccxt fetch_trades live."
+    },
+    {
+     "name": "[ADDED] Perpetual funding rate / futures basis (positioning flows)",
+     "formula": "Funding_t = 8h funding rate (Binance/Bybit/OKX perps), annualized; Basis_t = (Perp or CME front-month price / spot - 1); feature = z-score over 30d or sign of extreme percentile; test contrarian sign on r_{t+1..t+7}.",
+     "horizon": "1-7 days",
+     "effect": "Widely used by practitioners as a crowding/contrarian indicator; academic evidence (cryptocurrency carry/basis papers, 2021-2024) indicates high funding predicts lower subsequent returns with modest t-stats, and funding also carries a directly earnable carry component. Sources not openable here; treat as candidate feature.",
+     "oos_evidence": "Unverified in this session; free historical funding is available so in-house OOS testing is cheap.",
+     "strength": "weak",
+     "sources": [
+      "https://www.binance.com/en/futures/funding-history/perpetual/real-time-funding-rate",
+      "https://www.cmegroup.com/markets/cryptocurrencies/bitcoin/bitcoin.html"
+     ],
+     "universe_period": "BTC/ETH perps 2019-2026; CME futures 2017-2026",
+     "costs_decay": "Low turnover if used at extremes; funding itself is a cost/income to the position.",
+     "data_source": "ccxt fetchFundingRateHistory (free), exchange bulk archives, Coinalyze; CFTC COT for CME positioning."
+    },
+    {
+     "name": "[ADDED] Coinbase premium / regional spot premium",
+     "formula": "Premium_t = (Coinbase BTC-USD price - Binance BTC-USDT price)/Binance price, sampled at bar close; feature = 24h mean or z-score; proxy for US institutional spot demand.",
+     "horizon": "Hours to days",
+     "effect": "Vendor evidence only (CryptoQuant Coinbase Premium Index); no peer-reviewed OOS study found; plausible short-lived flow proxy, likely arbitraged quickly.",
+     "oos_evidence": "None.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://cryptoquant.com/asset/btc/chart/market-indicator/coinbase-premium-index"
+     ],
+     "universe_period": "BTC 2018-2026",
+     "costs_decay": "Cheap to compute from free ccxt data; expect very fast decay.",
+     "data_source": "ccxt OHLCV for Coinbase and Binance (both blocked in this sandbox but free in general)."
+    },
+    {
+     "name": "[ADDED] Options implied volatility / skew (DVOL, 25-delta risk reversal)",
+     "formula": "DVOL_t (Deribit 30d implied vol index); Skew_t = IV(25d put) - IV(25d call); features: dDVOL_t, skew percentile; test for direction of r_{t+1..t+5} and for barrier sizing.",
+     "horizon": "Days",
+     "effect": "Equity literature shows implied skew/variance risk premium carries information; crypto evidence is thin and mostly about volatility, not direction. Primarily useful for barrier width and sizing.",
+     "oos_evidence": "None for direction.",
+     "strength": "weak",
+     "sources": [
+      "https://www.deribit.com/statistics/BTC/volatility-index",
+      "https://docs.deribit.com/"
+     ],
+     "universe_period": "BTC/ETH options 2019-2026",
+     "costs_decay": "No turnover implication if used for sizing.",
+     "data_source": "Deribit public API (DVOL, order book), free; Laevitas/Amberdata paid."
+    }
+   ],
+   "red_flags": [
+    "VERIFICATION FAILURE: in this session WebSearch was exhausted (200/200) and the egress proxy blocked every academic and vendor host (arXiv, SSRN, ScienceDirect, Wiley, NBER, NY Fed, RePEc, Semantic Scholar, doi.org, Quantpedia, Lyn Alden, CryptoSlate, Farside, alternative.me, Binance/Bybit/OKX/Coinbase APIs). No coefficient, R2, Sharpe or OOS window in this family was confirmed against a primary source; only claims matching widely known papers (Liu-Tsyvinski, Griffin-Shams, Lyons-VN, Benigno-Rosa, Lopez-Lira-Tang, Alden-Callahan) were accepted, and even those only qualitatively.",
+    "Upstream draft admitted the same problem: its numbers came from abstracts and search snippets. Two rounds without reading a single PDF means any hard-coded threshold from this document would be built on hearsay. Read the PDFs from a machine with open egress before implementation.",
+    "Three predictors previously rated 'moderate' (ETF flows, DXY, equity-correlation change) each rest on a single unreplicated paper with a short sample and no cost-adjusted OOS trading test; downgraded to 'weak'. Only order-flow imbalance keeps 'moderate', provisionally, and it is not an on-chain/sentiment/macro variable.",
+    "Data feasibility: in this sandbox even the free data endpoints (Binance/Bybit/OKX/Coinbase/Kraken/alternative.me/Farside) are blocked; the production environment must be checked separately before assuming any of these feeds.",
+    "Look-ahead: exchange/miner address labels are re-clustered retroactively; ETF flows are published after the close; M2 is revised; Google Trends is resampled. Only stored daily vintages are valid backtest inputs.",
+    "Fear & Greed is a lagging transform of price/volume/volatility; Global M2 is a spurious levels correlation; Tether issuance did not replicate; Reddit is null. None should enter as a direction signal.",
+    "Cycle indicators (MVRV-Z, NUPL, Puell, Pi Cycle) have ~3 independent observations and reportedly decayed; fixed thresholds are overfit by construction.",
+    "LLM-scored news backtests before the model's knowledge cutoff leak future information; only post-cutoff windows count as OOS.",
+    "Multi-factor ML studies (37 factors x 12 models; 141 predictors) without DSR/PBO corrections inflate the best-reported predictor; expect roughly half of every published effect (McLean-Pontiff)."
+   ]
+  },
+  "missing": [
+   "Perpetual funding rate / futures basis (added as weak; needs in-house OOS test with free ccxt funding history)",
+   "Coinbase premium / regional spot premium (added as no-evidence)",
+   "Options implied vol / skew, DVOL (added as weak, for sizing rather than direction)",
+   "Open interest changes and liquidation cascades (positioning family; not covered, likely to be handled by the perps/microstructure referee)",
+   "CFTC COT CME Bitcoin leveraged-funds net positioning (weekly; mentioned in repo research doc, no evidence assessed here)",
+   "Short-term-holder realized price / cost-basis bands (Glassnode/checkonchain; vendor-only evidence, no peer-reviewed study located)",
+   "Whale / large-holder accumulation-distribution scores (Glassnode Accumulation Trend Score; vendor-only)",
+   "Stablecoin Supply Ratio (SSR) as liquidity context; no peer-reviewed directional evidence",
+   "Bitcoin dominance / ETH-BTC ratio as cross-asset regime feature",
+   "VIX and gold co-movement as regime context (beyond DXY and equity correlation)"
+  ]
+ },
+ {
+  "verdicts": [
+   {
+    "name": "Gradient-boosted trees on engineered features (G-Research / Jaquart / Akyildirim)",
+    "verdict": "unverifiable",
+    "note": "gresearch.com, kaggle.com, sciencedirect.com and link.springer.com are all blocked by the egress proxy; WebSearch budget exhausted (200/200). Could not confirm the winning team name, that winners used LightGBM, the leaderboard metric value, Jaquart's per-horizon accuracies, or Akyildirim's 55-65%. The qAp repo confirms a Spacetimeformer entry (context 128/250, horizon 16) but reports no score, so 'transformers did not beat LightGBM' is also unconfirmed. Claims are consistent with my prior knowledge of these papers but nothing was checked at source this session. Strength downgraded moderate -> weak."
+   },
+   {
+    "name": "Meta-labeling (Lopez de Prado / JFDS series)",
+    "verdict": "overstated",
+    "note": "Confirmed via github.com/hudson-and-thames/meta-labeling: the four JFDS papers exist (Joubert Summer 2022; Meyer/Joubert/Alfeus Fall 2022; Thumm/Barucca/Joubert Winter 2022; Meyer/Barziy/Joubert Spring 2023) and the repo states meta-labeling helps 'size positions, filter out false-positive signals, and improve Sharpe and max drawdown' and that 'fixed position sizing methods is significantly improved by calibration'. NOT confirmed: whether data were synthetic vs real, any numbers, the Hudson & Thames two-strategy replication (hudsonthames.org blocked), and the 17%->63% figure. The original entry's claims about synthetic data and the base-rate artifact are plausible interpretations, not verified findings. Strength moderate -> weak (qualitative peer-reviewed support only, no crypto evidence)."
+   },
+   {
+    "name": "LSTM / RNN (Fischer-Krauss, Ghosh-Neufeld-Sahoo, Jaquart)",
+    "verdict": "unverifiable",
+    "note": "EJOR (ScienceDirect), arXiv 2004.10178 (arxiv.org, export.arxiv.org, huggingface papers, paperswithcode, econstor, scholar.archive.org) all blocked. The figures 0.46%/day, Sharpe 5.8, 1992-2015, post-2010 decay match my prior knowledge of Fischer & Krauss (2018) and Ghosh et al. (2022), but the '59.1% directional accuracy' attribution could not be checked and should not be quoted. Strength 'weak' stands; the cautionary decay narrative is the right lesson but is currently uncited-at-source."
+   },
+   {
+    "name": "Transformers / attention models for crypto returns",
+    "verdict": "overstated",
+    "note": "Only confirmed fact: qAp's Spacetimeformer solution used context 128 (train) / 250 (submit) and horizon 16; its README gives NO leaderboard score and NO LightGBM comparison. mlcontests.com blocked. arXiv 2608.05755 could not be opened (arXiv blocked) and its existence is unconfirmed. The statement 'transformers did not beat LightGBM' is inference, not evidence. Keep strength weak but note the negative claim is itself unverified."
+   },
+   {
+    "name": "Regime-conditional models (NHHM, RS-CAViaR, MS-GARCH)",
+    "verdict": "unverifiable",
+    "note": "arXiv 2011.03741, 2401.03393, 2107.05535 and both ScienceDirect articles blocked. Koki/Leonardos/Piliouras NHHM predictive-density claim matches prior knowledge but is unconfirmed; the key point that there is no directional/after-cost evidence remains true by absence. Strength moderate -> weak for direction; the entry should be reframed as 'use filtered posteriors as features' only."
+   },
+   {
+    "name": "Ensembles and stacking",
+    "verdict": "overstated",
+    "note": "Repo abstract confirms only 'ensembles are especially beneficial when underlying data consist of multiple regimes'. The quoted typical gain '+0.005-0.02 rank-corr' has no source; the claim that G-Research top teams averaged LightGBM seeds/folds is unverified (Kaggle blocked). Downgrade to weak; keep as engineering practice, not a predictor."
+   },
+   {
+    "name": "Time-series foundation models (Chronos-2, TimesFM, Kronos)",
+    "verdict": "holds",
+    "note": "Confirmed: TSFM_Finance repo = 'Re(visiting) Time Series Foundation Models in Finance' (Rahimikia, Ni, Wang; arXiv 2511.18578), tests Chronos 1.x and TimesFM 1.0/2.0; Kronos MIT, trained on K-lines from 45+ exchanges, authors say pipeline is 'not a production-ready quantitative trading system'; Chronos Apache-2.0, Chronos-2 released 2025-10-20. NOT confirmed this session: the ~50-51% accuracy, Chronos-large OOS R2 -1.37%, CatBoost Sharpe 6.79, Kronos Brier 0.189 vs 0.188 (cornfordandcross.com blocked), and the existence of arXiv 2606.27100 / 2609.20554. The repo's own prior research doc admits these were checked 'через GitHub/сниппеты'. The qualitative 'no directional edge' conclusion is consistent across what is accessible; strength no-evidence stands."
+   },
+   {
+    "name": "Cross-sectional rank prediction (Numerai Crypto style)",
+    "verdict": "holds",
+    "note": "Confirmed from numerai/docs on GitHub: target = 30-day forward token return, ranked, gaussianized, bucketed into 5 bins; payout = stake*clip(payout_factor*mmc, -0.05, 0.05); CORR = Pearson on gaussianized ranks and centered target, both raised to power 1.5 with sign preserved; YIEDL community data = PVM, sentiment, on-chain. NOT confirmed: the quoted warning that basic-feature models 'will likely have no performance' (not on the data page fetched) and the 'CORR 0.02-0.04 is strong' lore. Strength weak stands."
+   },
+   {
+    "name": "Cross-sectional crypto momentum / size factors (Liu, Tsyvinski & Wu)",
+    "verdict": "unverifiable",
+    "note": "nber.org and semanticscholar blocked. Magnitudes and t-stats unconfirmed. The paper (J. Finance 2022) does exist per prior knowledge; the 'post-publication weakening' claim has no cited source. Strength weak stands; this belongs to a different family (cross-sectional factors) anyway."
+   },
+   {
+    "name": "Validation design: purged/embargoed CPCV, DSR, PBO",
+    "verdict": "holds",
+    "note": "Confirmed at github.com/eslazarev/purged-cross-validation README: naive shuffled KFold R2 0.83 (k-NN) / 0.91 (RandomForest) on an unpredictable target vs -1.48 / -1.87 under PurgedKFold; train/test label overlap 100% -> 0%; MIT license. Kapoor & Narayanan (arXiv 2207.07048), arXiv 2410.14475 and the two SSRN papers could not be opened but are well-established. Strength strong stands."
+   }
+  ],
+  "corrected": {
+   "family": "ML models and ensembles for direction: what actually works out-of-sample (GBDT / RF / LSTM / transformers / meta-labeling / regime-conditional / stacking / competitions)",
+   "summary": "Referee outcome: this session could verify at source only GitHub-hosted material (purgedcv demo, JFDS meta-labeling paper list, Numerai target/payout/CORR definitions, Kronos and Chronos licenses/disclaimers, qAp Spacetimeformer config, TSFM_Finance paper identity). Every journal/arXiv/Kaggle/NBER number in the previous draft is UNVERIFIED this session because arxiv.org, sciencedirect.com, link.springer.com, nber.org, ssrn, kaggle.com, gresearch.com, semanticscholar, huggingface, econstor and hudsonthames.org are blocked by the egress proxy and the WebSearch budget is exhausted. The qualitative conclusions survive and are consistent with prior knowledge, but strengths are downgraded: (1) The only item with 'strong' evidence is the validation methodology itself — naive CV manufactures skill (R2 0.83-0.91 on noise vs negative under purged CV, confirmed). (2) GBDT on engineered features is the sensible default, but the competition and paper numbers behind it (G-Research winner = LightGBM, Jaquart 1-60 min accuracies, Akyildirim 55-65%) could not be confirmed; treat 52-55% hit-rate on 4h-1d as a working hypothesis to be measured in-house, not a literature fact. (3) Meta-labeling has peer-reviewed qualitative support (four JFDS papers; improves Sharpe/MaxDD via filtering and sizing; calibration helps fixed sizers) but no crypto evidence and no verified numbers; the 17%->63% figure should not be quoted. (4) Regime-switching: no verified evidence of directional edge; use only filtered (causal) posteriors as GBDT features. (5) LSTM/transformers: no verified evidence they beat GBDT in crypto; the Fischer-Krauss decay story is the right lesson but its numbers are unverified here. (6) Foundation TS models: license facts confirmed, 'no edge' conclusion consistent, exact accuracies unverified. (7) Numerai Crypto definitions confirmed; it is a 30-day cross-sectional problem, not a BTC direction signal. Practical implication for the advisor: build the LightGBM/CatBoost + triple-barrier + purged CPCV + DSR/PBO pipeline and generate the evidence yourself; do not cite any literature accuracy figure to users until re-verified from a machine with open internet. Never promise returns.",
+   "predictors": [
+    {
+     "name": "Gradient-boosted trees (LightGBM/XGBoost/CatBoost) on engineered return/volume features",
+     "formula": "y = sign(r_{t->t+h}) or triple-barrier label; X = lagged log returns at several lookbacks, realized vol, volume z-scores, high-low range, cross-asset returns, time-of-day. G-Research target (from memory, unverified): Target = r_{15min}(asset) - beta * r_{15min}(market), beta from rolling regression; metric = weighted Pearson corr(pred, Target).",
+     "horizon": "15 min (competition) to 1 day; expect most robust at 4h-1d",
+     "effect": "UNVERIFIED this session: G-Research/Kaggle 2022 winner reportedly used LightGBM with hand-crafted features; leaderboard scores reportedly small positive correlations (order 0.01-0.05). Jaquart et al. (2021) reportedly >50% accuracy on BTC 1-60 min with GBC/LSTM best; Akyildirim et al. (2021) reportedly 55-65% on 12 cryptos but with non-purged splits. None of these numbers could be opened at source (Kaggle, gresearch.com, ScienceDirect, Springer all blocked). Working expectation to be measured in-house: 52-55% hit rate on 4h-1d, rank-IC 0.02-0.05.",
+     "oos_evidence": "Competition holdout is the cleanest OOS design in crypto ML but its result could not be confirmed. No verified purged-CV replication of the academic accuracies exists in what was accessible.",
+     "strength": "weak",
+     "sources": [
+      "https://www.gresearch.com/news/wrapping-up-the-g-research-crypto-forecasting-competition/ (blocked, unverified)",
+      "https://www.kaggle.com/c/g-research-crypto-forecasting (blocked, unverified)",
+      "https://www.sciencedirect.com/science/article/pii/S2405918821000027 (blocked, unverified)",
+      "https://link.springer.com/article/10.1007/s10479-020-03575-y (blocked, unverified)"
+     ],
+     "universe_period": "G-Research: 14 cryptos 2018-2022; Jaquart: BTC 2019-2020 minute data; Akyildirim: 12 cryptos 2013-2018 (all from memory)",
+     "costs_decay": "Correlations of a few hundredths on 15-min residual returns are below 5-10 bp round-trip taker fees for single-asset trading; minute-level edges reportedly not exploitable after fees (Jaquart, unverified). Expect decay as market-making competition on BTC/ETH increased post-2021.",
+     "data_source": "OHLCV via ccxt / data.binance.vision (already in repo); Kaggle dataset for replication (needs open internet)."
+    },
+    {
+     "name": "Meta-labeling: secondary classifier on triple-barrier outcomes of a primary side signal",
+     "formula": "Primary side s_t in {-1,+1}; triple-barrier label y_t = 1 if profit barrier (pt*sigma_t) hit before stop (sl*sigma_t) or vertical barrier h with sign matching s_t, else 0; M2(X_t, s_t) -> p_t; trade if p_t > tau; size = f(p_t) (fixed/calibrated sigmoid); sample weights = label uniqueness.",
+     "horizon": "Any; typically 4h-5d via vertical barrier",
+     "effect": "CONFIRMED (hudson-and-thames/meta-labeling README): four JFDS papers (Joubert 2022; Meyer, Joubert & Alfeus 2022; Thumm, Barucca & Joubert 2022; Meyer, Barziy & Joubert 2023) state meta-labeling helps size positions, filter false positives and improve Sharpe and max drawdown; calibration 'significantly improved' fixed position-sizing methods while data-fitted sizers gained nothing; ensembles help most under multiple regimes. NOT confirmed: any numeric effect sizes, whether tests were synthetic or real, the Hudson & Thames two-strategy replication, and the 17%->63% figure (do not quote).",
+     "oos_evidence": "Peer-reviewed but qualitative as far as could be verified; no crypto-specific OOS study accessible. Meta-labeling cannot create edge absent a primary signal (Joubert 2022 framing, from memory).",
+     "strength": "weak",
+     "sources": [
+      "https://github.com/hudson-and-thames/meta-labeling (confirmed)",
+      "https://hudsonthames.org/does-meta-labeling-add-to-signal-efficacy-triple-barrier-method/ (blocked, unverified)"
+     ],
+     "universe_period": "Not verifiable this session (repo README gives abstracts only)",
+     "costs_decay": "Filtering lowers trade count and thus cost drag; barrier widths must exceed ~2-3x round-trip cost or labels are noise.",
+     "data_source": "Own OHLCV + primary signals (HMM/Elliott/rules) in repo; sigma from EWMA of returns."
+    },
+    {
+     "name": "LSTM / RNN on return sequences (Fischer-Krauss line)",
+     "formula": "Input: sequence of 240 standardized daily log returns (or 60-240 minute returns); output P(r_{t+1} > cross-sectional median); trade top-k / bottom-k.",
+     "horizon": "1 day (equities); 1-60 min (crypto papers)",
+     "effect": "UNVERIFIED this session (EJOR/arXiv/mirrors blocked). From memory: Fischer & Krauss (2018) S&P 500 1992-2015, ~0.46%/day and Sharpe ~5.8 before costs, edge fading after 2010; Ghosh, Neufeld & Sahoo (2022) intraday LSTM+RF confirm decay. The '59.1% directional accuracy' attribution could not be checked — drop it.",
+     "oos_evidence": "The replicated lesson is post-publication decay; in crypto no accessible evidence that LSTM beats GBDT with identical features.",
+     "strength": "weak",
+     "sources": [
+      "https://www.sciencedirect.com/science/article/abs/pii/S0377221717310652 (blocked, unverified)",
+      "https://arxiv.org/abs/2004.10178 (blocked, unverified)"
+     ],
+     "universe_period": "S&P 500 1992-2015 / 1993-2018; BTC 2019-2020 (from memory)",
+     "costs_decay": "Equity edge reportedly ~zero after costs from 2010; minute-level crypto LSTM edges do not survive 5-10 bp fees.",
+     "data_source": "OHLCV; for crypto ccxt/Binance vision."
+    },
+    {
+     "name": "Transformers / attention models (Spacetimeformer, PatchTST, iTransformer) for crypto returns",
+     "formula": "Multivariate seq2seq; context 128 (train) / 250 (inference) bars across 14 assets; horizon 16 steps; MSE loss (qAp config, confirmed).",
+     "horizon": "15 min-1 day",
+     "effect": "CONFIRMED only that a Spacetimeformer entry existed with the above config; its README reports no score and no LightGBM comparison. The claim that transformers underperformed GBDT in G-Research is unverified (Kaggle/gresearch blocked). No accessible peer-reviewed crypto transformer study with purged CV and costs.",
+     "oos_evidence": "None verifiable. Papers claiming >60% typically have leakage (overlapping windows, full-sample scaling) — general caution, not a checked finding.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://github.com/qAp/gresearch_crypto_forecasting_kaggle (confirmed config only)",
+      "https://mlcontests.com/tabular-data/ (blocked, unverified)"
+     ],
+     "universe_period": "14 cryptos 2018-2022",
+     "costs_decay": "Same as LSTM; high training cost and drift risk.",
+     "data_source": "OHLCV; NeuralForecast only if it beats GBDT after costs on all CPCV paths."
+    },
+    {
+     "name": "Regime-conditional models: HMM / NHHM / Markov-switching as features",
+     "formula": "S_t in {1..K}; r_t | S_t ~ N(mu_k, sigma_k^2); NHHM transition P(S_t=j|S_{t-1}=i, z_{t-1}) = logistic(z_{t-1}); feature = filtered posterior P(S_t=k | F_t) (forward filter only, never smoothed).",
+     "horizon": "1 day densities; as feature any horizon",
+     "effect": "UNVERIFIED this session (arXiv 2011.03741, ScienceDirect, arXiv 2401.03393 blocked). From memory: Koki, Leonardos & Piliouras report best one-step predictive density for BTC/ETH/XRP with a 4-state NHHM; RS-CAViaR improves BTC VaR/ES. No evidence anywhere accessible of improved directional hit rate or after-cost returns from regimes alone.",
+     "oos_evidence": "Density/tail-risk improvements reportedly rolling OOS; directional benefit: none verified. Smoothed posteriors are a look-ahead leak.",
+     "strength": "weak",
+     "sources": [
+      "https://arxiv.org/abs/2011.03741 (blocked, unverified)",
+      "https://arxiv.org/abs/2401.03393 (blocked, unverified)"
+     ],
+     "universe_period": "BTC/ETH/XRP daily 2013-2020 (from memory)",
+     "costs_decay": "Slow-moving; value is in sizing/abstaining, not more signals.",
+     "data_source": "Daily/4h returns; hmmlearn (in repo, limited maintenance), statsmodels MarkovAutoregression; forward filter only."
+    },
+    {
+     "name": "Ensembles and stacking (seed/fold averaging, DES, CPCV-OOF stacking)",
+     "formula": "p_hat = sum_m w_m p_hat_m with w from OOS log-loss on purged folds (or simple mean); stacking meta-learner fit only on CPCV out-of-fold predictions.",
+     "horizon": "Any",
+     "effect": "CONFIRMED only the JFDS abstract statement that ensembles are 'especially beneficial when underlying data consist of multiple regimes'. The '+0.005-0.02 rank-corr' figure and 'G-Research top teams averaged seeds' are unsourced — removed.",
+     "oos_evidence": "Variance/PBO reduction is the plausible benefit; no verified signal gain.",
+     "strength": "weak",
+     "sources": [
+      "https://github.com/hudson-and-thames/meta-labeling (confirmed abstract)"
+     ],
+     "universe_period": "n/a",
+     "costs_decay": "Neutral; smoother probabilities reduce flip-flop trades.",
+     "data_source": "Own models."
+    },
+    {
+     "name": "Time-series foundation models (Chronos-2, TimesFM, Kronos) zero-shot on returns",
+     "formula": "Zero-shot quantiles q_{0.1/0.5/0.9}(r_{t+1..t+H} | 512-2048 bar context); direction = sign(q_{0.5}); optionally quantile spread as a feature.",
+     "horizon": "5 min-1 day",
+     "effect": "CONFIRMED: 'Re(visiting) Time Series Foundation Models in Finance' (Rahimikia, Ni, Wang; arXiv 2511.18578; code DeepIntoStreams/TSFM_Finance) tests Chronos 1.x and TimesFM; Kronos is MIT, trained on K-lines from 45+ exchanges, and its authors call the demo 'not a production-ready quantitative trading system'; Chronos-2 Apache-2.0, released 2025-10-20. UNVERIFIED: ~50-51% directional accuracy, Chronos-large OOS R2 -1.37%, TimesFM-500M <50%, CatBoost in-sample Sharpe 6.79, Kronos Brier 0.189 vs 0.188 Brownian (cornfordandcross.com blocked); existence of arXiv 2606.27100 and 2609.20554 unconfirmed.",
+     "oos_evidence": "Qualitative 'no directional edge' is consistent across what is accessible and with the repo's prior research doc, which itself notes these were checked only via GitHub/snippets.",
+     "strength": "no-evidence",
+     "sources": [
+      "https://github.com/DeepIntoStreams/TSFM_Finance (confirmed identity)",
+      "https://github.com/shiyu-coder/Kronos (confirmed)",
+      "https://github.com/amazon-science/chronos-forecasting (confirmed)",
+      "https://arxiv.org/abs/2511.18578 (blocked)",
+      "https://cornfordandcross.com/market-insights/week-three-foundation-model-vs-brownian-motion-kronos-on-five-minute-btc/ (blocked, unverified)"
+     ],
+     "universe_period": "US equities daily; BTC 5-min 2025-2026 (from memory)",
+     "costs_decay": "No edge to decay; compute cost only. Evaluate only on bars after the model's pretraining cutoff.",
+     "data_source": "Chronos-2 (Apache-2.0), TimesFM <=2.5 (Apache-2.0), Kronos (MIT)."
+    },
+    {
+     "name": "Cross-sectional rank prediction (Numerai Crypto)",
+     "formula": "CONFIRMED: target = 30-day forward token return, ranked, gaussianized, bucketed into 5 bins; CORR = Pearson(sign*|gauss(rank(pred))|^1.5, sign*|target-mean|^1.5); legacy payout = stake*clip(payout_factor*MMC, -0.05, 0.05).",
+     "horizon": "30 days",
+     "effect": "Numerai publishes no typical score magnitudes; 'CORR 0.02-0.04 is strong' is community lore (unverified). Only live staked submissions reveal skill.",
+     "oos_evidence": "Live OOS by construction (black-box target).",
+     "strength": "weak",
+     "sources": [
+      "https://github.com/numerai/docs/blob/master/numerai-crypto/data.md (confirmed)",
+      "https://github.com/numerai/docs/blob/master/numerai-crypto/staking.md (confirmed)",
+      "https://github.com/numerai/docs/blob/master/numerai-tournament/scoring/correlation-corr.md (confirmed)"
+     ],
+     "universe_period": "Token universe 2023-2026 live",
+     "costs_decay": "Low turnover at 30d; not a BTC direction signal.",
+     "data_source": "Numerai CryptoAPI (train_targets.parquet, live_universe.parquet); YIEDL community data (PVM, sentiment, on-chain), free."
+    },
+    {
+     "name": "Validation design as the gate on reported accuracy: purged/embargoed CPCV, DSR, PBO",
+     "formula": "Purge overlapping label windows; embargo e bars after each test block; CPCV C(N,K) paths; PBO via CSCV; DSR = PSR at expected max Sharpe under N trials.",
+     "horizon": "n/a",
+     "effect": "CONFIRMED (purgedcv README): on an unpredictable target, shuffled KFold R2 = 0.83 (k-NN) / 0.91 (RandomForest); PurgedKFold R2 = -1.48 / -1.87; label overlap 100% -> 0%. MIT license.",
+     "oos_evidence": "Methodological; Bailey & Lopez de Prado (DSR, PBO) are standard though SSRN was blocked this session.",
+     "strength": "strong",
+     "sources": [
+      "https://github.com/eslazarev/purged-cross-validation (confirmed)",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2460551 (blocked)",
+      "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2326253 (blocked)"
+     ],
+     "universe_period": "n/a",
+     "costs_decay": "Count every optuna trial / feature sweep / threshold in N for DSR; gate: DSR > 0.95, PBO < 0.2, positive after-cost expectancy on all CPCV paths.",
+     "data_source": "purgedcv (MIT) or skfolio CombinatorialPurgedCV (BSD-3)."
+    },
+    {
+     "name": "ADDED: Order-book / order-flow-imbalance deep models (DeepLOB, deep OFI) — where honest >55% accuracy exists but is not tradable for a Telegram bot",
+     "formula": "Input: last T snapshots of L-level LOB (bid/ask price, size) or OFI_t = sum over levels of (delta bid size - delta ask size); CNN-LSTM (DeepLOB) or linear/GBDT; target = sign of mid-price change over next k events/seconds.",
+     "horizon": "Ticks to ~1 minute (event time)",
+     "effect": "UNVERIFIABLE this session (arXiv blocked). From memory: Zhang, Zohren & Roberts (2019) DeepLOB ~80%+ accuracy on FI-2010 and LSE at k=10-50 events; Kolm, Turiel & Westray (2023) deep OFI R2 of a few percent at short horizons. Effect is real in microstructure but decays to ~50% within minutes and is consumed by spread/fees for a taker.",
+     "oos_evidence": "Chronological OOS in the papers; no verified crypto replication accessible.",
+     "strength": "weak",
+     "sources": [
+      "https://arxiv.org/abs/1808.03668 (blocked, unverified)",
+      "https://arxiv.org/abs/2105.10430 (blocked, unverified)"
+     ],
+     "universe_period": "LSE / Nasdaq equities 2010-2019 (from memory)",
+     "costs_decay": "Not monetizable via delayed Telegram signals; only for market-making / execution timing.",
+     "data_source": "L2 snapshots via exchange websockets (must run from VPS/Mac — exchange APIs blocked from this container); data.binance.vision bookDepth."
+    },
+    {
+     "name": "ADDED: Probability calibration + abstention (conformal / MAPIE / crepes) as the layer that turns weak classifiers into usable signals",
+     "formula": "Calibrate p_t (isotonic/Platt on purged OOF); conformal set at alpha; emit signal only if |p_t - 0.5| > tau AND conformal set is a singleton; expectancy_t = p_t*TP - (1-p_t)*SL - costs > 0.",
+     "horizon": "Any",
+     "effect": "Mechanism, not a predictor: JFDS calibration paper (confirmed abstract) reports calibration significantly improves fixed sizers. No verified crypto numbers.",
+     "oos_evidence": "Must be measured on CPCV paths with Brier/log-loss and reliability curves.",
+     "strength": "weak",
+     "sources": [
+      "https://github.com/hudson-and-thames/meta-labeling (confirmed abstract)"
+     ],
+     "universe_period": "n/a",
+     "costs_decay": "Abstention is the main after-cost lever for sparse single-asset signals.",
+     "data_source": "MAPIE 1.5.0, crepes 0.9.1 (already noted in repo research doc)."
+    }
+   ],
+   "red_flags": [
+    "VERIFICATION STATUS: almost every numeric claim in this family is unverified at source this session (arXiv, ScienceDirect, Springer, NBER, SSRN, Kaggle, gresearch.com, Semantic Scholar, HuggingFace, econstor, alphaxiv, hudsonthames.org blocked; WebSearch 200/200 used). Only GitHub-hosted facts were confirmed. Re-verify from an unrestricted machine before quoting any accuracy figure to users.",
+    "The repo's own research doc (docs/research/regime-ai-stack-2026-09.md) states arXiv 2511.18578 and 2606.27100 were checked only 'через GitHub/сниппеты'; arXiv IDs 2606.27100, 2608.05755, 2609.20554 are unconfirmed to exist.",
+    "Reported crypto accuracies of 60-90% almost always come from price-level targets, shuffled splits with overlapping windows, full-sample scalers, smoothed (two-sided) regime labels, or test-set tuning. Akyildirim's 55-65% (unverified) reportedly used non-purged splits.",
+    "Hit rate is not expectancy: report after-cost expectancy per trade, Brier/log-loss and calibration, not accuracy.",
+    "Survivorship: today's top-N coin lists exclude dead tokens; use point-in-time universes.",
+    "Post-publication decay is the norm (Fischer-Krauss line, unverified numbers but consistent narrative); 2017-2021 crypto edges are likely smaller now.",
+    "Competition metrics (Pearson corr of a few hundredths, Numerai CORR) become money only via many netted bets at low cost; a single-asset BTC Telegram signal cannot harvest that.",
+    "Meta-labeling '17%->63%' should not be quoted; not found in any confirmed source and mechanically a base-rate shift.",
+    "Foundation TS models: no verified directional edge; also pretraining-cutoff look-ahead if evaluated on earlier data.",
+    "Multiple testing: count every optuna trial, feature set, barrier width and threshold in N for DSR.",
+    "Exchange APIs are blocked from this container — data collection and any replication must run from the VPS/Mac."
+   ]
+  },
+  "missing": [
+   "Order-book / order-flow-imbalance deep models (DeepLOB, deep OFI) — the one setting with honest >55% directional accuracy, but only at tick-to-minute horizons and not monetizable via delayed Telegram signals (added, unverifiable this session).",
+   "Probability calibration + conformal abstention layer (MAPIE/crepes) as the mechanism that makes 52-55% classifiers usable after costs (added).",
+   "Cross-sectional ML on the coin panel (Gu-Kelly-Xiu-style GBDT/NN on many tokens with lagged returns, volume, on-chain) — e.g. Bianchi & Babiak style crypto return predictability studies; not verifiable this session, worth a dedicated check.",
+   "Concept-drift handling: rolling/expanding retrain schedules and drift tests (ADWIN, PSI on feature distributions) — no literature check possible here but operationally essential for any GBDT deployed on crypto.",
+   "Exact G-Research winning private-leaderboard correlation and the winning solution write-up (Kaggle discussion) — needed before citing the competition as evidence.",
+   "Independent purged-CV replications of Jaquart et al. and Akyildirim et al. on 2022-2026 data — none accessible; the project should produce its own."
+  ]
+ }
+]
