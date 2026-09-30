@@ -26,6 +26,7 @@ from .barrier_eval import Config, score_configs
 from .evaluate import Folds, _make_model, nonoverlap
 from .features import build_features_v1, primary_side
 from .labels import triple_barrier_sided, uniqueness_weights
+from .registry import HOLDOUT_START, before_holdout, holdout_opened, n_trials, open_holdout, register, trade_moments
 from .run import BARS_PER_DAY, load
 
 
@@ -61,11 +62,21 @@ def vol_managed_long(close: pd.Series, bars_per_day: int, idx: np.ndarray, targe
 
 
 def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: float = 5.0, tp: float = 2.0, sl: float = 1.5,
-                taus=(0.55, 0.60), test_days: int = 90, min_train_days: int = 365, placebo: bool = False, seed: int = 0) -> dict:
+                taus=(0.55, 0.60), test_days: int = 90, min_train_days: int = 365, placebo: bool = False, seed: int = 0,
+                drop: tuple[str, ...] = (), n_trials_prior: int = 0, holdout: bool = False,
+                cutoff: pd.Timestamp | None = HOLDOUT_START) -> dict:
+    """drop — префиксы признаков, которые убираем (ablation: «F5_», «X_hmm»…); n_trials_prior — сколько испытаний уже
+    в реестре (N для DSR = они + конфигурации этого прогона). По умолчанию данные обрезаются до holdout;
+    holdout=True — тестовые блоки только внутри holdout (обучение — на всём до него)."""
+    is_dt = isinstance(df.index, pd.DatetimeIndex)
+    if cutoff is not None and is_dt and not holdout:
+        df = before_holdout(df, cutoff)
     bpd = BARS_PER_DAY[tf]
     h = max(1, int(round(horizon_hours * bpd / 24)))
     X = build_features_v1(df, bpd)
-    side = primary_side(X).values
+    side = primary_side(X).values                           # сторону задаёт тренд — её ablation не трогает
+    if drop:
+        X = X.drop(columns=[c for c in X.columns if c.startswith(tuple(drop))])
     tb = triple_barrier_sided(df, h, side, tp, sl, vol_span=7 * bpd)
     tb_long = triple_barrier_sided(df, h, np.ones(len(df)), tp, sl, vol_span=7 * bpd)
     Xs = X.assign(side=side)
@@ -79,7 +90,13 @@ def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: flo
     cost = 2 * fee_bps / 1e4
     valid = ~Xs.isna().any(axis=1).values & tb["ret"].notna().values & tb_long["ret"].notna().values
     y = tb["label"].values
-    folds = Folds(len(df), h, min_train=min_train_days * bpd, test_len=test_days * bpd)
+    # первый тест — когда набрано min_train_days дней ВАЛИДНЫХ строк (у DVOL/OI история короче свечей)
+    start = int(np.searchsorted(np.cumsum(valid), min_train_days * bpd)) + h
+    if holdout:
+        if cutoff is None or not is_dt:
+            raise ValueError("holdout требует DatetimeIndex и дату начала")
+        start = max(start, int(np.searchsorted(df.index, cutoff)))
+    folds = Folds(len(df), h, min_train=start, test_len=test_days * bpd)
 
     test_idx = np.concatenate([nonoverlap(te, h) for _, te in folds])
     test_idx = test_idx[valid[test_idx]]
@@ -110,12 +127,13 @@ def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: flo
         configs.append(Config(f"primary + M2[{k}] EV>0", (ev > 0).astype(float), p, tp_w, sl_w))
         for tau in taus:
             configs.append(Config(f"primary + M2[{k}] p>{tau:.2f}", (p > tau).astype(float), p, tp_w, sl_w))
-    pbo = score_configs(configs, r_sig, cost, 365 * bpd / h)
+    n_trials = n_trials_prior + len(configs)
+    pbo = score_configs(configs, r_sig, cost, 365 * bpd / h, n_trials=n_trials)
     # ориентиры: «всегда long» с теми же барьерами и случайная сторона (результат long-стороны × случайный знак)
     rng = np.random.default_rng(seed + 1)
     base = [Config("ориентир: всегда long (те же барьеры)", np.ones(len(test_idx))),
             Config("ориентир: случайная сторона", rng.choice([-1.0, 1.0], len(test_idx)))]
-    score_configs(base, r_long, cost, 365 * bpd / h)
+    score_configs(base, r_long, cost, 365 * bpd / h, n_trials=n_trials)
 
     ranked = sorted([c for c in configs if c.stats.get("trades", 0) >= 10], key=lambda c: -c.stats["dsr"])
     best = ranked[0] if ranked else None
@@ -134,8 +152,27 @@ def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: flo
             "m2_improves": m2_improves, "m2_best": m2_best,
             "h": h, "bpd": bpd, "n_test": len(test_idx), "primary_share": float(np.mean(s != 0)),
             "vol": vol_managed_long(df["close"], bpd, test_idx), "signals_per_month": signals_per_month,
-            "fee_bps": fee_bps, "tp": tp, "sl": sl, "placebo": placebo,
+            "fee_bps": fee_bps, "tp": tp, "sl": sl, "placebo": placebo, "n_trials": n_trials, "holdout": holdout,
+            "drop": tuple(drop), "features": list(X.columns), "horizon_hours": horizon_hours, "tf": tf,
             "period": (df.index[test_idx[0]], df.index[test_idx[-1]]) if len(test_idx) else None}
+
+
+def registry_rows(res: dict, asset: str, hypothesis: str) -> list[dict]:
+    """Каждая конфигурация прогона — отдельное испытание в реестре."""
+    feats = ";".join(res["features"])
+    p0, p1 = res["period"] or (None, None)
+    rows = []
+    for c in res["configs"]:
+        t = c.stats
+        model = "primary" if "M2" not in c.name else ("lgbm" if "lgbm" in c.name else "logit")
+        rows.append({"hypothesis": hypothesis, "asset": asset, "tf": res["tf"], "model": model, "features": feats,
+                     "barriers": f"tp{res['tp']:g}σ/sl{res['sl']:g}σ", "horizon_h": res["horizon_hours"], "rule": c.name,
+                     "period_start": p0, "period_end": p1, "holdout": res["holdout"], "hit": t.get("hit"),
+                     "mean_bps": t.get("mean_bps"), "ci_lo_bps": t.get("ci_lo_bps"), "ci_hi_bps": t.get("ci_hi_bps"),
+                     **trade_moments(c.rets), "n_trials_at_reg": res["n_trials"], "dsr_at_reg": t.get("dsr"),
+                     "pbo": res["pbo"]["pbo"], "verdict": "gate" if (c is res["best"] and res["gate"]) else "",
+                     "notes": ("placebo; " if res["placebo"] else "") + (f"drop={','.join(res['drop'])}" if res["drop"] else "")})
+    return rows
 
 
 def report_v1(res: dict, name: str) -> str:
@@ -144,7 +181,11 @@ def report_v1(res: dict, name: str) -> str:
          f"Горизонт {res['h']} баров ({res['h'] / res['bpd'] * 24:.0f} ч); цель +{res['tp']:g}σ, стоп −{res['sl']:g}σ; "
          f"комиссия {res['fee_bps']:g} б.п. за сторону. Тестовые события: {res['n_test']} (непересекающиеся), "
          f"период {res['period'][0]} — {res['period'][1]}." if res["period"] else "Недостаточно данных.", "",
-         f"PBO по всем конфигурациям: **{res['pbo']['pbo']:.2f}**.", "",
+         f"PBO по всем конфигурациям: **{res['pbo']['pbo']:.2f}**. N испытаний для DSR (реестр + этот прогон): "
+         f"**{res['n_trials']}**. " + ("**HOLDOUT** (тест только на отложенном периоде). " if res["holdout"] else
+                                       f"Данные обрезаны до {HOLDOUT_START.date()} (holdout не тронут). ")
+         + (f"Убраны признаки: {', '.join(res['drop'])}." if res["drop"] else ""), "",
+         f"Признаки M2 ({len(res['features'])}): {', '.join(res['features'])}.", "",
          "| конфигурация | сделок | прибыльных | средняя, б.п. | 95% ДИ, б.п. | PSR | DSR | ¼-Келли, б.п./сделку |",
          "|---|---|---|---|---|---|---|---|"]
     for c in [*res["configs"], *res["baselines"]]:
@@ -189,12 +230,23 @@ def main() -> None:
     ap.add_argument("--tp", type=float, default=2.0)
     ap.add_argument("--sl", type=float, default=1.5)
     ap.add_argument("--placebo", action="store_true")
+    ap.add_argument("--drop", default="", help="префиксы признаков через запятую, которые убрать (ablation), напр. F5_,X_hmm")
+    ap.add_argument("--hypothesis", default="H3", help="метка испытания в reports/trials.csv")
+    ap.add_argument("--no-register", action="store_true", help="не писать в реестр (только для отладки кода)")
+    ap.add_argument("--holdout", action="store_true", help="ОДНОКРАТНАЯ проверка на holdout замороженной спецификации")
     a = ap.parse_args()
     df = load(a.data)
     name = Path(a.data).stem
-    res = evaluate_v1(df, a.tf, a.hours, a.fee_bps, a.tp, a.sl, placebo=a.placebo)
+    if a.holdout:
+        open_holdout(f"v1 {name} {a.hours}h drop={a.drop}")        # второй раз — исключение
+    drop = tuple(p for p in a.drop.split(",") if p)
+    res = evaluate_v1(df, a.tf, a.hours, a.fee_bps, a.tp, a.sl, placebo=a.placebo, drop=drop,
+                      n_trials_prior=n_trials(), holdout=a.holdout)
+    if not a.no_register:
+        register(registry_rows(res, name.split("_")[0], a.hypothesis + ("-placebo" if a.placebo else "")))
     rep = report_v1(res, name)
-    out = Path("reports") / f"v1_{name}_{a.hours}h{'_placebo' if a.placebo else ''}.md"
+    tag = (f"_drop-{'-'.join(drop)}" if drop else "") + ("_placebo" if a.placebo else "") + ("_HOLDOUT" if a.holdout else "")
+    out = Path("reports") / f"v1_{name}_{a.hours}h{tag}.md"
     out.parent.mkdir(exist_ok=True)
     out.write_text(rep, encoding="utf-8")
     print(rep, f"\n\nСохранено: {out}", sep="")
