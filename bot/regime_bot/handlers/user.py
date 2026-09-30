@@ -70,6 +70,18 @@ async def terms(message: Message, settings: Settings) -> None:
     await message.answer(texts.TERMS.format(support=settings.support, terms_link=link), disable_web_page_preview=True)
 
 
+@router.message(Command("delete_me"))
+async def delete_me(message: Message) -> None:
+    await message.answer(texts.DELETE_CONFIRM, reply_markup=kb.delete_kb())
+
+
+@router.callback_query(F.data == "delete_yes")
+async def delete_yes(cb: CallbackQuery, db: Database) -> None:
+    db.forget_user(cb.from_user.id)
+    await cb.answer()
+    await cb.message.edit_text(texts.DELETED)
+
+
 @router.message(Command("paysupport"))
 async def paysupport(message: Message, settings: Settings) -> None:
     await message.answer(texts.PAYSUPPORT.format(support=settings.support))

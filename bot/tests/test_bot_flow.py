@@ -73,8 +73,12 @@ async def test_full_purchase_flow(env, db, settings):
     assert db.get_user(UID)["source"] == "reels"
     assert "REGIME AI" in s.of(SendMessage)[-1].text
 
-    await dp.feed_update(bot, cb("plans"))                         # без согласия — сначала риски
-    assert "Прежде чем оформить" in s.of(EditMessageText)[-1].text
+    await dp.feed_update(bot, cb("plans"))                         # сначала — согласие на ПДн
+    assert "персональных данных" in s.of(EditMessageText)[-1].text
+    await dp.feed_update(bot, cb("buy:m3"))                        # обойти согласие нельзя
+    assert not s.of(SendInvoice)
+    await dp.feed_update(bot, cb("privacy"))                       # затем — риски
+    assert db.privacy_accepted(UID) and "Прежде чем оформить" in s.of(EditMessageText)[-1].text
     await dp.feed_update(bot, cb("accept"))
     assert db.terms_accepted(UID) and "Тарифы" in s.of(EditMessageText)[-1].text
 
@@ -128,3 +132,6 @@ async def test_signals_locked_without_access_and_referral(env, db):
     assert "start=ref_900" in s.of(EditMessageText)[-1].text
     await dp.feed_update(bot, msg("/start ref_900", uid=901))
     assert db.get_user(901)["referred_by"] == 900
+    await dp.feed_update(bot, msg("/delete_me", uid=900))
+    await dp.feed_update(bot, cb("delete_yes", uid=900))
+    assert db.get_user(900) is None and db.get_user(901)["referred_by"] is None

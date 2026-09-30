@@ -33,6 +33,7 @@ COMMANDS = [
     BotCommand(command="help", description="Вопросы и ответы"),
     BotCommand(command="terms", description="Условия использования"),
     BotCommand(command="paysupport", description="Поддержка по оплатам"),
+    BotCommand(command="delete_me", description="Удалить мои данные"),
 ]
 
 

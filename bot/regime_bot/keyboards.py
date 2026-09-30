@@ -25,6 +25,18 @@ def to_plans() -> list[list[B]]:
     return [[B(text="💎 Оформить доступ", callback_data="plans")]]
 
 
+def privacy_kb(settings: Settings) -> KB:
+    rows = [[B(text="✅ Даю согласие", callback_data="privacy")]]
+    if settings.privacy_url:
+        rows.append([B(text="📄 Политика обработки данных", url=settings.privacy_url)])
+    rows.append([B(text="← Назад", callback_data="menu")])
+    return KB(inline_keyboard=rows)
+
+
+def delete_kb() -> KB:
+    return KB(inline_keyboard=[[B(text="Да, удалить", callback_data="delete_yes")], [B(text="Отмена", callback_data="menu")]])
+
+
 def risk_kb(settings: Settings) -> KB:
     rows = [[B(text="✅ Понимаю риски и принимаю", callback_data="accept")]]
     if settings.terms_url:

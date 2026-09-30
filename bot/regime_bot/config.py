@@ -73,6 +73,7 @@ class Settings:
     channel_id: int | None = None            # приватный канал с сигналами (необязательно)
     support: str = "@regime_support"
     terms_url: str = ""
+    privacy_url: str = ""                   # политика обработки ПДн (обязательна по 152-ФЗ)
     referral_bonus_days: int = 7
     grace_hours: int = 24                    # запас после окончания Stars-подписки, пока Telegram продлевает
     plans: tuple[Plan, ...] = field(default=DEFAULT_PLANS)
@@ -103,6 +104,7 @@ class Settings:
             channel_id=int(channel) if channel else None,
             support=e("SUPPORT", cls.support),
             terms_url=e("TERMS_URL", ""),
+            privacy_url=e("PRIVACY_URL", ""),
             referral_bonus_days=int(e("REFERRAL_BONUS_DAYS", str(cls.referral_bonus_days))),
             grace_hours=int(e("GRACE_HOURS", str(cls.grace_hours))),
             plans=_plans_from_env(e("PLANS_JSON")),

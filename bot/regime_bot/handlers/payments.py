@@ -24,11 +24,21 @@ router = Router(name="payments")
 @router.callback_query(F.data == "plans")
 async def plans(event: Message | CallbackQuery, db: Database, settings: Settings) -> None:
     remember(db, event.from_user)
-    if not db.terms_accepted(event.from_user.id):              # сначала — честное предупреждение о рисках
+    if not db.privacy_accepted(event.from_user.id):            # 1) согласие на ПДн — отдельным шагом (152-ФЗ)
+        link = f"\n\nПолитика: {settings.privacy_url}" if settings.privacy_url else ""
+        await show(event, texts.PRIVACY.format(link=link), kb.privacy_kb(settings))
+        return
+    if not db.terms_accepted(event.from_user.id):              # 2) честное предупреждение о рисках
         await show(event, texts.RISK, kb.risk_kb(settings))
         return
     line = texts.CHANNEL_LINE if settings.channel_id else ""
     await show(event, texts.PLANS.format(channel_line=line), kb.plans_kb(settings))
+
+
+@router.callback_query(F.data == "privacy")
+async def accept_privacy(cb: CallbackQuery, db: Database, settings: Settings) -> None:
+    db.accept_privacy(cb.from_user.id)
+    await plans(cb, db, settings)
 
 
 @router.callback_query(F.data == "accept")
@@ -40,7 +50,7 @@ async def accept(cb: CallbackQuery, db: Database, settings: Settings) -> None:
 @router.callback_query(F.data.startswith("buy:"))
 async def buy(cb: CallbackQuery, bot: Bot, db: Database, settings: Settings) -> None:
     plan = settings.plan(cb.data.split(":", 1)[1])
-    if plan is None or not db.terms_accepted(cb.from_user.id):
+    if plan is None or not (db.privacy_accepted(cb.from_user.id) and db.terms_accepted(cb.from_user.id)):
         await plans(cb, db, settings)
         return
     title = f"{texts.BRAND} · {plan.title}"

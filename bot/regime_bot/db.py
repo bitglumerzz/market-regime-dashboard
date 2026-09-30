@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     source         TEXT,                 -- метка рекламной кампании из /start src_xxx
     referred_by    INTEGER,
     terms_at       INTEGER,              -- когда принял предупреждение о рисках
+    privacy_at     INTEGER,              -- когда дал согласие на обработку ПДн (152-ФЗ)
     blocked        INTEGER NOT NULL DEFAULT 0,
     created_at     INTEGER NOT NULL
 );
@@ -101,6 +102,9 @@ class Database:
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA foreign_keys=ON")
         self.conn.executescript(SCHEMA)
+        cols = {r[1] for r in self.conn.execute("PRAGMA table_info(users)")}
+        if "privacy_at" not in cols:                      # миграция баз, созданных до появления согласия на ПДн
+            self.conn.execute("ALTER TABLE users ADD COLUMN privacy_at INTEGER")
 
     def close(self) -> None:
         self.conn.close()
@@ -136,6 +140,22 @@ class Database:
     def terms_accepted(self, tg_id: int) -> bool:
         row = self._one("SELECT terms_at FROM users WHERE tg_id=?", tg_id)
         return bool(row and row["terms_at"])
+
+    def accept_privacy(self, tg_id: int, now: int | None = None) -> None:
+        self.conn.execute("UPDATE users SET privacy_at=? WHERE tg_id=? AND privacy_at IS NULL", (now or int(time.time()), tg_id))
+
+    def privacy_accepted(self, tg_id: int) -> bool:
+        row = self._one("SELECT privacy_at FROM users WHERE tg_id=?", tg_id)
+        return bool(row and row["privacy_at"])
+
+    def forget_user(self, tg_id: int) -> None:
+        """Удалить персональные данные по запросу (/delete_me). Платежи остаются обезличенными —
+        их нужно хранить для бухгалтерии; доступ и доставки удаляются."""
+        self.conn.execute("DELETE FROM deliveries WHERE tg_id=?", (tg_id,))
+        self.conn.execute("DELETE FROM access WHERE tg_id=?", (tg_id,))
+        self.conn.execute("UPDATE payments SET tg_id=0 WHERE tg_id=?", (tg_id,))
+        self.conn.execute("UPDATE users SET referred_by=NULL WHERE referred_by=?", (tg_id,))
+        self.conn.execute("DELETE FROM users WHERE tg_id=?", (tg_id,))
 
     def set_blocked(self, tg_id: int, blocked: bool = True) -> None:
         self.conn.execute("UPDATE users SET blocked=? WHERE tg_id=?", (int(blocked), tg_id))
