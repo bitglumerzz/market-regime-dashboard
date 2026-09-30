@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Полная сборка промо на своей машине — одной командой:
 #   cd studio/promo && ./make_all.sh
-# Результат: promo_sound.mp4 (48 с, со звуком) и ad_18s.mp4 (18.6 с, рекламная нарезка).
+# Результат для трёх вариантов звука (hard / deep / funk):
+#   promo_sound.mp4, promo_sound_deep.mp4, promo_sound_funk.mp4   — 48 с со звуком
+#   ad_18s.mp4,      ad_18s_deep.mp4,      ad_18s_funk.mp4        — 18.6 с, рекламная нарезка
+# Только один стиль: STYLES="deep" ./make_all.sh
 # Нужны: Node.js 18+, Python 3.9+. ffmpeg можно не ставить — подтянется из pip (imageio-ffmpeg).
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -23,5 +26,5 @@ echo "==> 3/4 рендер видео покадрово (1449 кадров, 3�
 node render.js "$@"
 
 echo "==> 4/4 звук + сведение + рекламная нарезка"
-PYTHON="$PY" ./build.sh
-echo "Готово: $(pwd)/promo_sound.mp4 и $(pwd)/ad_18s.mp4"
+for st in ${STYLES:-hard deep funk}; do echo "    стиль: $st"; PYTHON="$PY" ./build.sh "$st"; done
+echo "Готово: ролики лежат в $(pwd)"

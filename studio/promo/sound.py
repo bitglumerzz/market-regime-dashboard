@@ -1,7 +1,13 @@
 """Звук для промо: phonk-house 120 BPM + саунд-дизайн, синхронно с кадром.
 
-    python3 sound.py full   -> promo_audio.wav (48.3 с, под promo.mp4)
-    python3 sound.py ad     -> ad_audio.wav    (18.6 с, под рекламную нарезку)
+    python3 sound.py full [hard|deep|funk]   -> promo_audio[_стиль].wav (48.3 с, под promo.mp4)
+    python3 sound.py ad   [hard|deep|funk]   -> ad_audio[_стиль].wav    (18.6 с, под рекламную нарезку)
+
+Стили:
+    hard — phonk-house 120 BPM: дисторшн-808, фонк-ковбелл, хлопки, дроби хэтов (по умолчанию)
+    deep — мягкий deep/lo-fi house 120 BPM: без ковбелла, чистый глубокий саб, пышные пэды, щелчки вместо хлопков
+    funk — бразильский фонк 130 BPM: рваная «тамборзан»-бочка, перегруженные ковбелл и 808
+           (склейки видео нарезаны под 120, поэтому в долю попадает дроп на 13.6 с; удары на склейках — по кадру)
 
 Всё синтезируется здесь же (никаких сэмплов и стоков), поэтому прав на музыку ни у кого, кроме вас, нет.
 Сетка: такт 2 с, доля 0.5 с, шаг 1/16 = 0.125 с; сильные доли на ... 1.6, 3.6, 5.6, ... 13.6 (дроп).
@@ -12,7 +18,20 @@ import scipy.signal as ss
 from scipy.io import wavfile
 
 SR = 44100
-BAR0, STEP = -0.4, 0.125          # такты начинаются в -0.4 + 2k
+BAR0, STEP = -0.4, 0.125          # такты начинаются в -0.4 + 2k (для 120 BPM)
+STYLES = {
+    'hard': dict(bpm=120, bass='808', cow=1.0, kicks=(0, 4, 8, 12), punch=1.1, clap=.95, snap=False, hats='16', pad=.5, arp=.42, duck=.65),
+    'deep': dict(bpm=120, bass='deep', cow=0.0, kicks=(0, 4, 8, 12), punch=.75, clap=.5, snap=True, hats='8', pad=.95, arp=.55, duck=.45),
+    'funk': dict(bpm=130, bass='808', cow=1.35, kicks=(0, 3, 6, 8, 11, 14), punch=1.25, clap=1.0, snap=False, hats='16', pad=.35, arp=.3, duck=.7),
+}
+S = STYLES['hard']
+
+
+def set_style(name):
+    """темп и характер; сильная доля всегда остаётся на 13.6 с — на дропе презентации модели"""
+    global S, BAR0, STEP
+    S = STYLES[name]; beat = 60 / S['bpm']; STEP = beat / 4; bar = beat * 4
+    BAR0 = 13.6 - np.ceil(13.6 / bar + 1e-9) * bar
 rng = np.random.default_rng(7)
 
 
@@ -65,10 +84,19 @@ def sub(m, dur):
     return np.sin(2 * np.pi * mf(m) * t) * env
 
 
-def cowbell(m, dur=.17):
+def snap():
+    t = T(.18); return filt(noise(.18), 'bandpass', [1500, 6000]) * np.exp(-t * 55) * 1.2
+
+
+def deepbass(m, dur):
+    t = T(dur + .1); f = mf(m); env = np.minimum(1, t / .015) * np.exp(-t * .6) * np.clip((dur + .1 - t) / .1, 0, 1)
+    return filt(np.sin(2 * np.pi * f * t) + .15 * np.sin(4 * np.pi * f * t), 'lowpass', 400) * env * .9
+
+
+def cowbell(m, dur=.17, drive=1.6):
     t = T(dur); f = mf(m)
     s = .6 * np.tanh(3 * np.sin(2 * np.pi * f * t)) + .4 * np.tanh(3 * np.sin(2 * np.pi * f * 1.504 * t))
-    return sat(filt(s * np.exp(-t * 15), 'bandpass', [f * .7, 7000]), 1.6) * .8
+    return sat(filt(s * np.exp(-t * 15), 'bandpass', [f * .7, 7000]), drive) * .8
 
 
 def supersaw(ms, dur, cut=2200, att=.25, rel=.6):
@@ -171,23 +199,30 @@ def groove(mx, t0, t1, *, kick_=True, clap_=True, hats='16', bass='808', cow=Non
         t = BAR0 + s * STEP
         if t >= t1: break
         bar, pos = divmod(s, 16); root, chord = PROG[prog][bar % 4]
-        if kick_ and pos % 4 == 0:
-            mx.add('drums', kick(1.1 * energy), t, .95); mx.kicks.append(t)
-        if clap_ and pos in (4, 12): mx.add('drums', clap(), t, .95 * energy, verb=.25)
+        if kick_ and pos in S['kicks']:
+            mx.add('drums', kick(S['punch'] * energy), t, .95); mx.kicks.append(t)
+        if clap_ and pos in (4, 12): mx.add('drums', snap() if S['snap'] else clap(), t, S['clap'] * energy, verb=.35 if S['snap'] else .25)
+        if clap_ and S['bpm'] > 125 and pos in (7, 15): mx.add('drums', snap(), t, .5 * energy)
+        if hats == '16' and S['hats'] == '8': hats = '8'
         if hats:
             if hats == '16' or pos % 2 == 0:
                 acc = .9 if pos % 4 == 2 else .55
                 mx.add('drums', hat(pos % 8 == 6 and hats == '16'), t, acc * energy, pan=.25)
             if hats == '16' and bar % 2 == 1 and pos >= 13:              # дробь в конце каждого второго такта
                 for k in (1, 2): mx.add('drums', hat(), t + k * STEP / 3, .3 * energy, pan=-.2)
+        if bass == '808' and S['bass'] == 'deep': bass = 'deep'
+        if bass == 'deep' and pos in (0, 10):
+            mx.add('bass', deepbass(root + 12, (10 if pos == 0 else 6) * STEP), t, .75)
         if bass == '808' and pos in BASS:
             nxt = min([p for p in BASS if p > pos] + [16]); m = root + BASS[pos]
             mx.add('bass', b808(m, (nxt - pos) * STEP * .95, glide=root + 12 if pos == 11 else None), t, .8 * energy)
         if bass == 'sub' and pos in (0, 8): mx.add('bass', sub(root + 12, 1.0) * .6, t, .9)
-        if cow and pos in cow: mx.add('music', cowbell(cow[pos] - (12 if bar % 4 == 3 else 0) * 0), t, .75 * energy, pan=-.15, verb=.18)
-        if pad and pos == 0: mx.add('music', supersaw(chord, min(2.0, t1 - t), cut=pad_cut), t, .5, verb=.3)
+        if cow and S['cow'] and pos in cow: mx.add('music', cowbell(cow[pos], drive=1.6 + S['cow'] * 1.5 - 1.5), t, .75 * energy * S['cow'], pan=-.15, verb=.18)
+        if pad and pos == 0:
+            ch = chord + [chord[1] + 14] if S['bass'] == 'deep' else chord          # в deep — аккорды пышнее (+9)
+            mx.add('music', supersaw(ch, min(16 * STEP, t1 - t), cut=pad_cut * (1.3 if S['bass'] == 'deep' else 1)), t, S['pad'], verb=.3)
         if arp and pos % 2 == 0:
-            m = chord[ARP[(pos // 2) % 8]] + 12; mx.add('music', pluck(m), t, .42, pan=.3 if pos % 4 else -.3, verb=.35)
+            m = chord[ARP[(pos // 2) % 8]] + 12; mx.add('music', pluck(m), t, S['arp'], pan=.3 if pos % 4 else -.3, verb=.35)
 
 
 def tapestop(x, a, b):
@@ -206,7 +241,8 @@ def hook_sfx(mx):
     H.add('sfx', whoosh(.62, up=False), 0, .6)
     for k, tt in enumerate((0, .125, .25, .375, .4375, .5)):              # удары-заикания
         H.add('sfx', kick(1.3), tt, .7 if k < 3 else .5)
-    H.add('sfx', clap(), .25, .6); H.add('sfx', cowbell(81), 0, .5); H.add('sfx', cowbell(76), .1875, .45)
+    H.add('sfx', clap(), .25, .6)
+    if S['cow']: H.add('sfx', cowbell(81), 0, .5); H.add('sfx', cowbell(76), .1875, .45)
     h = sum(H.b.values())
     h = tapestop(h, int(.42 * SR), int(.64 * SR))                         # стоп-кадр = остановка ленты
     mx.add('sfx', h, 0, 1.0)
@@ -244,7 +280,7 @@ def master(mx, out):
     duck = np.ones(mx.N); t = np.arange(mx.N) / SR
     for k in mx.kicks:
         i = int(k * SR); j = min(mx.N, i + int(.3 * SR)); tt = t[i:j] - k
-        duck[i:j] = np.minimum(duck[i:j], 1 - .65 * np.exp(-tt / .09))
+        duck[i:j] = np.minimum(duck[i:j], 1 - S['duck'] * np.exp(-tt / .09))
     for bus in ('bass', 'music'): mx.b[bus] *= duck
     # реверб: свёртка с затухающим шумом
     ir_t = T(2.2); ir = np.vstack([filt(noise(2.2), 'lowpass', 5000) * np.exp(-ir_t * 2.6) for _ in range(2)])
@@ -309,7 +345,7 @@ def full():
     groove(mx, 41.6, 47.6, cow=COW, arp=True, energy=1.05)
     mx.add('sfx', impact(.9), 41.6, .7); mx.add('sfx', ping(1760, 1.4), 44.25, .3, verb=.5)
     mx.add('sfx', impact(1.0), 47.6, .8); mx.add('music', supersaw([45, 57, 64, 69], .1, cut=2000, att=.01, rel=.7), 47.6, .5, verb=.6)
-    master(mx, 'promo_audio.wav')
+    master(mx, OUT('promo_audio'))
 
 
 # рекламная нарезка: (источник в promo.mp4, начало, конец) → стыки на долях 0.5 с
@@ -333,8 +369,11 @@ def ad():
     groove(mx, 13.6, 18.1, cow=COW, arp=True, energy=1.05)                               # Telegram
     mx.add('sfx', impact(.9), 13.6, .7); mx.add('sfx', ping(1760, 1.4), 16.0, .3, verb=.5)
     mx.add('sfx', impact(1.0), 18.1, .8)
-    master(mx, 'ad_audio.wav')
+    master(mx, OUT('ad_audio'))
 
 
 if __name__ == '__main__':
+    STYLE = sys.argv[2] if len(sys.argv) > 2 else 'hard'
+    set_style(STYLE)
+    OUT = lambda base: f'{base}.wav' if STYLE == 'hard' else f'{base}_{STYLE}.wav'
     {'full': full, 'ad': ad}[sys.argv[1] if len(sys.argv) > 1 else 'full']()

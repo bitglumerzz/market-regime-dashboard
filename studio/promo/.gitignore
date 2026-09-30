@@ -9,3 +9,6 @@ still_*.png
 .venv/
 node_modules/
 package-lock.json
+track*.m4a
+promo_sound_*.mp4
+ad_18s_*.mp4
