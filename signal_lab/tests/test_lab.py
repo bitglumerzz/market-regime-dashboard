@@ -38,6 +38,7 @@ def test_planted_momentum_is_detected():
     assert any(r.q_value < 0.05 for r in res["factors"])
     best = max(res["models"], key=lambda m: m.hit)
     assert best.hit > 0.53 and best.mean_ret_bps > 0
+    assert res["gate"] and res["pbo"] < 0.2                     # в формате сигналов со стопом/целью гейт тоже проходит
 
 
 def test_features_do_not_look_ahead():

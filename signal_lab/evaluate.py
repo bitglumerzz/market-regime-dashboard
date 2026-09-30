@@ -148,9 +148,14 @@ def model_tests(X: pd.DataFrame, fwd: pd.Series, horizon: int, folds: Folds, per
     return out
 
 
-def deflated_sharpe(rets: np.ndarray, n_trials: int, sr_trials_std: float) -> float:
+def deflated_sharpe(rets: np.ndarray, n_trials: int, sr_trials_std: float | None = None) -> float:
     """Deflated Sharpe Ratio (Bailey & López de Prado, 2014): вероятность, что настоящий Sharpe > 0
-    с учётом числа испробованных вариантов, асимметрии и толстых хвостов. Считается по Sharpe за сделку."""
+    с учётом числа испробованных вариантов, асимметрии и толстых хвостов. Считается по Sharpe за сделку.
+
+    Порог SR0 — ожидаемый максимум Sharpe из n_trials попыток, если преимущества нет ни у одной.
+    Разброс оценки Sharpe при нулевой гипотезе ≈ 1/√(n−1); его и берём по умолчанию. Разброс Sharpe между
+    нашими конфигурациями для этого не годится: когда настоящее преимущество есть у многих коррелированных
+    конфигураций сразу, он раздувается и штрафует реальный сигнал как шум."""
     n = len(rets)
     if n < 10 or rets.std() == 0:
         return 0.0
@@ -158,13 +163,13 @@ def deflated_sharpe(rets: np.ndarray, n_trials: int, sr_trials_std: float) -> fl
     g3, g4 = stats.skew(rets), stats.kurtosis(rets, fisher=False)
     emc = 0.5772156649
     n_trials = max(2, n_trials)
+    if sr_trials_std is None:
+        sr_trials_std = 1 / math.sqrt(n - 1)
     sr0 = sr_trials_std * ((1 - emc) * stats.norm.ppf(1 - 1 / n_trials) + emc * stats.norm.ppf(1 - 1 / (n_trials * math.e)))
     denom = math.sqrt(max(1e-12, 1 - g3 * sr + (g4 - 1) / 4 * sr ** 2))
     return float(stats.norm.cdf((sr - sr0) * math.sqrt(n - 1) / denom))
 
 
 def attach_dsr(results: list[ModelResult], extra_trials: int = 0) -> None:
-    srs = [r.trade_rets.mean() / r.trade_rets.std(ddof=1) for r in results if len(r.trade_rets) > 2 and r.trade_rets.std() > 0]
-    sd = float(np.std(srs, ddof=1)) if len(srs) > 1 else 0.1
     for r in results:
-        r.dsr = deflated_sharpe(r.trade_rets, len(results) + extra_trials, sd)
+        r.dsr = deflated_sharpe(r.trade_rets, len(results) + extra_trials)
