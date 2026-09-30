@@ -143,6 +143,23 @@ def evaluate_h2(df: pd.DataFrame, holdout: bool = False, fee_bps: float = 10.0, 
             "version": version, "period": (main["rets"].index[0], main["rets"].index[-1]), "fee_bps": fee_bps}
 
 
+def placebo_h2(df: pd.DataFrame, n_perm: int = 200, seed: int = 0, fee_bps: float = 10.0) -> dict:
+    """Плацебо для тренда: дневные доходности до holdout перемешиваются (серийная зависимость разрушена, распределение
+    то же), из них собирается цена и прогоняется основная спецификация (ансамбль, храповик, v1).
+    Если настоящий Sharpe не выше 95-го перцентиля перемешанных — тренд-эффект неотличим от формы распределения."""
+    c = before_holdout(df)["close"]
+    real = perf(strat_returns(c, model_weights(c), fee_bps))["sharpe"]
+    r = c.pct_change().dropna().values
+    rng = np.random.default_rng(seed)
+    sh = []
+    for _ in range(n_perm):
+        p = pd.Series(c.iloc[0] * np.cumprod(1 + np.r_[0.0, rng.permutation(r)]), index=c.index)
+        sh.append(perf(strat_returns(p, model_weights(p), fee_bps))["sharpe"])
+    sh = np.array(sh)
+    return {"real": real, "perm": sh, "p": float((np.sum(sh >= real) + 1) / (n_perm + 1)),
+            "q95": float(np.quantile(sh, 0.95)), "median": float(np.median(sh))}
+
+
 def report_h2(res: dict, name: str) -> str:
     m = res["main"]
     L = [f"# H2 — ансамбль Дончиана (реплика Zarattini 2025, версия {res['version']}) · {name}"
@@ -170,8 +187,27 @@ def main() -> None:
     ap.add_argument("--data", required=True)
     ap.add_argument("--version", default="v1", choices=["v0", "v1"])
     ap.add_argument("--no-register", action="store_true")
+    ap.add_argument("--placebo", type=int, default=0, help="перестановочный тест: число перемешиваний (напр. 200)")
     a = ap.parse_args()
     name = Path(a.data).stem
+    if a.placebo:
+        pl = placebo_h2(load(a.data), a.placebo)
+        rep = (f"# H2 — плацебо (перемешанные дневные доходности) · {name}\n\n"
+               f"Основная спецификация (ансамбль v1, храповик) до holdout: Sharpe **{pl['real']:.2f}**. "
+               f"На {a.placebo} перемешиваниях: медиана {pl['median']:.2f}, 95-й перцентиль {pl['q95']:.2f}, "
+               f"p = {pl['p']:.3f} (доля перемешиваний с Sharpe ≥ настоящего).\n\n"
+               + ("**Тренд-эффект отличим от перемешанного ряда.**" if pl["p"] < 0.05 else
+                  "**Тренд-эффект НЕ отличим от перемешанного ряда** — результат объясняется формой распределения "
+                  "доходностей (дрейф, толстые хвосты), а не их последовательностью."))
+        if not a.no_register:
+            register([{"hypothesis": "H2-placebo", "asset": name.split("_")[0], "tf": "1d", "model": "donchian",
+                       "rule": f"ансамбль · mid_ratchet v1 на перемешанных доходностях ×{a.placebo}", "holdout": False,
+                       "notes": f"real Sharpe {pl['real']:.2f}; perm median {pl['median']:.2f} q95 {pl['q95']:.2f}; p={pl['p']:.3f}",
+                       "n_trials_at_reg": n_trials() + 1, "verdict": "контроль"}])
+        out = Path("reports") / f"H2_{name}_placebo.md"
+        out.write_text(rep, encoding="utf-8")
+        print(rep)
+        return
     res = evaluate_h2(load(a.data), n_prior=n_trials(), version=a.version)
     spec = "v1: 0.25/σ90 cap2 band20%(σ) 10bps" if a.version == "v1" else "v0: 0.25/σ90 cap1 band20% 10bps"
     if not a.no_register:

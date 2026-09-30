@@ -30,9 +30,12 @@ from .registry import HOLDOUT_START, before_holdout, holdout_opened, n_trials, o
 from .run import BARS_PER_DAY, load
 
 
-def _fit_calibrated(kind: str, X: np.ndarray, y: np.ndarray, horizon: int, w: np.ndarray | None = None):
+def _fit_calibrated(kind: str, X: np.ndarray, y: np.ndarray, horizon: int, w: np.ndarray | None = None,
+                    conformal: float | None = None):
     """Модель на первых 75% обучения + изотоническая калибровка на последних 25% (между ними зазор h баров).
-    w — веса уникальности меток (пересекающиеся сделки весят меньше)."""
+    w — веса уникальности меток (пересекающиеся сделки весят меньше).
+    conformal=α (H9): калибровочный хвост делится пополам — изотоническая регрессия на первой половине, split-conformal
+    (MAPIE, мера LAC) на второй; возвращается пара функций (p, «множество = {выигрыш}»)."""
     cut = int(len(X) * 0.75)
     fit_idx, cal_idx = np.arange(0, max(0, cut - horizon)), np.arange(cut, len(X))
     if len(fit_idx) < 150 or len(cal_idx) < 50 or len(np.unique(y[fit_idx])) < 2:
@@ -40,8 +43,51 @@ def _fit_calibrated(kind: str, X: np.ndarray, y: np.ndarray, horizon: int, w: np
     sw = None if w is None else w[fit_idx]
     m = _make_model(kind)
     m = m.fit(X[fit_idx], y[fit_idx], **({"logisticregression__sample_weight": sw} if kind == "logit" else {"sample_weight": sw}))
-    iso = IsotonicRegression(out_of_bounds="clip", y_min=0.01, y_max=0.99).fit(m.predict_proba(X[cal_idx])[:, 1], y[cal_idx])
-    return lambda Z: iso.predict(m.predict_proba(Z)[:, 1])
+    if conformal is None:
+        iso = IsotonicRegression(out_of_bounds="clip", y_min=0.01, y_max=0.99).fit(m.predict_proba(X[cal_idx])[:, 1], y[cal_idx])
+        return lambda Z: iso.predict(m.predict_proba(Z)[:, 1])
+    half = len(cal_idx) // 2
+    iso_idx, conf_idx = cal_idx[:half], cal_idx[half:]
+    iso = IsotonicRegression(out_of_bounds="clip", y_min=0.01, y_max=0.99).fit(m.predict_proba(X[iso_idx])[:, 1], y[iso_idx])
+    from mapie.classification import SplitConformalClassifier
+    est = _Calibrated(m, iso)
+    mc = SplitConformalClassifier(est, confidence_level=1 - conformal, prefit=True, conformity_score="lac")
+    mc.conformalize(X[conf_idx], y[conf_idx].astype(int))
+    def win_singleton(Z):
+        sets = mc.predict_set(Z)[1][:, :, 0]                 # (n, 2): входит ли класс 0 / 1 в множество
+        return sets[:, 1] & ~sets[:, 0]
+    return (lambda Z: iso.predict(m.predict_proba(Z)[:, 1])), win_singleton
+
+
+class _Calibrated:
+    """Обёртка «модель + изотоническая калибровка» в интерфейсе sklearn-классификатора для MAPIE (prefit)."""
+    _estimator_type = "classifier"
+
+    def __init__(self, m, iso):
+        self.m, self.iso, self.classes_ = m, iso, np.array([0, 1])
+        self.fitted_ = True
+
+    def fit(self, X, y):
+        return self
+
+    def predict_proba(self, X):
+        p = self.iso.predict(self.m.predict_proba(X)[:, 1])
+        return np.c_[1 - p, p]
+
+    def predict(self, X):
+        return (self.predict_proba(X)[:, 1] > 0.5).astype(int)
+
+    def __sklearn_tags__(self):
+        from sklearn.utils import Tags, ClassifierTags, TargetTags
+        return Tags(estimator_type="classifier", classifier_tags=ClassifierTags(), target_tags=TargetTags(required=True))
+
+
+def _share_folds_better(p: np.ndarray, y: np.ndarray, p0: np.ndarray, fold: np.ndarray) -> float:
+    """Доля тестовых блоков, где log-loss M2 ниже, чем у константы (доли выигрышей на обучении)."""
+    ll = lambda q: -(y * np.log(np.clip(q, 1e-4, 1 - 1e-4)) + (1 - y) * np.log(np.clip(1 - q, 1e-4, 1)))
+    a, b = ll(p), ll(p0)
+    better = [a[fold == f].mean() < b[fold == f].mean() for f in np.unique(fold)]
+    return float(np.mean(better)) if better else float("nan")
 
 
 def vol_managed_long(close: pd.Series, bars_per_day: int, idx: np.ndarray, target_ann: float = 0.25) -> dict:
@@ -64,7 +110,7 @@ def vol_managed_long(close: pd.Series, bars_per_day: int, idx: np.ndarray, targe
 def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: float = 5.0, tp: float = 2.0, sl: float = 1.5,
                 taus=(0.55, 0.60), test_days: int = 90, min_train_days: int = 365, placebo: bool = False, seed: int = 0,
                 drop: tuple[str, ...] = (), n_trials_prior: int = 0, holdout: bool = False,
-                cutoff: pd.Timestamp | None = HOLDOUT_START) -> dict:
+                cutoff: pd.Timestamp | None = HOLDOUT_START, conformal: float | None = None) -> dict:
     """drop — префиксы признаков, которые убираем (ablation: «F5_», «X_hmm»…); n_trials_prior — сколько испытаний уже
     в реестре (N для DSR = они + конфигурации этого прогона). По умолчанию данные обрезаются до holdout;
     holdout=True — тестовые блоки только внутри holdout (обучение — на всём до него)."""
@@ -102,19 +148,28 @@ def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: flo
     test_idx = test_idx[valid[test_idx]]
     pos = {t: i for i, t in enumerate(test_idx)}
     probs = {k: np.full(len(test_idx), np.nan) for k in ("logit", "lgbm")}
+    single = {k: np.zeros(len(test_idx), bool) for k in probs}          # H9: конформное множество = {выигрыш}
+    fold_start, p_base = np.zeros(len(test_idx), int), np.full(len(test_idx), np.nan)
     for tr, te in folds:
         tr = tr[valid[tr]]
         te = nonoverlap(te, h)
         te = te[valid[te]]
         if not len(te):
             continue
+        ii = [pos[t] for t in te]
+        fold_start[ii], p_base[ii] = te[0], y[tr].mean() if len(tr) else np.nan
         wts = uniqueness_weights(tr + 1, tb["exit_bar"].values[tr])
         for k in probs:
-            f = _fit_calibrated(k, Xs.values[tr], y[tr], h, wts)
-            if f is not None:
-                probs[k][[pos[t] for t in te]] = f(Xs.values[te])
+            f = _fit_calibrated(k, Xs.values[tr], y[tr], h, wts, conformal)
+            if f is None:
+                continue
+            if conformal is not None:
+                f, g = f
+                single[k][ii] = g(Xs.values[te])
+            probs[k][ii] = f(Xs.values[te])
     have = ~np.isnan(probs["logit"])
-    test_idx = test_idx[have]
+    test_idx, fold_start, p_base = test_idx[have], fold_start[have], p_base[have]
+    single = {k: v[have] for k, v in single.items()}
     s = side[test_idx]
     r_sig = tb["ret"].values[test_idx]                       # результат сделки со стороны primary
     tp_w, sl_w = tb["tp_w"].values[test_idx], tb["sl_w"].values[test_idx]
@@ -125,6 +180,9 @@ def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: flo
         p = p[have]
         ev = p * tp_w - (1 - p) * sl_w - cost
         configs.append(Config(f"primary + M2[{k}] EV>0", (ev > 0).astype(float), p, tp_w, sl_w))
+        if conformal is not None:
+            configs.append(Config(f"primary + M2[{k}] EV>0 + conformal α={conformal:g}",
+                                  ((ev > 0) & single[k]).astype(float), p, tp_w, sl_w))
         for tau in taus:
             configs.append(Config(f"primary + M2[{k}] p>{tau:.2f}", (p > tau).astype(float), p, tp_w, sl_w))
     n_trials = n_trials_prior + len(configs)
@@ -154,6 +212,11 @@ def evaluate_v1(df: pd.DataFrame, tf: str, horizon_hours: int = 48, fee_bps: flo
             "vol": vol_managed_long(df["close"], bpd, test_idx), "signals_per_month": signals_per_month,
             "fee_bps": fee_bps, "tp": tp, "sl": sl, "placebo": placebo, "n_trials": n_trials, "holdout": holdout,
             "drop": tuple(drop), "features": list(X.columns), "horizon_hours": horizon_hours, "tf": tf,
+            # сырьё для ablation/H7/H9: события, вероятности, исходы, фолды
+            "test_idx": test_idx, "probs": {k: v[have] for k, v in probs.items()}, "y": y[test_idx], "r_sig": r_sig,
+            "tp_w": tp_w, "sl_w": sl_w, "p_base": p_base, "fold_start": fold_start, "X": X,
+            "fold_ll_better": {k: _share_folds_better(v[have], y[test_idx], p_base, fold_start) for k, v in probs.items()},
+            "conformal": conformal,
             "period": (df.index[test_idx[0]], df.index[test_idx[-1]]) if len(test_idx) else None}
 
 
@@ -186,6 +249,8 @@ def report_v1(res: dict, name: str) -> str:
                                        f"Данные обрезаны до {HOLDOUT_START.date()} (holdout не тронут). ")
          + (f"Убраны признаки: {', '.join(res['drop'])}." if res["drop"] else ""), "",
          f"Признаки M2 ({len(res['features'])}): {', '.join(res['features'])}.", "",
+         "Log-loss M2 ниже константы (доли выигрышей на обучении) в доле тестовых блоков: "
+         + ", ".join(f"{k} {v:.0%}" for k, v in res["fold_ll_better"].items()) + " (критерий H3 — ≥ 80 %).", "",
          "| конфигурация | сделок | прибыльных | средняя, б.п. | 95% ДИ, б.п. | PSR | DSR | ¼-Келли, б.п./сделку |",
          "|---|---|---|---|---|---|---|---|"]
     for c in [*res["configs"], *res["baselines"]]:
@@ -234,6 +299,7 @@ def main() -> None:
     ap.add_argument("--hypothesis", default="H3", help="метка испытания в reports/trials.csv")
     ap.add_argument("--no-register", action="store_true", help="не писать в реестр (только для отладки кода)")
     ap.add_argument("--holdout", action="store_true", help="ОДНОКРАТНАЯ проверка на holdout замороженной спецификации")
+    ap.add_argument("--conformal", type=float, default=None, help="H9: α конформного воздержания (напр. 0.2)")
     a = ap.parse_args()
     df = load(a.data)
     name = Path(a.data).stem
@@ -241,11 +307,11 @@ def main() -> None:
         open_holdout(f"v1 {name} {a.hours}h drop={a.drop}")        # второй раз — исключение
     drop = tuple(p for p in a.drop.split(",") if p)
     res = evaluate_v1(df, a.tf, a.hours, a.fee_bps, a.tp, a.sl, placebo=a.placebo, drop=drop,
-                      n_trials_prior=n_trials(), holdout=a.holdout)
+                      n_trials_prior=n_trials(), holdout=a.holdout, conformal=a.conformal)
     if not a.no_register:
         register(registry_rows(res, name.split("_")[0], a.hypothesis + ("-placebo" if a.placebo else "")))
     rep = report_v1(res, name)
-    tag = (f"_drop-{'-'.join(drop)}" if drop else "") + ("_placebo" if a.placebo else "") + ("_HOLDOUT" if a.holdout else "")
+    tag = (f"_conformal{a.conformal:g}" if a.conformal else "") + (f"_drop-{'-'.join(drop)}" if drop else "") + ("_placebo" if a.placebo else "") + ("_HOLDOUT" if a.holdout else "")
     out = Path("reports") / f"v1_{name}_{a.hours}h{tag}.md"
     out.parent.mkdir(exist_ok=True)
     out.write_text(rep, encoding="utf-8")
