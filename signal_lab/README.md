@@ -21,6 +21,23 @@ python -m signal_lab.v1 --data data/BTCUSDT_4h.parquet --tf 4h --hours 48
 python -m signal_lab.v1 --data data/BTCUSDT_4h.parquet --tf 4h --hours 48 --placebo   # контроль утечек
 ```
 
+## Исследование directional edge (09.2026): гипотезы H1–H10, реестр, holdout
+Итог — `reports/edge_summary.md`: ни одна из 263 спецификаций не прошла гейт, в том числе на holdout.
+
+```bash
+python -m signal_lab.fetch --symbol BTCUSDT --tf 4h --extras          # + oi, dvol, dxy (с лагом H.10), hmm_p_* (forward filter)
+python -m signal_lab.h1 --data data/BTCUSDT_spot_1d.parquet           # H1 размер по волатильности
+python -m signal_lab.h2 --data data/BTCUSDT_spot_1d.parquet           # H2 реплика Zarattini (--placebo 200 — перестановки)
+python -m signal_lab.v1 --data data/BTCUSDT_4h.parquet --tf 4h --hours 48 [--placebo] [--conformal 0.2] [--drop F5_]
+python -m signal_lab.ablation --data data/BTCUSDT_4h.parquet --drop X_hmm --hypothesis H10   # H4/H10; --gate — H7
+python -m signal_lab.h6 --data data/BTCUSDT_4h.parquet                # H6 режим фандинга
+python -m signal_lab.holdout --dry-run                                # holdout открывается один раз: --i-understand-this-runs-once
+```
+- **Реестр испытаний** `reports/trials.csv` (`registry.py`): каждый прогон дописывает строки, N для DSR берётся отсюда.
+- **Holdout** с 01.04.2025: `registry.before_holdout` отрезает его до построения признаков и меток; открыть можно
+  один раз (`open_holdout`, отметка в реестре). Уже открыт 30.09.2026.
+- Отчёты по гипотезам — `docs/research/experiments/H*.md`, включая отрицательные.
+
 ## Что делает
 1. **Признаки** (`features.py`, все каузальные): моментум 1–28 дней, моментум с поправкой на волатильность, отрыв от средней,
    пересечение средних, положение в канале Дончиана, краткосрочный разворот, RSI, режим волатильности, аномальный объём,
@@ -37,7 +54,10 @@ python -m signal_lab.v1 --data data/BTCUSDT_4h.parquet --tf 4h --hours 48 --plac
   это шум (именно такой результат лаборатория выдаёт на чистом случайном блуждании, см. тесты).
 - **Гейт:** DSR > 0.95, средняя сделка > 0 после комиссий, ≥ 100 непересекающихся сделок. Не прошли — не продаём.
 
-## Проверено на синтетике (`tests/`, 15 тестов)
+## Проверено на синтетике (`tests/`, 29 тестов)
+- новые ряды (OI, DVOL, DXY, HMM) не заглядывают вперёд и учитывают задержку публикации; реестр append-only,
+  holdout открывается один раз; H2 — стоп-храповик и исполнение со следующего дня; H6 — эпизоды не пересекаются;
+  конформное воздержание только убирает сделки;
 - случайное блуждание → значимых признаков нет, гейт не пройден;
 - встроенный моментум → лаборатория его находит, модель проходит гейт;
 - изменение «будущих» данных не меняет признаки прошлого (нет заглядывания вперёд);
