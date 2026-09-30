@@ -14,7 +14,7 @@ import pandas as pd
 from scipy import stats as st
 
 from .evaluate import Folds, _make_model, deflated_sharpe, nonoverlap
-from .labels import ev_threshold, kelly_fraction
+from .labels import ev_threshold, kelly_binary
 from .stats import min_track_record, pbo_cscv, psr, stationary_bootstrap_ci
 
 
@@ -22,7 +22,9 @@ from .stats import min_track_record, pbo_cscv, psr, stationary_bootstrap_ci
 class Config:
     name: str
     side: np.ndarray                 # позиция на каждом тестовом моменте: +1 / −1 / 0
-    p: np.ndarray | None = None      # вероятность роста (для моделей)
+    p: np.ndarray | None = None      # вероятность выигрыша выбранной стороны (для Келли)
+    win: np.ndarray | None = None    # размер выигрыша и проигрыша (для Келли)
+    loss: np.ndarray | None = None
     rets: np.ndarray = field(default_factory=lambda: np.array([]))
     stats: dict = field(default_factory=dict)
 
@@ -78,35 +80,11 @@ def evaluate_barrier(X: pd.DataFrame, tb: pd.DataFrame, horizon: int, folds: Fol
     for c, s in fsides.items():
         configs.append(Config(f"признак {c}", s[covered]))
 
-    M = np.zeros((len(test_idx), len(configs)))
-    for i, cfg in enumerate(configs):
-        traded = cfg.side != 0
-        M[traded, i] = cfg.side[traded] * r_long[traded] - cost
-        cfg.rets = M[traded, i]
-    pbo = pbo_cscv(M)
-
-    for c in configs:
-        r = c.rets
-        n = len(r)
-        if n < 10:
-            c.stats = {"trades": n}
-            continue
-        hits = int(np.sum(r + cost > 0))
-        lo, hi = stationary_bootstrap_ci(r, block=3.0, n_boot=600)
-        s = {
-            "trades": n, "coverage": n / len(test_idx), "hit": hits / n,
-            "p": st.binomtest(hits, n, 0.5, alternative="greater").pvalue,
-            "mean_bps": r.mean() * 1e4, "ci_lo_bps": lo * 1e4, "ci_hi_bps": hi * 1e4,
-            "sharpe": r.mean() / r.std(ddof=1) * np.sqrt(periods_per_year * n / len(test_idx)),
-            "psr": psr(r), "min_trl": min_track_record(r), "dsr": deflated_sharpe(r, len(configs)),
-        }
-        if c.p is not None:                                    # рост капитала при ¼-Келли по вероятности модели
-            traded = c.side != 0
-            pw = np.where(c.side[traded] > 0, c.p[traded], 1 - c.p[traded])
-            f = kelly_fraction(pw, width[traded])
-            s["kelly_logg_bps"] = float(np.mean(np.log1p(f * (np.expm1(r))))) * 1e4
-        c.stats = s
-
+    for cfg in configs:
+        if cfg.p is not None:                              # симметричные барьеры: выигрыш и проигрыш = ширина
+            cfg.p = np.where(cfg.side > 0, cfg.p, 1 - cfg.p)
+            cfg.win = cfg.loss = width
+    pbo = score_configs(configs, r_long, cost, periods_per_year)
     return {"configs": configs, "pbo": pbo, "test_idx": test_idx, "n_test": len(test_idx)}
 
 
@@ -128,3 +106,37 @@ def regime_breakdown(cfg: Config, X: pd.DataFrame, test_idx: np.ndarray) -> list
             if m.sum() >= 10:
                 out.append((name, int(m.sum()), float(np.mean(r[m] > -1e-12)), float(r[m].mean() * 1e4)))
     return out
+
+
+def score_configs(configs: list[Config], r_side: np.ndarray, cost: float, periods_per_year: float) -> dict:
+    """Общий подсчёт: для каждой конфигурации — доходности сделок (side·r − издержки), PSR, MinTRL, DSR,
+    бутстрап-интервал, рост капитала по ¼-Келли; по матрице всех конфигураций — PBO.
+    r_side — результат long-позиции (если side = ±1 означает long/short) или результат «со стороны сигнала»."""
+    n_test = len(r_side)
+    M = np.zeros((n_test, len(configs)))
+    for i, cfg in enumerate(configs):
+        traded = cfg.side != 0
+        M[traded, i] = cfg.side[traded] * r_side[traded] - cost
+        cfg.rets = M[traded, i]
+    pbo = pbo_cscv(M)
+    for c in configs:
+        r = c.rets
+        n = len(r)
+        if n < 10:
+            c.stats = {"trades": n}
+            continue
+        hits = int(np.sum(r + cost > 0))
+        lo, hi = stationary_bootstrap_ci(r, block=3.0, n_boot=600)
+        s = {
+            "trades": n, "coverage": n / n_test, "hit": hits / n,
+            "p": st.binomtest(hits, n, 0.5, alternative="greater").pvalue,
+            "mean_bps": r.mean() * 1e4, "ci_lo_bps": lo * 1e4, "ci_hi_bps": hi * 1e4,
+            "sharpe": r.mean() / r.std(ddof=1) * np.sqrt(periods_per_year * n / n_test) if r.std() > 0 else 0.0,
+            "psr": psr(r), "min_trl": min_track_record(r), "dsr": deflated_sharpe(r, len(configs)),
+        }
+        if c.p is not None and c.win is not None:
+            traded = c.side != 0
+            f = kelly_binary(c.p[traded], c.win[traded], c.loss[traded])
+            s["kelly_logg_bps"] = float(np.mean(np.log1p(f * np.expm1(r)))) * 1e4
+        c.stats = s
+    return pbo

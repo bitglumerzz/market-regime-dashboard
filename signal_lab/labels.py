@@ -60,3 +60,41 @@ def kelly_fraction(p_win: np.ndarray, width: np.ndarray, frac: float = 0.25, cap
     Используем дробный Келли (по умолчанию ¼) и потолок cap — полный Келли слишком агрессивен при ошибке в p."""
     f = frac * (2 * p_win - 1) / np.where(width > 0, width, np.inf)
     return np.clip(f, 0.0, cap)
+
+
+def triple_barrier_sided(df: pd.DataFrame, horizon: int, side: np.ndarray, tp: float = 2.0, sl: float = 1.5,
+                         vol_span: int = 42) -> pd.DataFrame:
+    """Барьеры для заданной стороны сделки (мета-разметка): цель tp·σ·√h в сторону сделки, стоп sl·σ·√h против неё,
+    выход по времени через h баров. label = 1, если сделка закрылась в плюс (цель или плюс по времени), иначе 0.
+    ret — результат в лог-доходности со стороны сделки. При касании обоих барьеров в одной свече — стоп."""
+    c = df["close"].values
+    hi, lo = df["high"].values, df["low"].values
+    sig = ewm_vol(df["close"], vol_span).values
+    n = len(c)
+    w = sig * np.sqrt(horizon)
+    label, ret, how = np.full(n, np.nan), np.full(n, np.nan), np.full(n, np.nan)
+    for t in range(n - horizon):
+        s = side[t]
+        if not np.isfinite(w[t]) or w[t] <= 0 or not np.isfinite(s) or s == 0:
+            continue
+        up_w, dn_w = (tp * w[t], sl * w[t]) if s > 0 else (sl * w[t], tp * w[t])
+        up, dn = c[t] * np.exp(up_w), c[t] * np.exp(-dn_w)
+        r, h = s * np.log(c[t + horizon] / c[t]), 0
+        for j in range(1, horizon + 1):
+            touch_up, touch_dn = hi[t + j] >= up, lo[t + j] <= dn
+            stop_hit = touch_dn if s > 0 else touch_up
+            tgt_hit = touch_up if s > 0 else touch_dn
+            if stop_hit:
+                r, h = -sl * w[t], -1
+                break
+            if tgt_hit:
+                r, h = tp * w[t], 1
+                break
+        label[t], ret[t], how[t] = float(r > 0), r, h
+    return pd.DataFrame({"label": label, "ret": ret, "hit": how, "tp_w": tp * w, "sl_w": sl * w}, index=df.index)
+
+
+def kelly_binary(p_win: np.ndarray, win: np.ndarray, loss: np.ndarray, frac: float = 0.25, cap: float = 1.0) -> np.ndarray:
+    """Келли для исхода +win / −loss (в долях): f* = p/loss − (1−p)/win. Дробный и с потолком."""
+    f = frac * (p_win / np.where(loss > 0, loss, np.inf) - (1 - p_win) / np.where(win > 0, win, np.inf))
+    return np.clip(f, 0.0, cap)
