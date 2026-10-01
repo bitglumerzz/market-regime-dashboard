@@ -67,3 +67,52 @@ def test_novelty_gate_on_all_raw_features_cuts_drawdown_after_regime_shift():
     dd_base, dd_gated = max_dd(base[te]), max_dd(gated[te])
     assert dd_gated < 0.8 * dd_base, f"gate did not cut drawdown: {dd_gated:.3f} vs {dd_base:.3f}"
     assert gated[te].sum() > base[te].sum() - 0.02                           # и не хуже по сумме (сдвиг режима ломает базу)
+
+
+def discrete_vocab(X, Z, valid):
+    """Маленький дискретный словарь состояний (5 бит, ≤ 32 комбинаций — в пределах ёмкости фильтра ≈ m/k ≈ 20
+    различимых паттернов); пороги — знак относительно среднего ОБУЧЕНИЯ (Z уже стандартизован по обучению)."""
+    ci = {n: i for i, n in enumerate(X.columns)}
+    S = np.c_[(X["F1_donchian"].values > 0), (Z[:, ci["F4_vol_ratio_5_60"]] > 0), (Z[:, ci["F4_vol_20d"]] > 0),
+              (Z[:, ci["F5_taker_imb_24h_z"]] > 0), (Z[:, ci["F2_log_p_ma20"]] > 0)].astype(float)
+    S[~valid] = np.nan
+    return S
+
+
+@pytest.mark.xfail(strict=True, reason="H-FlyBrain-2, зафиксировано 02.10.2026: гейт новизны на дискретном словаре "
+                                        "(5 бит, τ=180) не воспроизводится по seed'ам — отношение просадок 0.65/0.99/0.91, "
+                                        "новизна в новом режиме растёт лишь на 2 из 3 seed'ов; линия A′ закрыта по правилу остановки")
+def test_novelty_gate_on_discrete_vocabulary_cuts_drawdown_after_regime_shift():
+    """Positive control дизайна A′ (словарь + фильтр Блума, τ = 180 баров ≈ 30 дней): на 3 seed'ах синтетики со сменой
+    режима гейт по порогу, выбранному на обучении, обязан снижать просадку базы (ансамбль Дончиана) и не ухудшать сумму."""
+    from signal_lab import flybrain_novelty as fn
+    c = fb.load_circuit()
+    m = len(c.kc_ids)
+    dd_ratio, nov_up, sum_ok = [], [], []
+    for seed in (0, 1, 2):
+        df, n1 = two_regimes(seed=seed)
+        X = build_features_v1(df, 6)
+        valid = ~X.isna().any(axis=1).values
+        first, tr_end = int(np.argmax(valid)), int(n1 * 0.8)
+        mu, sd = X.values[first:tr_end].mean(0), X.values[first:tr_end].std(0) + 1e-9
+        S = discrete_vocab(X, (X.values - mu) / sd, valid)
+        fbf = fn.FlyBloom(m, 1.0, 180.0)
+        nov = np.full(len(S), np.nan)
+        for t in range(len(S)):
+            fbf.tick()
+            if np.isnan(S[t]).any():
+                continue
+            tag = fn.flyhash_rates(c, fn.encode_setups(S[t], len(c.pn_ids)))
+            if t >= first + 360:
+                nov[t] = fbf.novelty(tag)
+            fbf.insert(tag)
+        thr = np.nanquantile(nov[first:tr_end], 0.95)
+        state = donchian_ensemble(df["close"], [60, 120, 360, 720]).shift(1).fillna(0).values
+        r = np.log(df["close"]).diff().fillna(0).values
+        te = np.arange(tr_end, len(df))
+        base, gated = (state * r)[te], (np.where(np.nan_to_num(nov, nan=0.0) > thr, 0.0, state) * r)[te]
+        dd_ratio.append(max_dd(gated) / max(1e-9, max_dd(base)))
+        nov_up.append(np.nanmean(nov[n1:]) > np.nanmean(nov[tr_end:n1]))
+        sum_ok.append(gated.sum() > base.sum() - 0.05)
+    assert np.median(dd_ratio) < 0.8, f"DD ratios {np.round(dd_ratio, 2)}"
+    assert sum(nov_up) >= 2 and sum(sum_ok) >= 2, f"nov_up {nov_up}, sum_ok {sum_ok}"
