@@ -63,6 +63,31 @@ class FlyBloom:
             self.w += (1.0 - self.w) / self.tau_bars
 
 
+def uniform_circuit(like: Circuit, rng: np.random.Generator, s: int = 6) -> Circuit:
+    """Плацебо «равномерная проекция» (Dasgupta 2017): каждая KC получает s случайных uPN с равными весами,
+    средний суммарный вход на KC — как у реальной проводки. Проверяет, важна ли именно схема мухи (хабы и т.п.),
+    или любая разрежённая случайная проекция хеширует не хуже."""
+    n_kc, n_pn = like.W_pn_kc.shape
+    w_mean = like.W_pn_kc.sum() / (n_kc * s)
+    rows = np.repeat(np.arange(n_kc), s)
+    cols = np.concatenate([rng.choice(n_pn, s, replace=False) for _ in range(n_kc)])
+    W = sparse.csr_matrix((np.full(len(rows), w_mean), (rows, cols)), shape=(n_kc, n_pn))
+    c = Circuit(like.pn_ids, like.kc_ids, like.mbon_ids, like.mbon_types, W, like.W_kc_mbon0, like.apl_kc,
+                like.comp_pam, like.comp_ppl1, like.approach, like.avoid)
+    return c
+
+
+def tags_matrix(circ: Circuit, Z: np.ndarray, k_frac: float = KC_ACTIVE_FRACTION) -> sparse.csr_matrix:
+    """Разрежённая матрица тегов (строки = бары, столбцы = KC) для линейного считывания; NaN-строки → пустые теги."""
+    rows, cols = [], []
+    for t in range(len(Z)):
+        if np.isnan(Z[t]).any():
+            continue
+        idx = np.where(flyhash(circ, Z[t], k_frac))[0]
+        rows.extend([t] * len(idx)); cols.extend(idx.tolist())
+    return sparse.csr_matrix((np.ones(len(rows)), (rows, cols)), shape=(len(Z), len(circ.kc_ids)))
+
+
 def novelty_series(circ: Circuit, Z: np.ndarray, eps: float = 1.0, tau_bars: float = np.inf,
                    warmup: int = 0) -> np.ndarray:
     """Каузальная новизна каждой строки Z относительно всех ПРЕДЫДУЩИХ строк: nov[t] считается до insert(t).

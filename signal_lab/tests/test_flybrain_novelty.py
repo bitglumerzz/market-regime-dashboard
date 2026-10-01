@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from signal_lab import flybrain as fb
-from signal_lab.flybrain_novelty import FlyBloom, flyhash, novelty_series
+from signal_lab.flybrain_novelty import FlyBloom, flyhash, novelty_series, tags_matrix, uniform_circuit
 
 HAS_DATA = (fb.FLYWIRE / "mb_right_nodes.parquet").exists()
 needs_data = pytest.mark.skipif(not HAS_DATA, reason="нет data/flywire/mb_right_*.parquet")
@@ -114,3 +114,58 @@ def test_novelty_series_is_causal_and_flags_regime_shift():
     Z2 = Z.copy(); Z2[350:] += 10.0                                              # меняем будущее
     nov2 = novelty_series(c, Z2, tau_bars=24.0, warmup=50)
     np.testing.assert_array_equal(nov[:350], nov2[:350])                        # прошлое не меняется
+
+
+@needs_data
+def test_uniform_placebo_circuit_hashes_with_fewer_hubs():
+    """Равномерная проекция (6 uPN на KC, равные веса) — плацебо для вопроса «важна ли схема мухи».
+    Ожидание из замера хабов: покрытие ближе к формуле, задействовано больше KC."""
+    c = fb.load_circuit()
+    u = uniform_circuit(c, np.random.default_rng(0), s=6)
+    assert u.W_pn_kc.shape == c.W_pn_kc.shape and np.all(np.asarray((u.W_pn_kc > 0).sum(1)).ravel() == 6)
+    rng = np.random.default_rng(3)
+    cu = np.zeros(len(c.kc_ids)); cr = np.zeros(len(c.kc_ids))
+    for _ in range(200):
+        z = rng.normal(0, 1, 25)
+        cu += flyhash(u, z); cr += flyhash(c, z)
+    assert abs(flyhash(u, rng.normal(0, 1, 25)).mean() - 0.05) < 0.002
+    assert (cu > 0).mean() > (cr > 0).mean()                              # меньше хабов → больше KC в деле
+
+
+def _planted_readout_data(seed=4, n=2000):
+    rng = np.random.default_rng(seed)
+    d = np.zeros(n)
+    for t in range(1, n):
+        d[t] = 0.98 * d[t - 1] + rng.normal(0, 0.2)
+    Z = rng.normal(0, 1, (n, 25)); Z[:, 7] = d                            # один информативный признак из 25
+    y = (0.35 * np.tanh(d) + rng.normal(0, 0.6, n) > 0).astype(int)         # знак предсказуем ~65–70 %
+    return Z, y, np.arange(0, 1400), np.arange(1400, n)
+
+
+@needs_data
+@pytest.mark.xfail(strict=True, reason="H-FlyBrain-2, зафиксированный отрицательный результат 01.10.2026: логит на FlyHash "
+                                        "всех 25 признаков (0.60) хуже логита на сырых признаках — LSH хранит ОБЩЕЕ сходство "
+                                        "векторов, где 24 измерения шум; вариант «хеш как предиктор направления» отброшен")
+def test_linear_readout_on_kc_tags_matches_raw_logit():
+    from sklearn.linear_model import LogisticRegression
+    c = fb.load_circuit()
+    Z, y, tr, te = _planted_readout_data()
+    T = tags_matrix(c, Z)
+    acc_tags = (LogisticRegression(C=0.1, max_iter=3000).fit(T[tr], y[tr]).predict(T[te]) == y[te]).mean()
+    acc_raw = (LogisticRegression(C=0.1, max_iter=3000).fit(Z[tr], y[tr]).predict(Z[te]) == y[te]).mean()
+    assert acc_tags >= acc_raw - 0.02, f"tags {acc_tags:.2f} vs raw {acc_raw:.2f}"
+
+
+@needs_data
+def test_linear_readout_on_kc_tags_is_above_base_rate():
+    """Считывание на коде KC всё же обучаемо (информация не уничтожена полностью) и каузально: тег бара t
+    не зависит от будущих строк."""
+    from sklearn.linear_model import LogisticRegression
+    c = fb.load_circuit()
+    Z, y, tr, te = _planted_readout_data()
+    T = tags_matrix(c, Z)
+    acc = (LogisticRegression(C=0.1, max_iter=3000).fit(T[tr], y[tr]).predict(T[te]) == y[te]).mean()
+    base = max(y[te].mean(), 1 - y[te].mean())
+    assert acc > base + 0.02, f"readout acc {acc:.2f}, base {base:.2f}"
+    Z2 = Z.copy(); Z2[1500:] += 5.0
+    assert (tags_matrix(c, Z2)[:1500] != T[:1500]).nnz == 0
