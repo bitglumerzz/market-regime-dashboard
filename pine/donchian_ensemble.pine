@@ -15,7 +15,7 @@ maxW      = input.float(1.0, "Максимальный вес (1 = 100 % кап�
 band      = input.float(0.20, "Порог ребаланса по волатильности", minval = 0.0, maxval = 0.5)
 showStops = input.bool(true, "Показывать стоп окна 20 дней")
 
-if timeframe.period != "D"
+if not (timeframe.isdaily and timeframe.multiplier == 1)
     runtime.error("Стратегия рассчитана на дневной график (1D)")
 
 // Одна модель окна n: вход, когда закрытие = максимум закрытий за n дней (включая сегодня);
