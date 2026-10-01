@@ -67,15 +67,24 @@ def register(rows: list[dict], path: Path = TRIALS_PATH) -> list[int]:
     return ids
 
 
-def holdout_opened(path: Path = TRIALS_PATH) -> bool:
-    return any(str(r.get("holdout", "")).lower() in ("true", "1", "yes") for r in read_trials(path))
+def holdout_opened(path: Path = TRIALS_PATH, group: str = "BTC-ETH") -> bool:
+    """Открыт ли holdout для группы активов. Исторически единственная группа — BTC/ETH (строка HOLDOUT без asset);
+    новые группы (например, 'alts-2026-10') помечаются полем asset."""
+    for r in read_trials(path):
+        if r.get("hypothesis") != "HOLDOUT":
+            continue
+        g = r.get("asset") or "BTC-ETH"
+        if g == group:
+            return True
+    return False
 
 
-def open_holdout(reason: str, path: Path = TRIALS_PATH) -> None:
-    """Однократное открытие holdout: вторая попытка — исключение. Пишет строку-отметку в реестр."""
-    if holdout_opened(path):
-        raise RuntimeError("holdout уже открыт — повторная проверка на нём запрещена")
-    register([{"hypothesis": "HOLDOUT", "rule": "открытие holdout", "holdout": True,
+def open_holdout(reason: str, path: Path = TRIALS_PATH, group: str = "BTC-ETH") -> None:
+    """Однократное открытие holdout для группы активов: вторая попытка для той же группы — исключение.
+    Пишет строку-отметку в реестр (hypothesis=HOLDOUT, asset=группа)."""
+    if holdout_opened(path, group):
+        raise RuntimeError(f"holdout группы {group} уже открыт — повторная проверка на нём запрещена")
+    register([{"hypothesis": "HOLDOUT", "asset": group, "rule": "открытие holdout", "holdout": True,
                "period_start": HOLDOUT_START.date().isoformat(), "notes": reason, "verdict": "открыт"}], path)
 
 

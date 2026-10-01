@@ -79,6 +79,11 @@ def test_registry_append_only_and_holdout_once(tmp_path):
     open_holdout("финальная проверка", p)
     with pytest.raises(RuntimeError):
         open_holdout("вторая попытка", p)
+    open_holdout("альты, один раз", p, group="alts-2026-10")          # другая группа — своё одноразовое открытие
+    with pytest.raises(RuntimeError):
+        open_holdout("альты, второй раз", p, group="alts-2026-10")
+    from signal_lab.registry import holdout_opened
+    assert holdout_opened(p) and holdout_opened(p, "alts-2026-10") and not holdout_opened(p, "sol-only")
 
 
 def test_before_holdout_cuts_everything_after():
