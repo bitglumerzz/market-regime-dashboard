@@ -153,7 +153,7 @@ def test_linear_readout_on_kc_tags_matches_raw_logit():
     T = tags_matrix(c, Z)
     acc_tags = (LogisticRegression(C=0.1, max_iter=3000).fit(T[tr], y[tr]).predict(T[te]) == y[te]).mean()
     acc_raw = (LogisticRegression(C=0.1, max_iter=3000).fit(Z[tr], y[tr]).predict(Z[te]) == y[te]).mean()
-    assert acc_tags >= acc_raw - 0.02, f"tags {acc_tags:.2f} vs raw {acc_raw:.2f}"
+    assert acc_tags >= acc_raw, f"tags {acc_tags:.3f} vs raw {acc_raw:.3f}"     # измерено: 0.600 против 0.618
 
 
 @needs_data
