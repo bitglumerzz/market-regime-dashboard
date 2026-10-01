@@ -1,8 +1,10 @@
 """Apex Cloud: механика stop-and-reverse на синтетике — отладка без просмотра реальных данных индикатора."""
+import math
+
 import numpy as np
 import pandas as pd
 
-from signal_lab.apex_cloud import placebo, stop_and_reverse, strat_returns, trade_returns
+from signal_lab.apex_cloud import infer_periods_per_year, perf, placebo, stop_and_reverse, strat_returns, trade_returns
 
 
 def _df(n=50, seed=0):
@@ -69,5 +71,32 @@ def test_placebo_preserves_event_count():
     df["Trend DOWN"] = 0.0
     df.loc[df.index[[10, 50, 90, 130]], "Trend UP"] = 1
     df.loc[df.index[[30, 70, 110, 150]], "Trend DOWN"] = 1
-    pl = placebo(df, "Trend UP", "Trend DOWN", fee_bps=5.0, n_perm=20, seed=2)
+    pl = placebo(df, "Trend UP", "Trend DOWN", fee_bps=5.0, periods_per_year=365 * 6, n_perm=20, seed=2)
     assert np.isfinite(pl["real"]) and len(pl["perm"]) == 20
+
+
+def test_infer_periods_per_year_detects_bar_step():
+    idx4h = pd.date_range("2024-01-01", periods=100, freq="4h", tz="UTC")
+    idx1d = pd.date_range("2024-01-01", periods=100, freq="1D", tz="UTC")
+    assert math.isclose(infer_periods_per_year(idx4h), 365 * 6, rel_tol=1e-9)
+    assert math.isclose(infer_periods_per_year(idx1d), 365, rel_tol=1e-9)
+
+
+def test_infer_periods_per_year_robust_to_rare_gaps():
+    # DOGE-style случай: почти все шаги 4h, но пара однократных дыр не должна сбивать медиану
+    idx = pd.date_range("2024-01-01", periods=200, freq="4h", tz="UTC")
+    idx = idx.delete([50, 120])                    # две дырки среди 200 — медиана шага всё равно 4h
+    assert math.isclose(infer_periods_per_year(idx), 365 * 6, rel_tol=1e-9)
+
+
+def test_perf_annualization_scales_with_periods_per_year():
+    # одни и те же по-бару доходности, разная частота баров -> Sharpe/vol отличаются ровно на sqrt(6),
+    # CAGR — на корректную степень (если это не учесть, 4H-ряд, посчитанный как дневной, занижает оба показателя)
+    rng = np.random.default_rng(0)
+    x = pd.Series(rng.normal(0.0005, 0.01, 500))
+    p_daily = perf(x, periods_per_year=365)
+    p_4h = perf(x, periods_per_year=365 * 6)
+    assert math.isclose(p_4h["sharpe"], p_daily["sharpe"] * math.sqrt(6), rel_tol=1e-9)
+    assert math.isclose(p_4h["vol"], p_daily["vol"] * math.sqrt(6), rel_tol=1e-9)
+    assert p_4h["mdd"] == p_daily["mdd"]            # просадка не зависит от аннуализации
+    assert p_4h["cagr"] != p_daily["cagr"]

@@ -14,13 +14,13 @@ Cloud flip ▲, Cloud flip ▼.
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from .evaluate import deflated_sharpe
-from .h1 import perf
 from .registry import n_trials, register, trade_moments
 from .stats import min_track_record, psr, stationary_bootstrap_ci
 
@@ -31,6 +31,25 @@ def load_export(path: str | Path) -> pd.DataFrame:
     df = pd.read_csv(path)
     df["time"] = pd.to_datetime(df["time"], utc=True)
     return df.set_index("time").sort_index()
+
+
+def infer_periods_per_year(index: pd.DatetimeIndex) -> float:
+    """Не доверяем таймфрейму в имени файла (TradingView-экспорт DOGE оказался дневным при имени «240» = 4H) —
+    определяем шаг бара по самим меткам времени (медиана, устойчива к редким пропускам)."""
+    hours = index.to_series().diff().dropna().dt.total_seconds().median() / 3600
+    if not np.isfinite(hours) or hours <= 0:
+        raise ValueError("не удалось определить шаг бара по времени")
+    return 365 * 24 / hours
+
+
+def perf(x: pd.Series, periods_per_year: float) -> dict:
+    """Та же формула, что в h1.py/h2.py, но с явным periods_per_year — там он захардкожен на дневные бары (365),
+    здесь ряды на 4H (или, как выяснилось для одного экспорта, на 1D) и подстановка константы 365 занижала
+    бы Sharpe/вол в √(баров в сутках) раз и давала неверный показатель CAGR."""
+    eq = (1 + x).cumprod()
+    return {"sharpe": float(x.mean() / x.std() * math.sqrt(periods_per_year)) if x.std() > 0 else 0.0,
+            "cagr": float(eq.iloc[-1] ** (periods_per_year / len(x)) - 1) if len(x) else math.nan,
+            "vol": float(x.std() * math.sqrt(periods_per_year)), "mdd": float((1 - eq / eq.cummax()).max())}
 
 
 def stop_and_reverse(df: pd.DataFrame, up_col: str, dn_col: str) -> pd.Series:
@@ -82,7 +101,8 @@ def trade_returns(df: pd.DataFrame, pos: pd.Series, fee_bps: float) -> np.ndarra
     return np.array(rets)
 
 
-def placebo(df: pd.DataFrame, up_col: str, dn_col: str, fee_bps: float, n_perm: int = 500, seed: int = 0) -> dict:
+def placebo(df: pd.DataFrame, up_col: str, dn_col: str, fee_bps: float, periods_per_year: float,
+           n_perm: int = 500, seed: int = 0) -> dict:
     """Число и чередование знаков событий сохраняются, их расположение на оси времени — случайное
     (после разминки индикатора: первые valid_from баров исключены из возможных позиций событий)."""
     up, dn = df[up_col].fillna(0).values, df[dn_col].fillna(0).values
@@ -93,7 +113,7 @@ def placebo(df: pd.DataFrame, up_col: str, dn_col: str, fee_bps: float, n_perm: 
     valid_from = int(df[["Cloud top", "SSL high"]].notna().all(axis=1).values.argmax()) if "Cloud top" in df else 0
     real_pos = stop_and_reverse(df, up_col, dn_col)
     real_rets = trade_returns(df, real_pos, fee_bps)
-    real_sharpe = perf(strat_returns(df, real_pos, fee_bps))["sharpe"]
+    real_sharpe = perf(strat_returns(df, real_pos, fee_bps), periods_per_year)["sharpe"]
     rng = np.random.default_rng(seed)
     n = len(df)
     sh = []
@@ -104,32 +124,34 @@ def placebo(df: pd.DataFrame, up_col: str, dn_col: str, fee_bps: float, n_perm: 
         for i, s in zip(idx, signs):
             (u if s == 1 else d)[i] = 1
         pos = stop_and_reverse(df.assign(**{up_col: u, dn_col: d}), up_col, dn_col)
-        sh.append(perf(strat_returns(df, pos, fee_bps))["sharpe"])
+        sh.append(perf(strat_returns(df, pos, fee_bps), periods_per_year)["sharpe"])
     sh = np.array(sh)
     p = float((np.sum(sh >= real_sharpe) + 1) / (n_perm + 1))
     return {"real": real_sharpe, "perm": sh, "p": p, "real_trades": real_rets}
 
 
-def evaluate(df: pd.DataFrame, variant: str, fee_bps: float) -> dict:
+def evaluate(df: pd.DataFrame, variant: str, fee_bps: float, periods_per_year: float) -> dict:
     up_col, dn_col = VARIANTS[variant]
     pos = stop_and_reverse(df, up_col, dn_col)
     bar_rets = strat_returns(df, pos, fee_bps)
     trades = trade_returns(df, pos, fee_bps)
     bh = df["close"].pct_change().dropna()
     bh = bh[bh.index.isin(bar_rets.index)]
-    p = perf(bar_rets)
+    p = perf(bar_rets, periods_per_year)
     stats = {}
     if len(trades) >= 2:
         lo, hi = stationary_bootstrap_ci(trades, block=2.0, n_boot=2000)
         stats = {"n_trades": len(trades), "hit": float(np.mean(trades > 0)), "mean_bps": float(trades.mean() * 1e4),
                  "ci_lo_bps": lo * 1e4, "ci_hi_bps": hi * 1e4, "psr": psr(trades), "min_trl": min_track_record(trades)}
     return {"variant": variant, "pos": pos, "bar_rets": bar_rets, "trades": trades, "perf": p,
-            "bh_perf": perf(bh), "stats": stats, "n_events": int((df[up_col].sum() + df[dn_col].sum()))}
+            "bh_perf": perf(bh, periods_per_year), "stats": stats,
+            "n_events": int((df[up_col].sum() + df[dn_col].sum()))}
 
 
-def report(name: str, results: list[dict], pl: dict, fee_bps: float, n_trials_total: int) -> str:
+def report(name: str, results: list[dict], pl: dict, fee_bps: float, n_trials_total: int, tf_note: str) -> str:
     L = [f"# Apex Cloud (TradingView, veilazaro010) · {name}", "",
-         f"Издержки {fee_bps:g} б.п. за сторону. N испытаний для DSR (реестр на момент прогона): **{n_trials_total}**. "
+         f"Издержки {fee_bps:g} б.п. за сторону. Шаг бара (определён по времени в данных): **{tf_note}**. "
+         f"N испытаний для DSR (реестр на момент прогона): **{n_trials_total}**. "
          "Правило зафиксировано до прогона: docs/research/experiments/H-ApexCloud.md.", ""]
     for r in results:
         s, p, bh = r["stats"], r["perf"], r["bh_perf"]
@@ -168,15 +190,18 @@ def main() -> None:
     name = Path(a.data).stem
     asset = name.split("_")[0]
     df = load_export(a.data)
-    results = [evaluate(df, v, a.fee_bps) for v in VARIANTS]
-    pl = placebo(df, *VARIANTS["trend"], a.fee_bps, a.placebo) if a.placebo else {}
+    periods_per_year = infer_periods_per_year(df.index)
+    bar_hours = 365 * 24 / periods_per_year
+    tf = "1d" if abs(bar_hours - 24) < 0.5 else ("4h" if abs(bar_hours - 4) < 0.5 else f"{bar_hours:.1f}h")
+    results = [evaluate(df, v, a.fee_bps, periods_per_year) for v in VARIANTS]
+    pl = placebo(df, *VARIANTS["trend"], a.fee_bps, periods_per_year, a.placebo) if a.placebo else {}
     N = n_trials() + len(results) + (1 if pl else 0)
-    rep = report(name, results, pl, a.fee_bps, N)
+    rep = report(name, results, pl, a.fee_bps, N, f"{tf} ({bar_hours:.1f} ч/бар, по медиане шага в данных)")
     if not a.no_register:
         rows = []
         for r in results:
             s = r["stats"]
-            rows.append({"hypothesis": "H-ApexCloud", "asset": asset, "tf": "4h", "model": "indicator",
+            rows.append({"hypothesis": "H-ApexCloud", "asset": asset, "tf": tf, "model": "indicator",
                         "rule": f"stop-reverse {r['variant']} (Apex Cloud)", "horizon_h": "", "holdout": False,
                         "n_trades": s.get("n_trades", 0), "hit": s.get("hit"), "mean_bps": s.get("mean_bps"),
                         "ci_lo_bps": s.get("ci_lo_bps"), "ci_hi_bps": s.get("ci_hi_bps"),
@@ -185,7 +210,7 @@ def main() -> None:
                         "verdict": "нет ответа" if s.get("n_trades", 0) < 10 else "ориентир (< 100 сделок)",
                         "notes": f"Sharpe {r['perf']['sharpe']:+.2f} vs B&H {r['bh_perf']['sharpe']:+.2f}; {a.data}"})
         if pl:
-            rows.append({"hypothesis": "H-ApexCloud-placebo", "asset": asset, "tf": "4h", "model": "indicator",
+            rows.append({"hypothesis": "H-ApexCloud-placebo", "asset": asset, "tf": tf, "model": "indicator",
                         "rule": "перестановка моментов событий (trend)", "n_trials_at_reg": N,
                         "verdict": "контроль", "notes": f"real Sharpe {pl['real']:+.2f}; p={pl['p']:.3f}"})
         register(rows)
