@@ -44,6 +44,22 @@ def test_circuit_counts_match_extraction():
 
 
 @needs_data
+def test_valence_by_nt_and_compartment_consistency():
+    """Aso 2014: avoid = глутаматергические, approach = ГАМК/АХ. Биологическая согласованность с правилом обучения:
+    PAM (награда) иннервируют компартменты avoidance-MBON, PPL1 (наказание) — approach-MBON."""
+    c = fb.load_circuit()
+    has_val = c.approach | c.avoid
+    assert has_val.sum() >= 15                                          # типичные MBON01–19 правого полушария
+    assert all(1 <= fb.mbon_type_number(t) <= 19 for t in c.mbon_types[has_val])
+    assert all(fb.mbon_type_number(t) > 19 or fb.mbon_type_number(t) == 0 for t in c.mbon_types[~has_val])
+    assert not (c.approach & c.avoid).any()
+    pam_only, ppl1_only = c.comp_pam & ~c.comp_ppl1, c.comp_ppl1 & ~c.comp_pam
+    assert pam_only.sum() >= 5 and ppl1_only.sum() >= 5
+    assert c.avoid[pam_only].mean() > c.avoid[ppl1_only].mean()         # в PAM-компартментах больше avoid-MBON
+    assert c.approach[ppl1_only].mean() > c.approach[pam_only].mean()   # в PPL1-компартментах больше approach-MBON
+
+
+@needs_data
 def test_rewired_circuit_same_size_different_wiring():
     rng = np.random.default_rng(1)
     a, b = fb.load_circuit(), fb.load_circuit(rng=rng, rewire=True)
@@ -72,12 +88,20 @@ def test_lif_bar_runs_and_is_reproducible():
 
 def test_reinforce_depresses_only_active_compartment():
     n_kc, n_mb = 10, 4
+    # MBON 0: PAM-компартмент, avoid; MBON 1: PAM-компартмент, approach; MBON 2: PPL1, approach; MBON 3: PPL1, avoid
     c = fb.Circuit(np.arange(3), np.arange(n_kc), np.arange(n_mb), np.array(["a"] * n_mb), None,
-                   np.ones((n_mb, n_kc), np.float32), np.ones(n_kc), np.array([1, 1, 0, 0], bool), np.array([0, 0, 1, 1], bool))
+                   np.ones((n_mb, n_kc), np.float32), np.ones(n_kc), np.array([1, 1, 0, 0], bool), np.array([0, 0, 1, 1], bool),
+                   approach=np.array([0, 1, 1, 0], bool), avoid=np.array([1, 0, 0, 1], bool))
     fly = fb.Fly(c, 1.0, 0.0, 0)
     elig = np.zeros(n_kc); elig[:5] = 3.0
-    fly.reinforce(elig, +0.01)                       # награда → PAM-компартменты (MBON 0,1) депрессируют активные KC
-    assert (fly.W[:2, :5] < 1).all() and (fly.W[:2, 5:] == 1).all() and (fly.W[2:] == 1).all()
-    fly.reinforce(elig, -0.05)                       # наказание → PPL1-компартменты (MBON 2,3)
-    assert (fly.W[2:, :5] < 1).all() and (fly.W[2:, 5:] == 1).all()
-    assert (fly.W >= 0).all()
+    fly.reinforce(elig, +0.01, side=+1)              # long выиграл → бычье → PAM: avoid (MBON 0) ↓, approach (MBON 1) ↑
+    assert (fly.W[0, :5] < 1).all() and (fly.W[0, 5:] == 1).all()
+    assert (fly.W[1, :5] > 1).all() and (fly.W[1, 5:] == 1).all() and (fly.W[2:] == 1).all()
+    fly.reinforce(elig, -0.05, side=+1)              # long проиграл → медвежье → PPL1: approach (MBON 2) ↓, avoid (MBON 3) ↑
+    assert (fly.W[2, :5] < 1).all() and (fly.W[2, 5:] == 1).all() and (fly.W[3, :5] > 1).all() and (fly.W[3, 5:] == 1).all()
+    w0 = fly.W[0, :5].copy()
+    fly.reinforce(elig, -0.05, side=-1)              # short проиграл → состояние БЫЧЬЕ → снова PAM: MBON 0 ↓ ещё
+    assert (fly.W[0, :5] < w0).all() and (fly.W[2, 5:] == 1).all()
+    for _ in range(2000):                            # потенциация ограничена потолком W_CAP·w0
+        fly.reinforce(elig, +0.01, side=+1)
+    assert (fly.W <= fb.W_CAP + 1e-9).all() and (fly.W >= 0).all()

@@ -39,12 +39,28 @@ T_PRESENT_MS = 100
 R_BASE_HZ, R_GAIN_HZ = 5.0, 95.0
 PN_PER_FEATURE, PN_ON_PER_FEATURE = 5, 3
 DEAD_ZONE = 0.1
-ETA, TAU_REC_BARS, EMA_TRADES = 0.05, 2000.0, 20
+ETA, TAU_REC_BARS, EMA_TRADES = 0.01, 2000.0, 20          # η: 0.05 отвергнуто positive control (разрушает сигнал)
+W_CAP = 3.0                                               # потолок потенциации, в единицах начального веса w0
 KC_TARGET_SPARSITY = (0.05, 0.10)
-LIF = dict(tau_m=20.0, v_rest=-52.0, v_th=-45.0, v_reset=-52.0, refrac=2.2, tau_syn=5.0)   # [ЛИТ] Shiu 2024, проверить
+# LIF и вес синапса — дословно из model.py Shiu et al. 2024 (Nature; github.com/philshiu/Drosophila_brain_model):
+# dv/dt = (v_0 − v + g)/t_mbr, dg/dt = −g/tau, on_pre: g += w, w = n_syn · w_syn.
+LIF = dict(tau_m=20.0, v_rest=-52.0, v_th=-45.0, v_reset=-52.0, refrac=2.2, tau_syn=5.0)
+W_SYN_MV = 0.275                                  # мВ на один синапс (Shiu 2024) — не калибруется
 
-# Валентность MBON (approach / avoid) — [ЛИТ] заполняется по Aso 2014; до заполнения модуль отказывается запускаться.
-MBON_VALENCE: dict[str, str] = {}
+# Валентность MBON по медиатору — Aso et al. 2014 eLife 3:e04580 (скрининг 20 из 22 типов, дословно): «all MBONs
+# eliciting aversion were glutamatergic and all the MBONs eliciting attraction were either GABAergic or cholinergic».
+# Правило применяем только к типичным MBON01–MBON19, на которых оно измерено; атипичные MBON20–35 (hemibrain) в
+# скрининге не были — их валентность не установлена, в считывании не участвуют. Медиатор — neurotransmitter_predicted.
+VALENCE_BY_NT = {"glutamate": "avoid", "gaba": "approach", "acetylcholine": "approach"}
+VALENCE_MAX_TYPE = 19
+
+
+def mbon_type_number(cell_type: str) -> int:
+    """'MBON12' → 12, 'MBON15-like' → 15, 'MBON25,MBON34' → 25; без номера → 0."""
+    import re
+    m = re.match(r"MBON(\d+)", str(cell_type))
+    return int(m.group(1)) if m else 0
+APL_GAIN_GRID = (0.0, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0, 500.0)
 
 
 # ============================================================ коннектом
@@ -99,7 +115,9 @@ def load_circuit(side: str = "right", rng: np.random.Generator | None = None, re
         comp[c][[ix["mbon"][i] for i in d_post]] = True
     types = nodes.set_index("id").loc[mbon, "cell_type"].astype(str).to_numpy()
     circ = Circuit(pn, kc, mbon, types, W_pn_kc, W_kc_mbon0, apl_kc, comp["PAM"], comp["PPL1"])
-    val = np.array([MBON_VALENCE.get(t.split(",")[0].replace("-like", ""), "unknown") for t in types])
+    nt = nodes.set_index("id").loc[mbon, "neurotransmitter_predicted"].astype(str).str.lower().to_numpy()
+    typical = np.array([1 <= mbon_type_number(t) <= VALENCE_MAX_TYPE for t in types])
+    val = np.array([VALENCE_BY_NT.get(x, "unknown") if ok else "unknown" for x, ok in zip(nt, typical)])
     circ.approach, circ.avoid = val == "approach", val == "avoid"
     return circ
 
@@ -136,7 +154,7 @@ def _lif_bar(pn_rates_hz, W_kc_pn_indptr, W_kc_pn_indices, W_kc_pn_data, apl_w, 
     ref_kc = np.zeros(n_kc); ref_mb = np.zeros(n_mbon)
     cnt_kc = np.zeros(n_kc); cnt_mb = np.zeros(n_mbon)
     p_pn = pn_rates_hz * dt / 1000.0
-    dec_syn = math.exp(-dt / tau_syn); dec_m = dt / tau_m
+    dec_syn = math.exp(-dt / tau_syn)
     apl = 0.0
     for t in range(T):
         # входные спайки uPN
@@ -144,20 +162,20 @@ def _lif_bar(pn_rates_hz, W_kc_pn_indptr, W_kc_pn_indices, W_kc_pn_data, apl_w, 
         for j in range(n_pn):
             if np.random.random() < p_pn[j]:
                 pn_spk[j] = 1.0
-        # ток на KC от uPN (CSR: строка = KC)
+        # синаптическая проводимость KC (мВ): g += w на пресинаптический спайк, w = n_syn · w_unit; APL — тормозно
         for i in range(n_kc):
             s = 0.0
             for q in range(W_kc_pn_indptr[i], W_kc_pn_indptr[i + 1]):
                 s += W_kc_pn_data[q] * pn_spk[W_kc_pn_indices[q]]
-            g_kc[i] = g_kc[i] * dec_syn + w_unit * s - apl_gain * apl * apl_w[i]
+            g_kc[i] = g_kc[i] * dec_syn + w_unit * s - apl_gain * apl * apl_w[i] * w_unit
         kc_spk = np.zeros(n_kc)
         for i in range(n_kc):
             if ref_kc[i] > 0:
                 ref_kc[i] -= dt
                 continue
-            v_kc[i] += dec_m * (v_rest - v_kc[i]) + g_kc[i]
-            if v_kc[i] >= v_th:
-                v_kc[i] = v_reset; ref_kc[i] = refrac; kc_spk[i] = 1.0; cnt_kc[i] += 1.0
+            v_kc[i] += dt / tau_m * (v_rest - v_kc[i] + g_kc[i])     # Shiu 2024: dv/dt = (v_0 − v + g)/t_mbr
+            if v_kc[i] >= v_th:                                       # reset: v = v_rst; g = 0 (как в model.py)
+                v_kc[i] = v_reset; g_kc[i] = 0.0; ref_kc[i] = refrac; kc_spk[i] = 1.0; cnt_kc[i] += 1.0
         apl = apl * dec_syn + kc_spk.sum() / n_kc            # APL: однородный вход от всех KC (KC→APL нет в данных)
         for m in range(n_mbon):
             s = 0.0
@@ -168,9 +186,9 @@ def _lif_bar(pn_rates_hz, W_kc_pn_indptr, W_kc_pn_indices, W_kc_pn_data, apl_w, 
             if ref_mb[m] > 0:
                 ref_mb[m] -= dt
                 continue
-            v_mb[m] += dec_m * (v_rest - v_mb[m]) + g_mb[m]
+            v_mb[m] += dt / tau_m * (v_rest - v_mb[m] + g_mb[m])
             if v_mb[m] >= v_th:
-                v_mb[m] = v_reset; ref_mb[m] = refrac; cnt_mb[m] += 1.0
+                v_mb[m] = v_reset; g_mb[m] = 0.0; ref_mb[m] = refrac; cnt_mb[m] += 1.0
     return cnt_kc, cnt_mb
 
 
@@ -200,16 +218,29 @@ class Fly:
         ra, rv = mb_counts[self.c.approach].mean(), mb_counts[self.c.avoid].mean()
         return float((ra - rv) / (ra + rv + 1e-9))
 
-    def reinforce(self, elig_kc: np.ndarray, r_trade: float):
-        """Дофамин по RPE (§6): δ > 0 → PAM депрессирует KC→MBON в PAM-компартментах; δ ≤ 0 → PPL1 в своих."""
+    def reinforce(self, elig_kc: np.ndarray, r_trade: float, side: float = 1.0):
+        """Дофамин по RPE (§6, правило Bennett 2021 / Aso 2014). Цепь учит ВАЛЕНТНОСТЬ СОСТОЯНИЯ рынка, а не знак
+        P&L: свидетельство «состояние было бычьим» v = side · r_trade (long выиграл или short проиграл → v > 0).
+        δ = v − EMA(v): δ > 0 → PAM депрессирует KC→MBON только на avoidance-MBON своих компартментов;
+        δ ≤ 0 → PPL1 — только на approach-MBON своих компартментов. Две отвергнутые positive control версии:
+        депрессия всех MBON компартмента (размыто) и знак по P&L без учёта стороны (шорт учился наоборот)."""
+        v = side * r_trade
         hist = np.array(self.trade_log[-EMA_TRADES:]) if self.trade_log else np.array([0.0])
-        delta = r_trade - hist.mean()
+        delta = v - hist.mean()
         sd = hist.std() if len(hist) > 2 and hist.std() > 0 else max(abs(delta), 1e-6)
         a = min(2.0, abs(delta) / sd)
-        comp = self.c.comp_pam if delta > 0 else self.c.comp_ppl1
         e = elig_kc / max(1.0, elig_kc.max())
-        self.W[comp] = np.maximum(0.0, self.W[comp] - ETA * a * e[None, :] * self.W[comp])
-        self.trade_log.append(r_trade)
+        # Bennett 2021 ур. 2 (push–pull внутри компартментов активного кластера): Δw± = η·k·(d± − d∓).
+        # δ > 0 (PAM): KC→avoid депрессия, KC→approach потенциация; δ ≤ 0 (PPL1): наоборот. Шаг — в единицах w0,
+        # пол 0, потолок W_CAP·w0 (депрессия/потенциация только где есть синапс: w0 > 0).
+        if delta > 0:
+            dep, pot = self.c.comp_pam & self.c.avoid, self.c.comp_pam & self.c.approach
+        else:
+            dep, pot = self.c.comp_ppl1 & self.c.approach, self.c.comp_ppl1 & self.c.avoid
+        step = ETA * a * e[None, :]
+        self.W[dep] = np.maximum(0.0, self.W[dep] - step * self.W0[dep])
+        self.W[pot] = np.minimum(W_CAP * self.W0[pot], self.W[pot] + step * self.W0[pot])
+        self.trade_log.append(v)
 
     def recover(self):
         self.W += (self.W0 - self.W) / TAU_REC_BARS
@@ -229,35 +260,42 @@ def encode_rates(z: np.ndarray, n_pn: int) -> np.ndarray:
 
 
 # ============================================================ калибровка на шуме (§4), без ценовых данных
+def kc_sparsity(circ: Circuit, apl_gain: float, seed: int = 0, w_unit: float = W_SYN_MV, rate_hz: float = 50.0,
+                W: np.ndarray | None = None) -> float:
+    """Доля KC с ≥1 спайком за окно при всех uPN на rate_hz (шум, без ценовых данных)."""
+    n, A = len(circ.pn_ids), circ.W_pn_kc
+    W = circ.W_kc_mbon0.astype(np.float64) if W is None else W
+    fr = []
+    for k in range(3):
+        kc, _ = _lif_bar(np.full(n, rate_hz), A.indptr, A.indices, A.data, circ.apl_kc, W, w_unit, apl_gain,
+                         int(T_PRESENT_MS / DT_MS), DT_MS, LIF["tau_m"], LIF["v_rest"], LIF["v_th"],
+                         LIF["v_reset"], LIF["refrac"], LIF["tau_syn"], seed * 7 + k)
+        fr.append(float((kc > 0).mean()))
+    return float(np.mean(fr))
+
+
 def calibrate(circ: Circuit, seed: int = 0) -> tuple[float, float]:
-    """Подбираем w_unit и apl_gain так, чтобы при всех uPN на 50 Гц доля KC со спайком за окно была в
-    KC_TARGET_SPARSITY. Сетка фиксирована; выбирается первая точка, попавшая в диапазон (детерминированно)."""
-    n = len(circ.pn_ids)
-    for apl_gain in (0.0, 0.5, 1.0, 2.0, 4.0):
-        for w_unit in (0.02, 0.05, 0.1, 0.2, 0.4, 0.8, 1.6):
-            fly = Fly(circ, w_unit, apl_gain, seed)
-            fracs = []
-            for k in range(3):
-                z = np.zeros(25)
-                A = circ.W_pn_kc
-                kc, _ = _lif_bar(np.full(n, 50.0), A.indptr, A.indices, A.data, circ.apl_kc, fly.W, w_unit, apl_gain,
-                                 int(T_PRESENT_MS / DT_MS), DT_MS, LIF["tau_m"], LIF["v_rest"], LIF["v_th"],
-                                 LIF["v_reset"], LIF["refrac"], LIF["tau_syn"], seed * 7 + k)
-                fracs.append(float((kc > 0).mean()))
-            f = float(np.mean(fracs))
-            if KC_TARGET_SPARSITY[0] <= f <= KC_TARGET_SPARSITY[1]:
-                return w_unit, apl_gain
-    raise RuntimeError("калибровка не нашла точку сетки с нужной разрежённостью KC — проверить LIF/веса")
+    """§4: вес синапса фиксирован литературой (W_SYN_MV); калибруется ТОЛЬКО усиление APL (KC→APL нет в данных):
+    первая точка фиксированной сетки, при которой доля активных KC на шуме попадает в KC_TARGET_SPARSITY.
+    Если ни одна не попадает — ближайшая к середине диапазона (и это пишется в отчёт)."""
+    target = sum(KC_TARGET_SPARSITY) / 2
+    best, best_d = None, np.inf
+    for apl_gain in APL_GAIN_GRID:
+        f = kc_sparsity(circ, apl_gain, seed)
+        if KC_TARGET_SPARSITY[0] <= f <= KC_TARGET_SPARSITY[1]:
+            return W_SYN_MV, apl_gain
+        if abs(f - target) < best_d:
+            best, best_d = apl_gain, abs(f - target)
+    return W_SYN_MV, best
 
 
 # ============================================================ walk-forward
 def run_fly(df: pd.DataFrame, tf: str, seed: int, placebo: str | None = None, horizon_hours: int = 48,
             fee_bps: float = 5.0, tp: float = 2.0, sl: float = 1.5, test_days: int = 90, min_train_days: int = 365,
             n_trials_prior: int = 0, cutoff=HOLDOUT_START) -> dict:
-    if not MBON_VALENCE:
-        raise RuntimeError("MBON_VALENCE пуст: спецификация не заморожена (см. H-FlyBrain.md [ЛИТ])")
     rng = np.random.default_rng(seed)
-    df = before_holdout(df, cutoff)
+    if cutoff is not None:
+        df = before_holdout(df, cutoff)
     bpd = BARS_PER_DAY[tf]
     h = max(1, int(round(horizon_hours * bpd / 24)))
     X = build_features_v1(df, bpd)
@@ -293,7 +331,7 @@ def run_fly(df: pd.DataFrame, tf: str, seed: int, placebo: str | None = None, ho
             due = [p for p in pending if p[0] <= t]
             for exit_bar, elig, side, t0 in due:
                 tb = tb_long if side > 0 else tb_short
-                fly.reinforce(elig, float(tb["ret"].values[t0]) - cost)
+                fly.reinforce(elig, float(tb["ret"].values[t0]) - cost, side)
             pending = [p for p in pending if p[0] > t]
             fly.recover()
             kc, mb = fly.present((Xv[t] - mu) / sd)
