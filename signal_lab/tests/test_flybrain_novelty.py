@@ -3,7 +3,8 @@ import numpy as np
 import pytest
 
 from signal_lab import flybrain as fb
-from signal_lab.flybrain_novelty import FlyBloom, flyhash, novelty_series, tags_matrix, uniform_circuit
+from signal_lab.flybrain_novelty import (FlyBloom, encode_setups, flyhash, flyhash_rates, novelty_series, tags_matrix,
+                                         uniform_circuit)
 
 HAS_DATA = (fb.FLYWIRE / "mb_right_nodes.parquet").exists()
 needs_data = pytest.mark.skipif(not HAS_DATA, reason="нет data/flywire/mb_right_*.parquet")
@@ -169,3 +170,26 @@ def test_linear_readout_on_kc_tags_is_above_base_rate():
     assert acc > base + 0.02, f"readout acc {acc:.2f}, base {base:.2f}"
     Z2 = Z.copy(); Z2[1500:] += 5.0
     assert (tags_matrix(c, Z2)[:1500] != T[:1500]).nnz == 0
+
+
+def test_encode_setups_is_stimulus_specific():
+    r = encode_setups(np.array([1, 0, 0.5]), n_pn=139)
+    assert r[:4].tolist() == [100.0] * 4 and r[4:8].tolist() == [5.0] * 4           # сетап 0 ON, сетап 1 OFF
+    assert np.allclose(r[8:12], 52.5) and np.all(r[12:] == 5.0)                    # уровень 0.5 — середина; лишние OFF
+    with pytest.raises(ValueError):
+        encode_setups(np.ones(40), n_pn=139)                                       # 40 сетапов × 4 > 139 uPN
+
+
+@needs_data
+def test_setup_odors_hash_locally_and_distinctly():
+    """Похожие комбинации сетапов → похожие теги; разные комбинации → почти не пересекающиеся теги (как запахи)."""
+    c = fb.load_circuit()
+    rng = np.random.default_rng(5)
+    n = 139 // 4
+    a = (rng.random(n) < 0.3).astype(float)
+    a1 = a.copy(); flip = rng.choice(n, 2, replace=False); a1[flip] = 1 - a1[flip]  # 2 сетапа из 34 изменились
+    b = (rng.random(n) < 0.3).astype(float)
+    ta, ta1, tb = (flyhash_rates(c, encode_setups(v, 139)) for v in (a, a1, b))
+    assert abs(ta.mean() - 0.05) < 0.002
+    assert _jaccard(ta, ta1) > 0.4 > _jaccard(ta, tb)
+    np.testing.assert_array_equal(ta, flyhash_rates(c, encode_setups(a, 139)))       # детерминизм

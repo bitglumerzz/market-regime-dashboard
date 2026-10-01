@@ -26,6 +26,36 @@ from .flybrain import Circuit, encode_rates
 KC_ACTIVE_FRACTION = 0.05          # Dasgupta 2017: «all but the highest firing 5% of Kenyon cells are silenced»
 
 
+PN_PER_SETUP = 4                     # группа uPN на один элемент словаря сетапов (139 uPN → до 34 сетапов)
+SETUP_ON_HZ, SETUP_OFF_HZ = 100.0, 5.0
+
+
+def encode_setups(states: np.ndarray, n_pn: int, pn_per_setup: int = PN_PER_SETUP) -> np.ndarray:
+    """«Запах» из словаря сетапов: states — вектор в [0,1] (0/1 для бинарных сетапов, доли — для категориальных
+    с несколькими уровнями, заранее приведённых к [0,1]). Сетап i занимает свою группу из pn_per_setup uPN:
+    rate = OFF + (ON − OFF)·state_i. Группы не пересекаются (стимул-специфичный код, как у запахов); лишние uPN — OFF.
+    Это вход для flyhash: там он центрируется и проецируется реальной проводкой uPN→KC."""
+    states = np.asarray(states, float)
+    if len(states) * pn_per_setup > n_pn:
+        raise ValueError(f"словарь из {len(states)} сетапов не помещается в {n_pn} uPN по {pn_per_setup}")
+    rates = np.full(n_pn, SETUP_OFF_HZ)
+    for i, s in enumerate(states):
+        if np.isnan(s):
+            continue
+        rates[i * pn_per_setup:(i + 1) * pn_per_setup] = SETUP_OFF_HZ + (SETUP_ON_HZ - SETUP_OFF_HZ) * float(np.clip(s, 0, 1))
+    return rates
+
+
+def flyhash_rates(circ: Circuit, rates: np.ndarray, k_frac: float = KC_ACTIVE_FRACTION) -> np.ndarray:
+    """FlyHash от готовых частот uPN (для категориальных «запахов»): центрирование → проекция → WTA."""
+    x = rates - rates.mean()
+    kc = circ.W_pn_kc @ x
+    k = max(1, int(round(k_frac * len(kc))))
+    tag = np.zeros(len(kc), bool)
+    tag[np.argpartition(-kc, k - 1)[:k]] = True
+    return tag
+
+
 def flyhash(circ: Circuit, z: np.ndarray, k_frac: float = KC_ACTIVE_FRACTION) -> np.ndarray:
     """Бинарный тег KC для стандартизованного вектора признаков z (25 → 139 uPN → 2597 KC → top-k).
     Детерминированный (без Пуассона): вход PN = та же кодировка частот §3, что у flybrain (ON/OFF-логистика),
