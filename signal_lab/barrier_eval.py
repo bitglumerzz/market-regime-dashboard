@@ -25,6 +25,8 @@ class Config:
     p: np.ndarray | None = None      # вероятность выигрыша выбранной стороны (для Келли)
     win: np.ndarray | None = None    # размер выигрыша и проигрыша (для Келли)
     loss: np.ndarray | None = None
+    r_own: np.ndarray | None = None  # результат «со стороны сигнала» для КАЖДОГО момента, если у конфигураций разные
+                                     # направления (барьеры асимметричны, short ≠ −long); тогда side — маска 0/1
     rets: np.ndarray = field(default_factory=lambda: np.array([]))
     stats: dict = field(default_factory=dict)
 
@@ -119,7 +121,8 @@ def score_configs(configs: list[Config], r_side: np.ndarray, cost: float, period
     M = np.zeros((n_test, len(configs)))
     for i, cfg in enumerate(configs):
         traded = cfg.side != 0
-        M[traded, i] = cfg.side[traded] * r_side[traded] - cost
+        r = cfg.r_own[traded] if cfg.r_own is not None else cfg.side[traded] * r_side[traded]
+        M[traded, i] = r - cost
         cfg.rets = M[traded, i]
     pbo = pbo_cscv(M)
     for c in configs:
