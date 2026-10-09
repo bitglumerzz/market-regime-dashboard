@@ -4,6 +4,7 @@
 (GBM без сноса, seed 0) ДО единого взгляда на рыночные данные — здесь менять нельзя, иначе это новое испытание.
 
     python -m signal_lab.fly_forage --data data/SOLUSDT_4h.parquet --config stoch
+    python -m signal_lab.fly_forage --holdout     # однократная проверка 18 альтов на группе forage-alts-2025 (§10)
 
 «Встреча» — момент пробоя одного из 9 окон Дончиана (зеркально: long — как в h2.py, short — зеркальный канал по
 минимумам). Экспоненциальная память копит частоту/свежесть встреч по каждой стороне; решение — по одной из трёх
@@ -20,7 +21,7 @@ import pandas as pd
 
 from .evaluate import deflated_sharpe
 from .h2 import WINDOWS, donchian_state
-from .registry import HOLDOUT_START, before_holdout, n_trials, register, trade_moments
+from .registry import HOLDOUT_START, before_holdout, n_trials, open_holdout, register, trade_moments
 from .run import BARS_PER_DAY, load
 from .stats import min_track_record, psr, stationary_bootstrap_ci
 
@@ -28,6 +29,15 @@ from .stats import min_track_record, psr, stationary_bootstrap_ci
 TAU_BARS = 120.0
 FLOOR_BUSY = 6.94
 K_SENS = 0.328
+
+# Holdout альтов (§10 H-FlyForage.md): те же активы и конфигурации, что на периоде разработки (§6, §8).
+# Конец периода — до 2026-10-02, чтобы не задеть запечатанный forward-holdout SOL (§9).
+HOLDOUT_GROUP = "forage-alts-2025"
+HOLDOUT_END = pd.Timestamp("2026-10-02", tz="UTC")
+HOLDOUT_ASSETS = ["SOLUSDT", "LINKUSDT", "AAVEUSDT", "BNBUSDT", "DOGEUSDT", "LTCUSDT", "XRPUSDT", "HYPEUSDT",
+                  "SUIUSDT", "BCHUSDT", "AVAXUSDT", "HBARUSDT", "1000PEPEUSDT", "ICPUSDT", "APTUSDT", "NEARUSDT",
+                  "ETCUSDT", "ONDOUSDT"]
+HOLDOUT_CONFIGS = [("det", 0), ("stoch", 0), ("stoch", 1), ("stoch", 2)]
 
 
 def short_state(close: pd.Series, n: int) -> pd.Series:
@@ -158,15 +168,101 @@ def run(df: pd.DataFrame, tf: str, config: str, fee_bps: float = 5.0, seed: int 
             "bh_mean_bps": float(bh.mean() * 1e4) if len(bh) else float("nan"), "busy_frac": float(np.mean(el + es >= FLOOR_BUSY))}
 
 
+def run_holdout(df: pd.DataFrame, tf: str, config: str, fee_bps: float = 5.0, seed: int = 0,
+                start: pd.Timestamp = HOLDOUT_START, end: pd.Timestamp = HOLDOUT_END) -> dict:
+    """Правило считается каузально по всей истории до `end` (прогрев окон и памяти), но позиция до `start`
+    обнуляется: первая сделка holdout открывается не раньше первого бара периода, все сделки закрываются на
+    последнем баре до `end`. Так в holdout не попадает ни одна сделка, открытая на периоде разработки."""
+    df = df[df.index < end]
+    bpd = BARS_PER_DAY[tf]
+    cl, cs, valid = encounter_counts(df["close"], bpd)
+    el, es = memory_traces(cl, cs)
+    side = decide(el, es, cl, cs, config, seed=seed)
+    side = np.where(valid & (df.index >= start), side, 0.0)
+    win = df.index >= start
+    close = df["close"][win]
+    side = side[win]
+    trades = trade_returns(close, side, fee_bps)
+    bar_rets = strat_returns(close, side, fee_bps)
+    stats = {"n_trades": len(trades)}
+    if len(trades) >= 10:
+        lo, hi = stationary_bootstrap_ci(trades, block=3.0, n_boot=1000)
+        stats |= {"hit": float(np.mean(trades > 0)), "mean_bps": float(trades.mean() * 1e4),
+                  "ci_lo_bps": lo * 1e4, "ci_hi_bps": hi * 1e4, "psr": psr(trades)}
+    return {"config": config, "seed": seed, "trades": trades, "stats": stats,
+            "period": (close.index[0], close.index[-1]) if len(close) else (start, end),
+            "strat_total": float((1 + bar_rets).prod() - 1), "bh_total": float(close.iloc[-1] / close.iloc[0] - 1),
+            "active_frac": float(np.mean(side != 0)) if len(side) else 0.0}
+
+
+def holdout_main(data_dir: Path = Path("data"), tf: str = "4h") -> str:
+    """Однократное открытие holdout группы forage-alts-2025 и регистрация всех 72 строк независимо от результата."""
+    missing = [a for a in HOLDOUT_ASSETS if not (data_dir / f"{a}_{tf}.parquet").exists()]
+    if missing:
+        raise FileNotFoundError(f"нет данных: {missing} — holdout не открыт")
+    open_holdout("H-FlyForage: однократная проверка F-det/F-stoch (τ=120, floor=6.94, k=0.328) на 18 альтах, "
+                 f"{HOLDOUT_START.date()} — {(HOLDOUT_END - pd.Timedelta(days=1)).date()}", group=HOLDOUT_GROUP)
+    N = n_trials() + len(HOLDOUT_ASSETS) * len(HOLDOUT_CONFIGS)
+    rows, L = [], []
+    for asset in HOLDOUT_ASSETS:
+        df = load(data_dir / f"{asset}_{tf}.parquet")
+        for config, seed in HOLDOUT_CONFIGS:
+            res = run_holdout(df, tf, config, seed=seed)
+            s = res["stats"]
+            dsr = deflated_sharpe(res["trades"], N) if s["n_trades"] >= 10 else float("nan")
+            ok = (s["n_trades"] >= 100 and s.get("ci_lo_bps", -1) > 0 and dsr > 0.95
+                  and res["strat_total"] > res["bh_total"])
+            L.append({"asset": asset, "config": config, "seed": seed, **s, "dsr": dsr,
+                      "strat_total": res["strat_total"], "bh_total": res["bh_total"], "ok": ok})
+            rows.append({"hypothesis": "H-FlyForage", "asset": asset, "tf": tf, "model": "forage-encounter",
+                         "rule": f"{config} seed={seed} tau={TAU_BARS} floor={FLOOR_BUSY} k={K_SENS}",
+                         "period_start": HOLDOUT_START.date().isoformat(),
+                         "period_end": (HOLDOUT_END - pd.Timedelta(days=1)).date().isoformat(), "holdout": True,
+                         "n_trades": s["n_trades"], "hit": s.get("hit"), "mean_bps": s.get("mean_bps"),
+                         "ci_lo_bps": s.get("ci_lo_bps"), "ci_hi_bps": s.get("ci_hi_bps"),
+                         **trade_moments(res["trades"]), "n_trials_at_reg": N, "dsr_at_reg": dsr,
+                         "verdict": "прошёл" if ok else "не прошёл",
+                         "notes": f"holdout {HOLDOUT_GROUP}; стратегия {res['strat_total']:+.1%} vs B&H {res['bh_total']:+.1%}"})
+    register(rows)
+    return report_holdout(L, N)
+
+
+def report_holdout(L: list[dict], N: int) -> str:
+    f = lambda v, fmt: "—" if v is None or (isinstance(v, float) and not np.isfinite(v)) else format(v, fmt)
+    out = [f"# H-FlyForage · holdout {HOLDOUT_GROUP}", "",
+           f"Период: {HOLDOUT_START.date()} — {(HOLDOUT_END - pd.Timedelta(days=1)).date()} (4h, Binance USDⓈ-M). "
+           f"Правило без изменений: τ={TAU_BARS:g}, floor={FLOOR_BUSY}, k={K_SENS}, 5 б.п. за сторону. N для DSR: {N}.",
+           "", "Гейт: ≥ 100 сделок, нижняя граница 95 % ДИ средней сделки > 0, DSR > 0.95, доходность выше buy & hold.", "",
+           "| актив | конфигурация | сделок | попаданий | средняя, б.п. | 95% ДИ, б.п. | DSR | стратегия | B&H | гейт |",
+           "|---|---|---|---|---|---|---|---|---|---|"]
+    for r in L:
+        ci = (f"[{r['ci_lo_bps']:+.0f}; {r['ci_hi_bps']:+.0f}]" if "ci_lo_bps" in r else "—")
+        out.append(f"| {r['asset']} | {r['config']} seed={r['seed']} | {r['n_trades']} | {f(r.get('hit'), '.0%')} | "
+                   f"{f(r.get('mean_bps'), '+.1f')} | {ci} | {f(r['dsr'], '.2f')} | {r['strat_total']:+.1%} | "
+                   f"{r['bh_total']:+.1%} | {'**пройден**' if r['ok'] else 'нет'} |")
+    n_pos = sum(1 for r in L if r.get("ci_lo_bps", -1) > 0)
+    out += ["", f"Строк с ДИ целиком выше нуля: {n_pos} из {len(L)}. Гейт пройден: {sum(r['ok'] for r in L)} из {len(L)}."]
+    return "\n".join(out)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--data", required=True)
+    ap.add_argument("--holdout", action="store_true", help=f"однократная проверка на группе {HOLDOUT_GROUP}")
+    ap.add_argument("--data")
     ap.add_argument("--tf", default="4h", choices=list(BARS_PER_DAY))
     ap.add_argument("--config", default="stoch", choices=["stoch", "det"])
     ap.add_argument("--fee-bps", type=float, default=5.0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--no-register", action="store_true")
     a = ap.parse_args()
+    if a.holdout:
+        rep = holdout_main()
+        out = Path("reports") / "H-FlyForage_holdout.md"
+        out.write_text(rep, encoding="utf-8")
+        print(rep, f"\n\nСохранено: {out}", sep="")
+        return
+    if not a.data:
+        ap.error("нужен --data или --holdout")
     name = Path(a.data).stem
     res = run(load(a.data), a.tf, a.config, a.fee_bps, a.seed)
     s = res["stats"]

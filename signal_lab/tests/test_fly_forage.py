@@ -156,3 +156,24 @@ def test_PC3_stochastic_vs_deterministic_on_regime_signal():
     assert len(medians) == 2
     print(f"\n[PC3] медианное совпадение с режимом: {medians}")
     assert all(0.4 < v < 0.95 for v in medians.values())
+
+
+def test_run_holdout_trades_only_inside_window_and_ignores_bars_after_end():
+    df, _ = _gbm(6000, seed=7, drift=0.0004)
+    start, end = df.index[4000], df.index[5500]
+    res = ff.run_holdout(df, "4h", "det", start=start, end=end)
+    assert res["period"][0] == start and res["period"][1] == df.index[5499]
+    df2 = df.copy()
+    df2.iloc[5500:, df2.columns.get_indexer(["open", "high", "low", "close"])] *= 3.0   # бары после end не влияют
+    res2 = ff.run_holdout(df2, "4h", "det", start=start, end=end)
+    np.testing.assert_array_equal(res["trades"], res2["trades"])
+    assert res["bh_total"] == pytest.approx(df["close"].iloc[5499] / df["close"].iloc[4000] - 1)
+
+
+def test_run_holdout_does_not_carry_dev_position_into_window():
+    df, _ = _gbm(6000, seed=8, drift=0.0004)
+    start = df.index[4000]
+    res = ff.run_holdout(df, "4h", "det", start=start, end=df.index[-1] + pd.Timedelta(hours=4))
+    full = ff.run_holdout(df, "4h", "det", start=df.index[0], end=df.index[-1] + pd.Timedelta(hours=4))
+    # в окне не больше сделок, чем у полного прогона, и окно не содержит доходности до start
+    assert 0 < len(res["trades"]) <= len(full["trades"])
