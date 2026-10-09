@@ -200,12 +200,13 @@ def holdout_main(data_dir: Path = Path("data"), tf: str = "4h") -> str:
     missing = [a for a in HOLDOUT_ASSETS if not (data_dir / f"{a}_{tf}.parquet").exists()]
     if missing:
         raise FileNotFoundError(f"нет данных: {missing} — holdout не открыт")
+    frames = {a: load(data_dir / f"{a}_{tf}.parquet") for a in HOLDOUT_ASSETS}   # до открытия: сбой чтения не тратит holdout
     open_holdout("H-FlyForage: однократная проверка F-det/F-stoch (τ=120, floor=6.94, k=0.328) на 18 альтах, "
                  f"{HOLDOUT_START.date()} — {(HOLDOUT_END - pd.Timedelta(days=1)).date()}", group=HOLDOUT_GROUP)
     N = n_trials() + len(HOLDOUT_ASSETS) * len(HOLDOUT_CONFIGS)
     rows, L = [], []
     for asset in HOLDOUT_ASSETS:
-        df = load(data_dir / f"{asset}_{tf}.parquet")
+        df = frames[asset]
         for config, seed in HOLDOUT_CONFIGS:
             res = run_holdout(df, tf, config, seed=seed)
             s = res["stats"]
