@@ -18,6 +18,7 @@ reports/*
 !reports/H*.md
 !reports/v1_*.md
 !reports/ApexCloud_*.md
+!reports/R2*.md
 tv_bridge_queue/
 tv_ground_truth/
 tv_ideas/
