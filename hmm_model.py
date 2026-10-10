@@ -13,6 +13,7 @@ from typing import Tuple
 
 import numpy as np
 from hmmlearn.hmm import GaussianHMM
+from sklearn.preprocessing import StandardScaler
 
 
 # BIC search bounds.
@@ -269,6 +270,7 @@ def walk_forward_classify(
     n_components: int,
     min_train_size: int = DEFAULT_MIN_TRAIN_SIZE,
     refit_period: int = DEFAULT_REFIT_PERIOD,
+    standardize: bool = True,
     progress_callback=None,
 ) -> tuple[np.ndarray, list[int], list[GaussianHMM]]:
     """Rolling-window HMM refit with strict no-look-ahead.
@@ -278,22 +280,27 @@ def walk_forward_classify(
     For bars t in [min_train_size, T):
         - Let r = largest refit point <= t (refit at min_train_size, then
           every `refit_period` bars).
-        - Fit a fresh GaussianHMM on X[:r] (data strictly before bar t).
-        - Use forward_filter on X[:t+1] to compute posterior for bar t,
-          then KEEP only the posterior at row t (the most recent bar).
+        - Fit a StandardScaler and a fresh GaussianHMM on X[:r] (data
+          strictly before bar t).
+        - Use forward_filter on scaler(X[:t+1]) to compute posterior for
+          bar t, then KEEP only the posterior at row t (the most recent bar).
     The forward filter is already causal, so this gives a fully OOS
     classification: bar t's regime depends only on observations up to t and
-    on parameters estimated from observations strictly before the refit
-    point that t falls into.
+    on parameters (scaler mean/variance included) estimated from
+    observations strictly before the refit point that t falls into.
 
     Parameters
     ----------
-    X : (T, n_features) — already standardized.
+    X : (T, n_features) — RAW (unscaled) features. Do not pass a matrix
+        standardized on the full sample: its mean/variance already contain
+        future bars and the result is no longer out-of-sample.
     n_components : fixed n for all refits (caller decides via BIC/AIC on
                    the initial training window).
     min_train_size : number of bars needed before the first OOS prediction.
     refit_period : how many bars between successive HMM refits. Smaller =
                    more responsive but slower.
+    standardize : fit a StandardScaler on X[:r] at every refit point
+                  (default). False only if X is already scaled causally.
 
     Returns
     -------
@@ -327,13 +334,15 @@ def walk_forward_classify(
     posteriors = np.full((n_oos, n_components), np.nan, dtype=np.float64)
     state_orderings: list[np.ndarray] = []
     models: list[GaussianHMM] = []
+    scaler: StandardScaler | None = None
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
 
         for i, r in enumerate(refit_points):
-            # Train on the strictly-prior window [:r].
+            # Train scaler + HMM on the strictly-prior window [:r].
             try:
+                new_scaler = StandardScaler().fit(X[:r]) if standardize else None
                 model = GaussianHMM(
                     n_components=n_components,
                     covariance_type=HMM_COVARIANCE_TYPE,
@@ -341,9 +350,10 @@ def walk_forward_classify(
                     random_state=HMM_RANDOM_STATE,
                     tol=1e-3,
                 )
-                model.fit(X[:r])
+                model.fit(X[:r] if new_scaler is None else new_scaler.transform(X[:r]))
+                scaler = new_scaler
             except Exception:
-                # Fall back to the previous model if this fit failed.
+                # Fall back to the previous model (and its scaler) if this fit failed.
                 if not models:
                     raise RuntimeError(
                         f"Initial walk-forward fit at r={r} failed; "
@@ -357,7 +367,8 @@ def walk_forward_classify(
             # Window of OOS bars this model is responsible for.
             next_r = refit_points[i + 1] if i + 1 < len(refit_points) else T
             # Run the causal forward filter over [:next_r] and keep rows [r:next_r].
-            post_block = forward_filter(model, X[:next_r])  # shape (next_r, n)
+            X_block = X[:next_r] if scaler is None else scaler.transform(X[:next_r])
+            post_block = forward_filter(model, X_block)  # shape (next_r, n)
             # Map model's raw state order to canonical (vol-sorted) order so
             # column j of `posteriors` always means "j-th vol regime".
             order = state_orderings[-1]

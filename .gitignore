@@ -12,7 +12,12 @@ influencer_track_record/
 knowledge_base/
 predictions/
 predictions_smoke_test/
-reports/
+reports/*
+!reports/trials.csv
+!reports/edge_summary.md
+!reports/H*.md
+!reports/v1_*.md
+!reports/ApexCloud_*.md
 tv_bridge_queue/
 tv_ground_truth/
 tv_ideas/
@@ -37,3 +42,6 @@ venv/
 # OS
 .DS_Store
 .venv/
+
+# signal_lab market data (third-party, regenerate with python -m signal_lab.fetch)
+data/
