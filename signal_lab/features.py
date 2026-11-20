@@ -86,8 +86,8 @@ def donchian_ensemble(close: pd.Series, lookbacks_bars: list[int]) -> pd.Series:
 
 def build_features_v1(df: pd.DataFrame, bars_per_day: int) -> pd.DataFrame:
     """Признаки модели v1 из docs/research/directional-edge-2026-09.md (раздел 3.2): F1–F7 и F12.
-    F8 (DVOL), F9 (бета к BTC), F10 (макро), F11 (HMM) требуют внешних рядов — добавляются колонками в df,
-    если они есть: dvol, hmm_p_*, dxy."""
+    F8 (DVOL), F10 (DXY), F11 (HMM) требуют внешних рядов — берутся из колонок df, если они есть: dvol, dxy_chg_5d,
+    hmm_p_* (их присоединяет signal_lab.fetch --extras с задержкой публикации). F9 (бета к BTC) — для альтов, не в v1."""
     d = lambda days: max(2, int(round(days * bars_per_day)))
     c = df["close"]
     r = np.log(c).diff()
@@ -116,8 +116,16 @@ def build_features_v1(df: pd.DataFrame, bars_per_day: int) -> pd.DataFrame:
         sign = np.sign(fr)
         run = sign.groupby((sign != sign.shift()).cumsum()).cumcount() + 1
         f["F7_funding_sign_run"] = sign * run / bars_per_day               # сколько дней держится знак, со знаком
+    if "dvol" in df:                                                       # F8: уровень, изменение за 5 дней, VRP
+        dv = df["dvol"].ffill()
+        f["F8_dvol"] = dv
+        f["F8_dvol_chg_5d"] = np.log(dv / dv.shift(d(5)))
+        rv30 = r.rolling(d(30), min_periods=d(15)).std() * np.sqrt(365 * bars_per_day)
+        f["F8_vrp"] = (dv / 100) ** 2 - rv30 ** 2
+    if "dxy_chg_5d" in df:                                                 # F10: изменение доллара (уже с лагом публикации)
+        f["F10_dxy_chg_5d"] = df["dxy_chg_5d"].ffill()
     for col in df.columns:
-        if col == "dvol" or col.startswith("hmm_p_") or col == "dxy":
+        if col.startswith("hmm_p_"):                                       # F11: только forward-filter вероятности
             f[f"X_{col}"] = df[col].ffill()
     if isinstance(df.index, pd.DatetimeIndex):
         h = df.index.hour

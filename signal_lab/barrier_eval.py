@@ -25,6 +25,8 @@ class Config:
     p: np.ndarray | None = None      # вероятность выигрыша выбранной стороны (для Келли)
     win: np.ndarray | None = None    # размер выигрыша и проигрыша (для Келли)
     loss: np.ndarray | None = None
+    r_own: np.ndarray | None = None  # результат «со стороны сигнала» для КАЖДОГО момента, если у конфигураций разные
+                                     # направления (барьеры асимметричны, short ≠ −long); тогда side — маска 0/1
     rets: np.ndarray = field(default_factory=lambda: np.array([]))
     stats: dict = field(default_factory=dict)
 
@@ -108,15 +110,19 @@ def regime_breakdown(cfg: Config, X: pd.DataFrame, test_idx: np.ndarray) -> list
     return out
 
 
-def score_configs(configs: list[Config], r_side: np.ndarray, cost: float, periods_per_year: float) -> dict:
+def score_configs(configs: list[Config], r_side: np.ndarray, cost: float, periods_per_year: float,
+                  n_trials: int | None = None) -> dict:
     """Общий подсчёт: для каждой конфигурации — доходности сделок (side·r − издержки), PSR, MinTRL, DSR,
     бутстрап-интервал, рост капитала по ¼-Келли; по матрице всех конфигураций — PBO.
-    r_side — результат long-позиции (если side = ±1 означает long/short) или результат «со стороны сигнала»."""
+    r_side — результат long-позиции (если side = ±1 означает long/short) или результат «со стороны сигнала».
+    n_trials — N для DSR (все испытания из реестра); по умолчанию — только конфигурации этого прогона."""
+    n_trials = len(configs) if n_trials is None else max(n_trials, len(configs))
     n_test = len(r_side)
     M = np.zeros((n_test, len(configs)))
     for i, cfg in enumerate(configs):
         traded = cfg.side != 0
-        M[traded, i] = cfg.side[traded] * r_side[traded] - cost
+        r = cfg.r_own[traded] if cfg.r_own is not None else cfg.side[traded] * r_side[traded]
+        M[traded, i] = r - cost
         cfg.rets = M[traded, i]
     pbo = pbo_cscv(M)
     for c in configs:
@@ -132,7 +138,7 @@ def score_configs(configs: list[Config], r_side: np.ndarray, cost: float, period
             "p": st.binomtest(hits, n, 0.5, alternative="greater").pvalue,
             "mean_bps": r.mean() * 1e4, "ci_lo_bps": lo * 1e4, "ci_hi_bps": hi * 1e4,
             "sharpe": r.mean() / r.std(ddof=1) * np.sqrt(periods_per_year * n / n_test) if r.std() > 0 else 0.0,
-            "psr": psr(r), "min_trl": min_track_record(r), "dsr": deflated_sharpe(r, len(configs)),
+            "psr": psr(r), "min_trl": min_track_record(r), "dsr": deflated_sharpe(r, n_trials), "n_trials": n_trials,
         }
         if c.p is not None and c.win is not None:
             traded = c.side != 0

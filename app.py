@@ -92,6 +92,15 @@ TRANSITION_HEATMAP_HEIGHT: int = 360
 DEFAULT_LOOKBACK_YEARS: int = 3
 SYNTHETIC_BAR_COUNT: int = 250
 
+# Analysis modes. The values are stored in session results, so keep them
+# stable; the sidebar shows the longer, explicit labels.
+MODE_IN_SAMPLE: str = "In-sample"
+MODE_WALK_FORWARD: str = "Walk-forward (OOS)"
+MODE_LABELS: dict[str, str] = {
+    MODE_IN_SAMPLE: "In-sample (full-history fit, not OOS)",
+    MODE_WALK_FORWARD: "Walk-forward (OOS)",
+}
+
 # Canonical regime label menu (all the labels label_regimes() can produce).
 ALL_REGIME_LABELS: tuple[str, ...] = (
     "Low Vol",
@@ -163,15 +172,18 @@ criterion_choice = st.sidebar.selectbox(
 
 mode_choice = st.sidebar.radio(
     "Mode",
-    options=["In-sample", "Walk-forward (OOS)"],
+    options=[MODE_IN_SAMPLE, MODE_WALK_FORWARD],
     index=0,
+    format_func=MODE_LABELS.get,
     help=(
-        "In-sample: HMM trained on ALL data, then forward-filtered. "
-        "Walk-forward: HMM refitted on rolling history, then applied "
-        "to the next bars only. This is the honest out-of-sample mode."
+        "In-sample: scaler and HMM fitted on ALL data (future bars included), "
+        "then forward-filtered — descriptive only, not an out-of-sample result. "
+        "Walk-forward: scaler and HMM refitted on past bars only at each refit "
+        "point, then applied to the next bars. This is the honest "
+        "out-of-sample mode."
     ),
 )
-if mode_choice == "Walk-forward (OOS)":
+if mode_choice == MODE_WALK_FORWARD:
     min_train_size = st.sidebar.number_input(
         "Walk-forward min train size",
         min_value=100, max_value=2000, value=DEFAULT_MIN_TRAIN_SIZE, step=10,
@@ -309,7 +321,7 @@ def run_pipeline(
     end: str,
     n_range: tuple[int, int],
     criterion: str,
-    mode: str = "In-sample",
+    mode: str = MODE_IN_SAMPLE,
     min_train: int = DEFAULT_MIN_TRAIN_SIZE,
     refit_every: int = DEFAULT_REFIT_PERIOD,
     progress_cb=None,
@@ -323,24 +335,28 @@ def run_pipeline(
         )
 
     X = feature_matrix(feats)
-    scaler = StandardScaler()
-    Xs = scaler.fit_transform(X)
+    # Full-sample scaling: mean/variance include every bar, future ones too.
+    # Fine for the in-sample mode (and its sensitivity sweep), never for OOS.
+    Xs = StandardScaler().fit_transform(X)
 
-    if mode == "Walk-forward (OOS)":
-        if len(Xs) < min_train + refit_every:
+    if mode == MODE_WALK_FORWARD:
+        if len(X) < min_train + refit_every:
             raise ValueError(
                 f"Need at least {min_train + refit_every} bars for walk-forward "
                 f"with min_train={min_train}, refit_period={refit_every}; "
-                f"only have {len(Xs)}. Widen the date range or shrink the parameters."
+                f"only have {len(X)}. Widen the date range or shrink the parameters."
             )
         # Pick n_components from the initial training window only — never
-        # peeking at future data.
+        # peeking at future data. The scaler is fitted on that window too.
+        init_scaler = StandardScaler().fit(X[:min_train])
         init_model, best_n = train_best_hmm(
-            Xs[:min_train], n_range=n_range, criterion=criterion.lower()
+            init_scaler.transform(X[:min_train]),
+            n_range=n_range, criterion=criterion.lower(),
         )
-        # Now do the OOS classification.
+        # Now do the OOS classification on RAW features: walk_forward_classify
+        # refits the scaler on X[:r] at every refit point.
         posteriors_oos, state_orderings, models = walk_forward_classify(
-            Xs,
+            X,
             n_components=best_n,
             min_train_size=min_train,
             refit_period=refit_every,
@@ -378,19 +394,22 @@ def run_pipeline(
             "raw_ohlcv": raw,
             "data": out_df,
             "feats_full": feats,         # full features (incl. pre-OOS bars)
-            "Xs": Xs,                    # standardized feature matrix
+            "Xs": Xs,                    # full-sample scaling — only for the in-sample sensitivity sweep
             "model": models[-1],       # most recent fitted model (for transmat heatmap)
             "best_n": best_n,
             "state_to_label": label_regimes(models[-1], best_n),
             "posteriors": posteriors_oos,
             "source": raw.attrs.get("source", "unknown"),
-            "mode": "Walk-forward (OOS)",
+            "mode": MODE_WALK_FORWARD,
             "wf_n_refits": len(models),
             "wf_min_train": min_train,
             "wf_refit_period": refit_every,
         }
 
     # --- In-sample mode (original behaviour) ---
+    # Scaler and HMM parameters are fitted on the whole history, so past
+    # posteriors use information from later bars. Only the filtering step is
+    # causal; this is a descriptive view, not an out-of-sample result.
     model, best_n = train_best_hmm(Xs, n_range=n_range, criterion=criterion.lower())
     verify_no_lookahead(model, Xs)
 
@@ -420,7 +439,7 @@ def run_pipeline(
         "state_to_label": state_to_label,
         "posteriors": posteriors,
         "source": raw.attrs.get("source", "unknown"),
-        "mode": "In-sample",
+        "mode": MODE_IN_SAMPLE,
     }
 
 
@@ -451,12 +470,12 @@ if run:
     n_range = _resolve_n_components(regime_choice)
 
     spinner_text = (
-        f"Walk-forward fitting {ticker}…" if mode_choice == "Walk-forward (OOS)"
+        f"Walk-forward fitting {ticker}…" if mode_choice == MODE_WALK_FORWARD
         else f"Analyzing {ticker}…"
     )
     progress_bar = (
         st.sidebar.progress(0.0, text="Walk-forward refits")
-        if mode_choice == "Walk-forward (OOS)" else None
+        if mode_choice == MODE_WALK_FORWARD else None
     )
 
     def _progress(p: float) -> None:
@@ -1098,9 +1117,9 @@ st.caption(
 # ---------------------------------------------------------------------------
 # Footer
 # ---------------------------------------------------------------------------
-mode_info = result.get("mode", "In-sample")
+mode_info = result.get("mode", MODE_IN_SAMPLE)
 extra = ""
-if mode_info == "Walk-forward (OOS)":
+if mode_info == MODE_WALK_FORWARD:
     extra = (
         f" · WF: {result.get('wf_n_refits', '?')} refits, "
         f"min_train={result.get('wf_min_train', '?')}, "
@@ -1111,6 +1130,6 @@ st.caption(
     f"Period: {df_full.index.min().date()} → {df_full.index.max().date()} · "
     f"Data source: {result.get('source', 'unknown')} · "
     f"Criterion: {criterion_choice} · "
-    f"Mode: {mode_info}{extra} · "
+    f"Mode: {MODE_LABELS.get(mode_info, mode_info)}{extra} · "
     "Posteriors are causal (forward-algorithm only)."
 )
