@@ -46,3 +46,6 @@ venv/
 
 # signal_lab market data (third-party, regenerate with python -m signal_lab.fetch)
 data/
+
+# граф graphify — генерируется, вне git (как в студии)
+graphify-out/
